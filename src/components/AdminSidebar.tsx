@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { LayoutDashboard, BarChart3, Users, Search, Bot, CheckCircle, ChevronDown, ChevronRight, Briefcase } from "lucide-react"
+import { LayoutDashboard, BarChart3, Users, Search, Bot, CheckCircle, ChevronDown, ChevronRight, Briefcase, CreditCard, ScrollText } from "lucide-react"
 
 interface SidebarProps {
   current: string
@@ -9,6 +9,9 @@ interface SidebarProps {
 const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
   const [isMarketOpen, setIsMarketOpen] = useState(
     ["markets", "discovery", "settlements"].includes(current)
+  );
+  const [isLogsOpen, setIsLogsOpen] = useState(
+    ["payments"].includes(current)
   );
 
   return (
@@ -26,7 +29,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
             Dashboard
           </li>
 
-          <li 
+          <li
             onClick={() => setIsMarketOpen(!isMarketOpen)}
             style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
             className={["markets", "discovery", "settlements"].includes(current) ? "active-parent" : ""}
@@ -39,7 +42,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
           </li>
 
           {isMarketOpen && (
-            <div className="submenu" style={{ marginLeft: '1.5rem', marginTop: '0.25rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>  
+            <div className="submenu" style={{ marginLeft: '1.5rem', marginTop: '0.25rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               <li
                 className={current === "discovery" ? "active" : ""}
                 onClick={() => onNavigate("discovery")}
@@ -81,6 +84,31 @@ const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
             <Bot size={20} />
             Keeperbot
           </li>
+
+          <li
+            onClick={() => setIsLogsOpen(!isLogsOpen)}
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            className={["payments"].includes(current) ? "active-parent" : ""}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <ScrollText size={20} />
+              <span>Logs</span>
+            </div>
+            {isLogsOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </li>
+
+          {isLogsOpen && (
+            <div className="submenu" style={{ marginLeft: '1.5rem', marginTop: '0.25rem', marginBottom: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <li
+                className={current === "payments" ? "active" : ""}
+                onClick={() => onNavigate("payments")}
+                style={{ padding: '0.5rem 1rem', fontSize: '0.9rem' }}
+              >
+                <CreditCard size={18} />
+                Payment Log
+              </li>
+            </div>
+          )}
         </ul>
       </nav>
       <div style={{ marginTop: "auto", padding: "1rem" }}>

@@ -142,33 +142,6 @@ const MarketForm: React.FC<MarketFormProps> = ({
            </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-          <div>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>MECHANISM</label>
-            <select
-              name="mechanism"
-              value={formData.mechanism}
-              onChange={handleChange}
-              className="input-field"
-              style={{ width: "100%" }}
-            >
-              <option value="parimutuel">Parimutuel</option>
-              <option value="scpm">SCPM (Limit Orders)</option>
-            </select>
-          </div>
-          <div>
-            <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>LIQUIDITY (b)</label>
-            <input
-              type="number"
-              name="liquidityParam"
-              value={formData.liquidityParam}
-              onChange={handleChange}
-              className="input-field"
-              min="100"
-              required
-            />
-          </div>
-        </div>
 
         <div style={{ marginBottom: "1.5rem" }}>
           <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>HOUSE EDGE (%)</label>

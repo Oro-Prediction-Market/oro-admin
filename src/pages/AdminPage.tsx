@@ -6,6 +6,7 @@ import UserManagement from "./UserManagement"
 import MarketDiscovery from "./MarketDiscovery"
 import KeeperDashboard from "./KeeperDashboard"
 import SettlementPage from "./SettlementPage"
+import PaymentLogPage from "./PaymentLogPage"
 import { useAdminApi } from "../lib/useAdminApi"
 
 
@@ -94,6 +95,7 @@ const AdminPage: React.FC = () => {
   else if (page === "discovery") content = <MarketDiscovery />
   else if (page === "keeper") content = <KeeperDashboard />
   else if (page === "settlements") content = <SettlementPage />
+  else if (page === "payments") content = <PaymentLogPage />
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>

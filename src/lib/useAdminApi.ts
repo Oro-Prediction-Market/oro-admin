@@ -56,6 +56,7 @@ export function useAdminApi(token: string | null) {
         }),
       getPool: (id: string) => apiFetch(`/admin/markets/${id}/pool`),
       getSettlements: () => apiFetch("/admin/settlements"),
+      getPayments: () => apiFetch("/admin/payments"),
       getUsers: () => apiFetch("/admin/users"),
       toggleAdmin: (userId: string, isAdmin: boolean) =>
         apiFetch(`/admin/users/${userId}/admin`, {
