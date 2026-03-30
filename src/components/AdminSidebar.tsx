@@ -4,9 +4,10 @@ import { LayoutDashboard, BarChart3, Users, Search, Bot, CheckCircle, ChevronDow
 interface SidebarProps {
   current: string
   onNavigate: (page: string) => void
+  onLogout: () => void
 }
 
-const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
+const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate, onLogout }) => {
   const [isMarketOpen, setIsMarketOpen] = useState(
     ["markets", "discovery", "settlements"].includes(current)
   );
@@ -17,7 +18,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
   return (
     <aside className="admin-sidebar">
       <div className="brand" style={{ padding: "0 1rem", marginBottom: "2rem" }}>
-        <h1 style={{ fontSize: "1.5rem", margin: 0 }}>TARA <span style={{ color: "white" }}>ADMIN</span></h1>
+        <h1 style={{ fontSize: "1.5rem", margin: 0, color: "hsl(var(--primary))" }}>TARA <span style={{ color: "hsl(var(--foreground))" }}>ADMIN</span></h1>
       </div>
       <nav>
         <ul>
@@ -109,10 +110,22 @@ const AdminSidebar: React.FC<SidebarProps> = ({ current, onNavigate }) => {
               </li>
             </div>
           )}
+
+          <div style={{ margin: "1rem 0", borderTop: "1px solid hsl(var(--border))", opacity: 0.5 }} />
+
+          <li
+            onClick={onLogout}
+            style={{ color: "hsl(var(--destructive))" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <LayoutDashboard size={20} style={{ transform: "rotate(180deg)" }} />
+              Logout
+            </div>
+          </li>
         </ul>
       </nav>
       <div style={{ marginTop: "auto", padding: "1rem" }}>
-         <div style={{ fontSize: "0.75rem", color: "hsla(0, 0%, 100%, 0.4)" }}>
+         <div style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
             v1.0.0-alpha
          </div>
       </div>

@@ -103,8 +103,8 @@ const MarketDiscovery: React.FC = () => {
                 padding: "12px 12px 12px 40px",
                 borderRadius: "12px",
                 border: "1px solid hsl(var(--border))",
-                background: "hsl(var(--secondary))",
-                color: "inherit"
+                background: "white",
+                color: "hsl(var(--foreground))"
               }}
             />
           </div>

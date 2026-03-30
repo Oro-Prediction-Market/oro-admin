@@ -24,32 +24,32 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
       left: 0,
       right: 0,
       bottom: 0,
-      background: "rgba(0,0,0,0.8)",
+      background: "rgba(0,0,0,0.5)",
       backdropFilter: "blur(4px)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       zIndex: 1000
     }}>
-      <div className="glass-card" style={{ width: "400px" }}>
+      <div className="glass-card" style={{ width: "400px", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}>
         <h3>Final Resolution</h3>
         <p style={{ color: "hsl(var(--muted-foreground))", marginBottom: "1rem" }}>
-          <strong style={{ color: "white" }}>{market.title}</strong>
+          <strong style={{ color: "hsl(var(--foreground))" }}>{market.title}</strong>
         </p>
 
         {disputes.length > 0 && (
           <div style={{
-            background: "hsla(45, 100%, 50%, 0.08)",
-            border: "1px solid hsla(45, 100%, 50%, 0.3)",
+            background: "hsl(var(--primary) / 0.05)",
+            border: "1px solid hsl(var(--primary) / 0.2)",
             borderRadius: "var(--radius)",
             padding: "0.75rem 1rem",
             marginBottom: "1.25rem"
           }}>
-            <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "hsl(45, 80%, 70%)", marginBottom: "0.5rem" }}>
+            <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "hsl(var(--primary))", marginBottom: "0.5rem" }}>
               {disputes.length} Dispute{disputes.length !== 1 ? "s" : ""} Submitted
             </div>
             {disputes.map((d: any) => (
-              <div key={d.id} style={{ fontSize: "0.75rem", color: "hsl(45, 60%, 60%)", marginBottom: "0.25rem" }}>
+              <div key={d.id} style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))", marginBottom: "0.25rem" }}>
                 Bond: {Number(d.bondAmount).toLocaleString()} credits
                 {d.reason && <span style={{ opacity: 0.8 }}> — "{d.reason}"</span>}
               </div>
@@ -64,7 +64,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
               style={{
                 padding: "1rem",
                 borderRadius: "var(--radius)",
-                background: selectedOutcomeId === outcome.id ? "hsla(180, 100%, 50%, 0.1)" : "rgba(255,255,255,0.05)",
+                background: selectedOutcomeId === outcome.id ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted) / 0.2)",
                 border: `1px solid ${selectedOutcomeId === outcome.id ? "hsl(var(--primary))" : "transparent"}`,
                 cursor: "pointer",
                 display: "flex",
@@ -81,10 +81,10 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
                 style={{ accentColor: "hsl(var(--primary))" }}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500, display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <div style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: "0.5rem", color: "hsl(var(--foreground))" }}>
                   {outcome.label}
                   {outcome.id === market.proposedOutcomeId && (
-                    <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "hsl(var(--primary))", background: "hsla(180,100%,50%,0.1)", padding: "0.1rem 0.4rem", borderRadius: 4 }}>Proposed</span>
+                    <span style={{ fontSize: "0.7rem", fontWeight: 700, color: "hsl(var(--primary))", background: "hsl(var(--primary) / 0.1)", padding: "0.1rem 0.4rem", borderRadius: 4 }}>Proposed</span>
                   )}
                 </div>
                 <div style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
@@ -92,7 +92,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
                 </div>
               </div>
               {selectedOutcomeId === outcome.id && (
-                <div style={{ color: "hsl(var(--primary))", fontSize: "0.875rem" }}>
+                <div style={{ color: "hsl(var(--primary))", fontSize: "0.875rem", fontWeight: 700 }}>
                   ✓ Selected
                 </div>
               )}

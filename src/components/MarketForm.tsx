@@ -144,7 +144,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
 
 
         <div style={{ marginBottom: "1.5rem" }}>
-          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>HOUSE EDGE (%)</label>
+          <label style={{ display: "block", marginBottom: "0.5rem", fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>PLATFORM FEE (%)</label>
           <input
             type="number"
             name="houseEdgePct"

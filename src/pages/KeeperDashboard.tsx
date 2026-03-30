@@ -92,17 +92,18 @@ const KeeperDashboard: React.FC = () => {
           </div>
           <div style={{ 
             flex: 1, 
-            background: "#0a0a0a", 
+            background: "hsl(var(--secondary) / 0.5)", 
             borderRadius: "8px", 
             padding: "1rem", 
             fontFamily: "monospace", 
             fontSize: "0.75rem", 
             overflowY: "auto",
-            maxHeight: "300px"
+            maxHeight: "300px",
+            border: "1px solid hsl(var(--border))"
           }}>
             {logs.map(log => (
-              <div key={log.id} style={{ marginBottom: "0.5rem", display: "flex", gap: "0.5rem" }}>
-                <span style={{ color: "#444" }}>[{log.time}]</span>
+              <div key={log.id} style={{ marginBottom: "0.5rem", display: "flex", gap: "0.5rem", color: "hsl(var(--foreground))" }}>
+                <span style={{ color: "hsl(var(--muted-foreground))" }}>[{log.time}]</span>
                 <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
                   {log.icon} {log.msg}
                 </span>

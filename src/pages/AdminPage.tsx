@@ -58,8 +58,8 @@ const AdminPage: React.FC = () => {
                   padding: "8px 12px",
                   borderRadius: 8,
                   border: "1px solid hsl(var(--border))",
-                  background: "hsl(var(--secondary))",
-                  color: "inherit"
+                  background: "hsl(var(--card))",
+                  color: "hsl(var(--foreground))"
                 }}
                 placeholder="Enter ADMIN_DEV_SECRET"
               />
@@ -100,22 +100,8 @@ const AdminPage: React.FC = () => {
 
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
-      <AdminSidebar current={page} onNavigate={setPage} />
+      <AdminSidebar current={page} onNavigate={setPage} onLogout={handleLogout} />
       <main style={{ flex: 1, padding: 24 }}>
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 16 }}>
-          <button 
-            onClick={handleLogout}
-            style={{ 
-              background: "none", 
-              border: "none", 
-              color: "hsl(var(--muted-foreground))", 
-              cursor: "pointer",
-              fontSize: "0.875rem"
-            }}
-          >
-            Logout
-          </button>
-        </div>
         <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading…</div>}>
           {content}
         </Suspense>

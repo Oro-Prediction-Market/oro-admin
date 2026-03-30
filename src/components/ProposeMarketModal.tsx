@@ -19,25 +19,25 @@ const ProposeMarketModal: React.FC<ProposeMarketModalProps> = ({
     <div style={{
       position: "fixed",
       top: 0, left: 0, right: 0, bottom: 0,
-      background: "rgba(0,0,0,0.8)",
+      background: "rgba(0,0,0,0.5)",
       backdropFilter: "blur(4px)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
       zIndex: 1000
     }}>
-      <div className="glass-card" style={{ width: "420px" }}>
+      <div className="glass-card" style={{ width: "420px", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}>
         <h3>Propose Outcome</h3>
         <p style={{ color: "hsl(var(--muted-foreground))", marginBottom: "0.75rem" }}>
-          <strong style={{ color: "white" }}>{market.title}</strong>
+          <strong style={{ color: "hsl(var(--foreground))" }}>{market.title}</strong>
         </p>
         <div style={{
-          background: "hsla(45, 100%, 50%, 0.08)",
-          border: "1px solid hsla(45, 100%, 50%, 0.3)",
+          background: "hsl(var(--primary) / 0.05)",
+          border: "1px solid hsl(var(--primary) / 0.2)",
           borderRadius: "var(--radius)",
           padding: "0.75rem 1rem",
           fontSize: "0.8rem",
-          color: "hsl(45, 80%, 70%)",
+          color: "hsl(var(--muted-foreground))",
           marginBottom: "1.5rem"
         }}>
           This opens a 24-hour dispute window. Bettors can stake bonds to flag disagreement.
@@ -51,7 +51,7 @@ const ProposeMarketModal: React.FC<ProposeMarketModalProps> = ({
               style={{
                 padding: "1rem",
                 borderRadius: "var(--radius)",
-                background: selectedOutcomeId === outcome.id ? "hsla(180, 100%, 50%, 0.1)" : "rgba(255,255,255,0.05)",
+                background: selectedOutcomeId === outcome.id ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted) / 0.2)",
                 border: `1px solid ${selectedOutcomeId === outcome.id ? "hsl(var(--primary))" : "transparent"}`,
                 cursor: "pointer",
                 display: "flex",
@@ -68,13 +68,13 @@ const ProposeMarketModal: React.FC<ProposeMarketModalProps> = ({
                 style={{ accentColor: "hsl(var(--primary))" }}
               />
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 500 }}>{outcome.label}</div>
+                <div style={{ fontWeight: 600, color: "hsl(var(--foreground))" }}>{outcome.label}</div>
                 <div style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}>
                   Pool: {parseFloat(outcome.totalBetAmount || 0).toLocaleString()} credits
                 </div>
               </div>
               {selectedOutcomeId === outcome.id && (
-                <div style={{ color: "hsl(var(--primary))", fontSize: "0.875rem" }}>✓ Proposed</div>
+                <div style={{ color: "hsl(var(--primary))", fontSize: "0.875rem", fontWeight: 700 }}>✓ Proposed</div>
               )}
             </label>
           ))}
