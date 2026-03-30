@@ -49,11 +49,18 @@ export function useAdminApi(token: string | null) {
           method: "PATCH",
           body: JSON.stringify({ status }),
         }),
+      proposeMarket: (id: string, proposedOutcomeId: string) =>
+        apiFetch(`/admin/markets/${id}/propose`, {
+          method: "POST",
+          body: JSON.stringify({ proposedOutcomeId }),
+        }),
       resolveMarket: (id: string, winningOutcomeId: string) =>
         apiFetch(`/admin/markets/${id}/resolve`, {
           method: "POST",
           body: JSON.stringify({ winningOutcomeId }),
         }),
+      getMarketDisputes: (id: string) =>
+        apiFetch(`/admin/markets/${id}/disputes`),
       getPool: (id: string) => apiFetch(`/admin/markets/${id}/pool`),
       getSettlements: () => apiFetch("/admin/settlements"),
       getPayments: () => apiFetch("/admin/payments"),

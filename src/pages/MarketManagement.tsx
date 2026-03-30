@@ -1,8 +1,9 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { useAdminMarkets, useAdminApi } from "../lib/useAdminApi"
 import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates"
 import MarketForm from "../components/MarketForm"
 import ResolveMarketModal from "../components/ResolveMarketModal"
+import ProposeMarketModal from "../components/ProposeMarketModal"
 import { OddsDisplay } from "../components/OddsDisplay"
 import { LateMoneyMonitor } from "../components/LateMoneyMonitor"
 import { Plus, Play, Square, CheckSquare, Edit, Trash2, Wifi, WifiOff } from "lucide-react"
@@ -14,7 +15,9 @@ const MarketManagement: React.FC = () => {
 
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [editingMarket, setEditingMarket] = useState<any>(null)
+  const [proposingMarket, setProposingMarket] = useState<any>(null)
   const [resolvingMarket, setResolvingMarket] = useState<any>(null)
+  const [resolvingDisputes, setResolvingDisputes] = useState<any[]>([])
   const [filterStatus, setFilterStatus] = useState<string>("All")
   const [expandedMarket, setExpandedMarket] = useState<string | null>(null)
 
@@ -22,7 +25,7 @@ const MarketManagement: React.FC = () => {
   const { markets: realtimeMarkets, lastUpdate, connectionStatus } = useRealTimeUpdates(markets)
   const displayMarkets = realtimeMarkets.length > 0 ? realtimeMarkets : markets
 
-  const statuses = ["All", "Upcoming", "Open", "Closed", "Resolved", "Cancelled"]
+  const statuses = ["All", "Upcoming", "Open", "Closed", "Resolving", "Resolved", "Settled", "Cancelled"]
 
   const filteredMarkets = displayMarkets.filter(
     (m: any) => filterStatus === "All" || m.status === filterStatus.toLowerCase()
@@ -68,12 +71,33 @@ const MarketManagement: React.FC = () => {
     }
   }
 
+  const handlePropose = async (proposedOutcomeId: string) => {
+    try {
+      await api.proposeMarket(proposingMarket.id, proposedOutcomeId)
+      refresh()
+      setProposingMarket(null)
+      alert(`Dispute window opened for "${proposingMarket.title}". Bettors have 24 hours to dispute.`)
+    } catch (e: any) {
+      alert(`Error proposing outcome: ${e.message}`)
+    }
+  }
+
+  const handleOpenResolve = async (market: any) => {
+    setResolvingMarket(market)
+    try {
+      const disputes = await api.getMarketDisputes(market.id)
+      setResolvingDisputes(disputes)
+    } catch {
+      setResolvingDisputes([])
+    }
+  }
+
   const handleResolve = async (winningOutcomeId: string) => {
     try {
       await api.resolveMarket(resolvingMarket.id, winningOutcomeId)
       refresh()
       setResolvingMarket(null)
-      // Show success message
+      setResolvingDisputes([])
       alert(`Market "${resolvingMarket.title}" has been resolved successfully! Check the Settlements page for details.`)
     } catch (e: any) {
       alert(`Error resolving market: ${e.message}`)
@@ -196,7 +220,10 @@ const MarketManagement: React.FC = () => {
                             <button onClick={() => handleTransition(m.id, "closed")} className="secondary" title="Close Market"><Square size={14} /></button>
                           )}
                           {m.status === "closed" && (
-                            <button onClick={() => setResolvingMarket(m)} className="secondary" title="Resolve Market"><CheckSquare size={14} /></button>
+                            <button onClick={() => setProposingMarket(m)} className="secondary" title="Propose Outcome & Open Dispute Window" style={{ color: "hsl(45, 80%, 60%)" }}>⚖️</button>
+                          )}
+                          {m.status === "resolving" && (
+                            <button onClick={() => handleOpenResolve(m)} className="secondary" title="Final Resolution"><CheckSquare size={14} /></button>
                           )}
                           {(m.status === "upcoming" || m.status === "open") && (
                             <button onClick={() => { setEditingMarket(m); setView("edit"); }} className="secondary" title="Edit"><Edit size={14} /></button>
@@ -247,11 +274,20 @@ const MarketManagement: React.FC = () => {
         )}
       </div>
 
+      {proposingMarket && (
+        <ProposeMarketModal
+          market={proposingMarket}
+          onPropose={handlePropose}
+          onCancel={() => setProposingMarket(null)}
+          loading={api.loading}
+        />
+      )}
       {resolvingMarket && (
         <ResolveMarketModal
           market={resolvingMarket}
+          disputes={resolvingDisputes}
           onResolve={handleResolve}
-          onCancel={() => setResolvingMarket(null)}
+          onCancel={() => { setResolvingMarket(null); setResolvingDisputes([]); }}
           loading={api.loading}
         />
       )}

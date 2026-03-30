@@ -91,7 +91,7 @@ const PaymentLogPage: React.FC = () => {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12, marginBottom: 24 }}>
         {(["success", "pending", "failed", "cancelled"] as const).map((s) => {
           const count = payments.filter((p) => p.status === s).length
-          const { bg, color } = STATUS_COLORS[s]
+          const { color } = STATUS_COLORS[s]
           return (
             <div
               key={s}

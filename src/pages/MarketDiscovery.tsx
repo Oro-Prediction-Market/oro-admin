@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react"
-import { Search, Globe, Plus, Zap, Calendar, MapPin, Clock, AlertCircle } from "lucide-react"
+import { Search, Globe, Plus, Zap, Calendar, MapPin, Clock } from "lucide-react"
 import { fifaService, type FifaMarket } from "../services/fifaService"
 import { adminImportService } from "../services/adminImportService"
 
@@ -9,7 +9,7 @@ const MarketDiscovery: React.FC = () => {
   const [markets, setMarkets] = useState<FifaMarket[]>([])
   const [error, setError] = useState<string | null>(null)
   const [importing, setImporting] = useState<Set<string>>(new Set())
-  const [importResults, setImportResults] = useState<Map<string, any>>(new Map())
+  const [_importResults, setImportResults] = useState<Map<string, any>>(new Map())
 
   useEffect(() => {
     fetchFifaMarkets()

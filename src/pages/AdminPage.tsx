@@ -1,12 +1,13 @@
-import React, { useState } from "react"
+import React, { useState, lazy, Suspense } from "react"
 import AdminSidebar from "../components/AdminSidebar"
-import AdminDashboard from "./AdminDashboard"
-import MarketManagement from "./MarketManagement"
-import UserManagement from "./UserManagement"
-import MarketDiscovery from "./MarketDiscovery"
-import KeeperDashboard from "./KeeperDashboard"
-import SettlementPage from "./SettlementPage"
-import PaymentLogPage from "./PaymentLogPage"
+
+const AdminDashboard = lazy(() => import("./AdminDashboard"))
+const MarketManagement = lazy(() => import("./MarketManagement"))
+const UserManagement = lazy(() => import("./UserManagement"))
+const MarketDiscovery = lazy(() => import("./MarketDiscovery"))
+const KeeperDashboard = lazy(() => import("./KeeperDashboard"))
+const SettlementPage = lazy(() => import("./SettlementPage"))
+const PaymentLogPage = lazy(() => import("./PaymentLogPage"))
 import { useAdminApi } from "../lib/useAdminApi"
 
 
@@ -115,7 +116,9 @@ const AdminPage: React.FC = () => {
             Logout
           </button>
         </div>
-        {content}
+        <Suspense fallback={<div style={{ padding: 40, textAlign: "center", color: "hsl(var(--muted-foreground))" }}>Loading…</div>}>
+          {content}
+        </Suspense>
       </main>
     </div>
   )
