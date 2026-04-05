@@ -16,7 +16,7 @@ interface Settlement {
 }
 
 const SettlementPage: React.FC = () => {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const { getSettlements, loading, error } = useAdminApi(token)
   const [settlements, setSettlements] = useState<Settlement[]>([])
   const [fetchError, setFetchError] = useState<string | null>(null)

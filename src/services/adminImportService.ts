@@ -32,7 +32,7 @@ class AdminImportService {
     ).replace(/\/admin$/, "") + "/api"
 
   async importFifaMarket(fifaMarket: FifaMarket): Promise<ImportResult> {
-    const token = localStorage.getItem("admin_token")
+    const token = sessionStorage.getItem("admin_token")
     if (!token) {
       throw new Error("Admin authentication required")
     }
@@ -143,7 +143,7 @@ class AdminImportService {
   }
 
   async checkForDuplicates(fifaMarket: FifaMarket): Promise<boolean> {
-    const token = localStorage.getItem("admin_token")
+    const token = sessionStorage.getItem("admin_token")
     if (!token) return false
 
     try {

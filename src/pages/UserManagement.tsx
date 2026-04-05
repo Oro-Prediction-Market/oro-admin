@@ -36,7 +36,7 @@ interface AdminUser {
 const PAGE_SIZE = 20
 
 const UserManagement: React.FC = () => {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
 
   const [users, setUsers] = useState<AdminUser[]>([])

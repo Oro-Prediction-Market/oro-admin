@@ -31,7 +31,7 @@ export interface FifaMarket {
 
 class FifaService {
   private getAuthHeader(): Record<string, string> {
-    const token = localStorage.getItem("admin_token") ?? ""
+    const token = sessionStorage.getItem("admin_token") ?? ""
     return token ? { Authorization: `Bearer ${token}` } : {}
   }
 

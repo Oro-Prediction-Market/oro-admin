@@ -644,7 +644,7 @@ function DateSeparator({ label, count }: { label: string; count: number }) {
 const PAGE_BATCH = 50
 
 export function AuditLogPage() {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
 
   const [logs, setLogs] = useState<AuditLog[]>([])

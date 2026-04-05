@@ -14,7 +14,7 @@ import { useAdminApi } from "../lib/useAdminApi"
 const AdminPage: React.FC = () => {
   const [page, setPage] = useState("dashboard")
   const [token, setToken] = useState<string | null>(
-    localStorage.getItem("admin_token")
+    sessionStorage.getItem("admin_token")
   )
   const [secret, setSecret] = useState("")
   const [loginError, setLoginError] = useState<string | null>(null)
@@ -24,7 +24,7 @@ const AdminPage: React.FC = () => {
     e.preventDefault()
     try {
       const { token } = await loginWithDevSecret(secret)
-      localStorage.setItem("admin_token", token)
+      sessionStorage.setItem("admin_token", token)
       setToken(token)
       setLoginError(null)
     } catch (err) {
@@ -33,7 +33,7 @@ const AdminPage: React.FC = () => {
   }
 
   const handleLogout = () => {
-    localStorage.removeItem("admin_token")
+    sessionStorage.removeItem("admin_token")
     setToken(null)
   }
 
@@ -113,7 +113,7 @@ const AdminPage: React.FC = () => {
               Initialize Connection
             </button>
           </form>
-          <p
+          {/* <p
             style={{
               marginTop: 24,
               fontSize: "0.75rem",
@@ -123,7 +123,7 @@ const AdminPage: React.FC = () => {
           >
             Refer to <code>docs/admin_auth_integration.md</code> for setup
             instructions.
-          </p>
+          </p> */}
         </div>
       </div>
     )

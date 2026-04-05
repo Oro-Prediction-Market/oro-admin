@@ -3,7 +3,7 @@ import { useAdminMarkets } from "../lib/useAdminApi"
 import { TrendingUp, Activity, AlertCircle } from "lucide-react"
 
 const AdminDashboard: React.FC = () => {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const { markets, loading, error } = useAdminMarkets(token)
 
   const stats = useMemo(() => {

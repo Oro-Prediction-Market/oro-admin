@@ -43,7 +43,7 @@ interface Dispute {
 }
 
 const MarketManagement: React.FC = () => {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const { markets, loading, refresh } = useAdminMarkets(token)
   const api = useAdminApi(token)
 

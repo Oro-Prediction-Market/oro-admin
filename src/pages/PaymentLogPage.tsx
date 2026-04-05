@@ -48,7 +48,7 @@ const METHOD_LABELS: Record<string, string> = {
 const ALL = "all"
 
 const PaymentLogPage: React.FC = () => {
-  const token = localStorage.getItem("admin_token")
+  const token = sessionStorage.getItem("admin_token")
   const { getPayments, loading, error } = useAdminApi(token)
   const [payments, setPayments] = useState<Payment[]>([])
   const [filterStatus, setFilterStatus] = useState(ALL)
