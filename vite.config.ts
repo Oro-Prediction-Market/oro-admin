@@ -8,6 +8,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     port: 5174,
+    fs: {
+      // Restrict serving to tara-admin's own directory only,
+      // preventing Vite from accidentally resolving files from
+      // the sibling Tara monorepo workspace.
+      allow: ["."],
+    },
   },
   resolve: {
     alias: {

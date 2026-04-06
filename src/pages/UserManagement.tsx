@@ -4,7 +4,7 @@ import {
   User,
   Shield,
   ShieldOff,
-  Phone,
+  // Phone,
   CreditCard,
   Flame,
   Search,
@@ -27,10 +27,12 @@ interface AdminUser {
   dkCid: string | null
   dkAccountNumber: string | null
   dkAccountName: string | null
-  phoneNumber: string | null
+  // phoneNumber: string | null
+  reputationTier: string
+  totalPredictions: number
   createdAt: string
   // computed by backend — never raw hashes
-  balance?: string | number
+  // balance?: string | number
 }
 
 const PAGE_SIZE = 20
@@ -532,7 +534,7 @@ const UserManagement: React.FC = () => {
                       alignItems: "center",
                     }}
                   >
-                    <span
+                    {/* <span
                       style={{
                         color: "hsl(var(--muted-foreground))",
                         fontSize: "0.7rem",
@@ -541,13 +543,13 @@ const UserManagement: React.FC = () => {
                       }}
                     >
                       Balance
-                    </span>
-                    <span
+                    </span> */}
+                    {/* <span
                       style={{ fontWeight: 700, color: "hsl(var(--primary))" }}
                     >
                       NU.{" "}
                       {parseFloat(String(user.balance ?? 0)).toLocaleString()}
-                    </span>
+                    </span> */}
                   </div>
 
                   {/* Streak */}
@@ -587,8 +589,67 @@ const UserManagement: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Phone */}
+                  {/* Reputation Tier */}
                   <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "hsl(var(--muted-foreground))",
+                        fontSize: "0.7rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      Reputation
+                    </span>
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        textTransform: "capitalize",
+                        color:
+                          user.reputationTier === "expert"
+                            ? "hsl(var(--primary))"
+                            : user.reputationTier === "reliable"
+                              ? "#16a34a"
+                              : user.reputationTier === "regular"
+                                ? "#d97706"
+                                : "hsl(var(--muted-foreground))",
+                      }}
+                    >
+                      {user.reputationTier ?? "newcomer"}
+                    </span>
+                  </div>
+
+                  {/* Total Predictions */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: "hsl(var(--muted-foreground))",
+                        fontSize: "0.7rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      Predictions
+                    </span>
+                    <span style={{ fontWeight: 600 }}>
+                      {user.totalPredictions ?? 0}
+                    </span>
+                  </div>
+
+                  {/* Phone */}
+                  {/* <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
@@ -621,7 +682,7 @@ const UserManagement: React.FC = () => {
                         —
                       </span>
                     )}
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* ── DK Bank panel (only if linked) ── */}

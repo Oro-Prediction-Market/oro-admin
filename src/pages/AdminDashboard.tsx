@@ -8,15 +8,15 @@ const AdminDashboard: React.FC = () => {
 
   const stats = useMemo(() => {
     const activeMarkets = markets.filter(
-      (m: Record<string, unknown>) => m.status === "Open"
+      (m: Record<string, unknown>) => m.status === "open"
     ).length
     const totalPoolVolume = markets.reduce(
       (sum: number, m: Record<string, unknown>) =>
-        sum + (parseFloat(String(m.poolVolume)) || 0),
+        sum + (parseFloat(String(m.totalPool)) || 0),
       0
     )
-    const unsettledMarkets = markets.filter(
-      (m: Record<string, unknown>) => m.status === "Closed"
+    const unsettledMarkets = markets.filter((m: Record<string, unknown>) =>
+      ["closed", "resolving", "resolved"].includes(String(m.status))
     ).length
     return { activeMarkets, totalPoolVolume, unsettledMarkets }
   }, [markets])
