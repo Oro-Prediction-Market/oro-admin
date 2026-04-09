@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider.tsx"
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <ThemeProvider defaultTheme="light" storageKey="tara-admin-theme">
+    <ThemeProvider defaultTheme="light" storageKey="oro-admin-theme">
       <App />
     </ThemeProvider>
   </StrictMode>

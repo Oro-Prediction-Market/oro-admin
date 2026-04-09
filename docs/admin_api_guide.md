@@ -1,12 +1,15 @@
 # Admin API Integration Guide
 
-This document provides the necessary information to integrate an admin dashboard with the Tara Prediction Market backend.
+This document provides the necessary information to integrate an admin dashboard with the Oro Prediction Market backend.
 
 ## Base URL
+
 `http://localhost:3000/admin` (Default development environment)
 
 ## Authentication
+
 All admin endpoints require a **Bearer Token** with admin privileges.
+
 - Header: `Authorization: Bearer <JWT_TOKEN>`
 - The user must have the `role: "admin"` in the database.
 
@@ -15,8 +18,10 @@ All admin endpoints require a **Bearer Token** with admin privileges.
 ### 1. Market Management
 
 #### Create a New Market
+
 - **URL:** `POST /admin/markets`
 - **Body:** `CreateMarketDto`
+
 ```json
 {
   "title": "Will BTC reach $100k by end of 2024?",
@@ -29,12 +34,15 @@ All admin endpoints require a **Bearer Token** with admin privileges.
 ```
 
 #### List All Markets
+
 - **URL:** `GET /admin/markets`
 - **Returns:** Array of Market objects.
 
 #### Market Status Transition
+
 - **URL:** `PATCH /admin/markets/:id/status`
 - **Body:**
+
 ```json
 {
   "status": "Open" // Upcoming, Open, Closed, Cancelled
@@ -42,8 +50,10 @@ All admin endpoints require a **Bearer Token** with admin privileges.
 ```
 
 #### Resolve Market (Set Winner)
+
 - **URL:** `POST /admin/markets/:id/resolve`
 - **Body:**
+
 ```json
 {
   "winningOutcomeId": "uuid-of-the-winner"
@@ -51,30 +61,37 @@ All admin endpoints require a **Bearer Token** with admin privileges.
 ```
 
 #### Update Market
+
 - **URL:** `PATCH /admin/markets/:id`
 - **Body:** `Partial<CreateMarketDto>` (Updates title, description, etc.)
 
 #### Delete Market
+
 - **URL:** `DELETE /admin/markets/:id`
 - **Condition:** Only `Upcoming` status markets can be deleted.
 
 ### 2. Monitoring & Data
 
 #### Pool Breakdown
+
 - **URL:** `GET /admin/markets/:id/pool`
 - **Returns:** Detailed view of the parimutuel pool, house edge calculation, and current odds.
 
 #### Settlements
+
 - **URL:** `GET /admin/settlements`
 - **Returns:** History of all payouts made for resolved markets.
 
 #### User Management
+
 - **URL:** `GET /admin/users`
 - **Returns:** List of all registered users and their details.
 
 #### Toggle Admin Status
+
 - **URL:** `PATCH /admin/users/:id/admin`
 - **Body:**
+
 ```json
 {
   "isAdmin": true
@@ -82,6 +99,7 @@ All admin endpoints require a **Bearer Token** with admin privileges.
 ```
 
 ## Integration Tips
+
 - Use the `ApiBearerAuth` header for all requests.
 - Handle 403 Forbidden errors if the current user is not an admin.
 - Use the `MarketStatus` enum for consistent state management in the UI.

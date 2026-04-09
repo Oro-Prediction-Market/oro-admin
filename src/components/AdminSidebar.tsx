@@ -44,7 +44,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             color: "hsl(var(--primary))",
           }}
         >
-          TARA <span style={{ color: "hsl(var(--foreground))" }}>ADMIN</span>
+          ORO <span style={{ color: "hsl(var(--foreground))" }}>ADMIN</span>
         </h1>
       </div>
       <nav>

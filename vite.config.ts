@@ -9,9 +9,9 @@ export default defineConfig({
   server: {
     port: 5174,
     fs: {
-      // Restrict serving to tara-admin's own directory only,
+      // Restrict serving to Oro-admin's own directory only,
       // preventing Vite from accidentally resolving files from
-      // the sibling Tara monorepo workspace.
+      // the sibling Oro monorepo workspace.
       allow: ["."],
     },
   },
