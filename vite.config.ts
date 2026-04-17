@@ -22,10 +22,12 @@ export default defineConfig({
   },
   esbuild: {
     sourcemap: false,
+    drop: ["console", "debugger"],
   },
   build: {
     minify: "esbuild",
     target: "es2020",
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
         manualChunks: {
