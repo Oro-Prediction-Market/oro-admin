@@ -107,7 +107,7 @@ const AdminPage: React.FC = () => {
                     fontWeight: 400,
                   }}
                 >
-                  (if 2FA enabled)
+                  (2FA enabled)
                 </span>
               </label>
               <input
