@@ -226,6 +226,7 @@ export function useAdminApi(token: string | null) {
         apiFetch(`/admin/tournaments/${tournamentId}/start`, {
           method: "POST",
         }),
+      getReconciliation: () => apiFetch("/admin/reconciliation"),
     }),
     [apiFetch]
   )

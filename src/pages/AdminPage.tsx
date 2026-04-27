@@ -10,6 +10,7 @@ const SettlementPage = lazy(() => import("./SettlementPage"))
 const PaymentLogPage = lazy(() => import("./PaymentLogPage"))
 const AuditLogPage = lazy(() => import("./AuditLogPage"))
 const ResolutionLogPage = lazy(() => import("./ResolutionLogPage"))
+const ReconciliationPage = lazy(() => import("./ReconciliationPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -190,6 +191,7 @@ const AdminPage: React.FC = () => {
   else if (page === "payments") content = <PaymentLogPage />
   else if (page === "audit") content = <AuditLogPage />
   else if (page === "resolution-log") content = <ResolutionLogPage />
+  else if (page === "reconciliation") content = <ReconciliationPage />
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>

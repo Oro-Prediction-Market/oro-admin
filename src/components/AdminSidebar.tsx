@@ -12,6 +12,7 @@ import {
   CreditCard,
   ScrollText,
   ShieldCheck,
+  Scale,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -29,7 +30,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
     ["markets", "discovery", "settlements"].includes(current)
   )
   const [isLogsOpen, setIsLogsOpen] = useState(
-    ["payments", "audit", "resolution-log"].includes(current)
+    ["payments", "audit", "resolution-log", "reconciliation"].includes(current)
   )
 
   return (
@@ -146,7 +147,12 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               alignItems: "center",
             }}
             className={
-              ["payments", "audit", "resolution-log"].includes(current)
+              [
+                "payments",
+                "audit",
+                "resolution-log",
+                "reconciliation",
+              ].includes(current)
                 ? "active-parent"
                 : ""
             }
@@ -199,6 +205,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               >
                 <ShieldCheck size={18} />
                 Resolution Log
+              </li>
+              <li
+                className={current === "reconciliation" ? "active" : ""}
+                onClick={() => onNavigate("reconciliation")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Scale size={18} />
+                Reconciliation
               </li>
             </div>
           )}
