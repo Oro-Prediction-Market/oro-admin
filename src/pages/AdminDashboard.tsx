@@ -2,9 +2,11 @@ import React, { useMemo } from "react"
 import { useAdminMarkets } from "../lib/useAdminApi"
 import { TrendingUp, Activity, AlertCircle } from "lucide-react"
 import HealthCheck from "../components/HealthCheck"
+import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 
 const AdminDashboard: React.FC = () => {
-  const token = sessionStorage.getItem("admin_token")
+  const token =
+    sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token")
   const { markets, loading, error } = useAdminMarkets(token)
 
   const stats = useMemo(() => {
@@ -89,18 +91,7 @@ const AdminDashboard: React.FC = () => {
 
       <HealthCheck />
 
-      <div className="glass-card" style={{ marginTop: "2rem" }}>
-        <h3>Behavioral Analysis</h3>
-        <p
-          style={{
-            color: "hsl(var(--muted-foreground))",
-            fontSize: "0.875rem",
-          }}
-        >
-          For future analytics features that will help admins make informed
-          decisions based on market activity and user engagement patterns.
-        </p>
-      </div>
+      <BehavioralAnalytics token={token} />
     </div>
   )
 }
