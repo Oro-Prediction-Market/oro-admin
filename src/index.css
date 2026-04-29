@@ -173,6 +173,11 @@ h4 {
   box-shadow: var(--glass-shadow), var(--glass-glow);
 }
 
+.glass-card:has(form):hover,
+.glass-card:has(input[type="datetime-local"]):hover {
+  transform: none;
+}
+
 .admin-sidebar {
   width: 280px;
   background: rgba(10, 10, 15, 0.6);

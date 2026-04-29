@@ -439,4 +439,4 @@ const MarketForm: React.FC<MarketFormProps> = ({
   )
 }
 
-export default MarketForm
+export default React.memo(MarketForm)

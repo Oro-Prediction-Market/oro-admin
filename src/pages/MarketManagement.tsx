@@ -124,7 +124,8 @@ const MarketManagement: React.FC = () => {
     lastUpdate,
     connectionStatus,
   } = useRealTimeUpdates(markets)
-  const displayMarkets = realtimeMarkets.length > 0 ? realtimeMarkets : markets
+  const displayMarkets =
+    realtimeMarkets.length > 0 && view === "list" ? realtimeMarkets : markets
 
   const handleCreate = async (data: MarketFormData) => {
     try {
