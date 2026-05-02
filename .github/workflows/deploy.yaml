@@ -13,8 +13,8 @@ env:
   IMAGE: harbor.oro.fun/oro/admin
   NS: prod
   DEPLOY: oro-admin
-  VITE_API_BASE_URL: https://api.oro.fun/admin
-  VITE_API_URL: https://api.oro.fun
+  VITE_API_BASE_URL: https://api.oro.fun/api/admin
+  VITE_API_URL: https://api.oro.fun/api
   VITE_WS_URL: wss://api.oro.fun
 
 jobs:
