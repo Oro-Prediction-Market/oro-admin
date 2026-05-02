@@ -71,7 +71,6 @@ const MarketDiscovery: React.FC = () => {
         mechanism: data.mechanism,
         liquidityParam: data.liquidityParam,
         category: data.category,
-        imageUrl: data.imageUrl || undefined,
         externalData: {
           source: market.source,
           matchId: market.matchData.id,

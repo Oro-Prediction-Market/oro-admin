@@ -1,0 +1,63 @@
+name: admin → prod
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: admin-prod
+  cancel-in-progress: true
+
+env:
+  IMAGE: harbor.oro.fun/oro/admin
+  NS: prod
+  DEPLOY: oro-admin
+  VITE_API_BASE_URL: https://api.oro.fun/admin
+  VITE_API_URL: https://api.oro.fun
+  VITE_WS_URL: wss://api.oro.fun
+
+jobs:
+  ship:
+    runs-on: [self-hosted, oro]
+    timeout-minutes: 12
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup kubeconfig
+        run: |
+          mkdir -p $RUNNER_TEMP/.kube
+          echo '${{ secrets.KUBECONFIG }}' | base64 -d > $RUNNER_TEMP/.kube/config
+          chmod 600 $RUNNER_TEMP/.kube/config
+          echo "KUBECONFIG=$RUNNER_TEMP/.kube/config" >> $GITHUB_ENV
+
+      - name: Login to Harbor
+        run: |
+          echo '${{ secrets.HARBOR_PASSWORD }}' | docker login harbor.oro.fun \
+            -u '${{ secrets.HARBOR_USERNAME }}' --password-stdin
+
+      - name: Build + push
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            --build-arg VITE_API_BASE_URL=$VITE_API_BASE_URL \
+            --build-arg VITE_API_URL=$VITE_API_URL \
+            --build-arg VITE_WS_URL=$VITE_WS_URL \
+            -t $IMAGE:$TAG -t $IMAGE:latest .
+          docker push $IMAGE:$TAG
+          docker push $IMAGE:latest
+
+      - name: Roll deployment
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          kubectl -n $NS set image deployment/$DEPLOY nginx=$IMAGE:$TAG
+          kubectl -n $NS rollout status deployment/$DEPLOY --timeout=300s
+
+      - name: Show new pod state
+        if: always()
+        run: |
+          kubectl -n $NS get pods -l app=$DEPLOY -o wide
+          kubectl -n $NS get deploy $DEPLOY

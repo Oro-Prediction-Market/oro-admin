@@ -20,11 +20,11 @@ interface Settlement {
   }
   outcome?: { label?: string }
   winningOutcomeId?: string
-  totalBets?: number
-  winningBets?: number
+  totalBets: number
+  winningBets: number
   losingBets?: number
   totalPool?: string | number
-  totalPaidOut?: string | number
+  totalPaidOut: string | number
   houseEdge?: string | number
   houseAmount?: string | number
   payoutPool?: string | number
