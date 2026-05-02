@@ -399,12 +399,16 @@ input[type="time"] {
   color-scheme: dark;
 }
 
-/* Ensure the calendar/clock icon inherits a visible color */
+/* Ensure the calendar/clock icon inherits a visible color and is clickable */
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="time"]::-webkit-calendar-picker-indicator {
   filter: invert(1) opacity(0.7);
   cursor: pointer;
+  position: relative;
+  z-index: 1;
+  padding: 4px;
+  margin-right: -4px;
 }
 
 input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
