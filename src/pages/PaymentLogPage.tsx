@@ -1,34 +1,23 @@
 import React, { useEffect, useState } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 
-interface PaymentUser {
+interface TxUser {
   username?: string
   telegramUsername?: string
   firstName?: string
 }
 
-interface Payment {
+interface Tx {
   id: string
   userId?: string
-  user?: PaymentUser
-  status: string
+  user?: TxUser
   type: string
-  method: string
   amount: string | number
-  currency?: string
+  balanceBefore: string | number
+  balanceAfter: string | number
+  note?: string
+  isBonus: boolean
   createdAt: string
-  failureReason?: string
-  referenceId?: string
-  customerPhone?: string
-  externalPaymentId?: string
-  dkInquiryId?: string
-}
-
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  success: { bg: "#1a2e1a", color: "#4caf50" },
-  pending: { bg: "#2e2a1a", color: "#ffb74d" },
-  failed: { bg: "#2e1a1a", color: "#ef5350" },
-  cancelled: { bg: "#1e222a", color: "#708499" },
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -37,60 +26,64 @@ const TYPE_LABELS: Record<string, string> = {
   bet_placed: "Bet Placed",
   bet_payout: "Bet Payout",
   refund: "Refund",
+  dispute_bond: "Dispute Bond",
+  dispute_refund: "Dispute Refund",
+  dispute_bond_lock: "Bond Lock",
+  dispute_bond_forfeit: "Bond Forfeit",
+  dispute_bond_reward: "Bond Reward",
+  referral_bonus: "Referral Bonus",
+  referral_prize: "Referral Prize",
+  free_credit: "Free Credit",
+  streak_bonus: "Streak Bonus",
+  duel_wager: "Duel Wager",
+  duel_payout: "Duel Payout",
 }
 
-const METHOD_LABELS: Record<string, string> = {
-  dkbank: "DK Bank",
-  ton: "TON",
-  credits: "Credits",
-}
+const SUMMARY_TYPES = [
+  { key: "deposit", label: "Deposits", color: "#4caf50" },
+  { key: "withdrawal", label: "Withdrawals", color: "#ef5350" },
+  { key: "bet_placed", label: "Bets Placed", color: "#ffb74d" },
+  { key: "bet_payout", label: "Payouts", color: "#42a5f5" },
+] as const
 
 const ALL = "all"
 
 const PaymentLogPage: React.FC = () => {
   const token = sessionStorage.getItem("admin_token")
-  const { getPayments, loading, error } = useAdminApi(token)
-  const [payments, setPayments] = useState<Payment[]>([])
-  const [filterStatus, setFilterStatus] = useState(ALL)
+  const { getTransactions, loading, error } = useAdminApi(token)
+  const [transactions, setTransactions] = useState<Tx[]>([])
   const [filterType, setFilterType] = useState(ALL)
-  const [filterMethod, setFilterMethod] = useState(ALL)
   const [search, setSearch] = useState("")
 
-  useEffect(() => {
+  const load = () => {
     if (!token) return
-    getPayments()
+    getTransactions()
       .then((res) =>
-        setPayments(
-          ((res as Record<string, unknown>)?.data ?? res) as Payment[]
-        )
+        setTransactions(((res as Record<string, unknown>)?.data ?? res) as Tx[])
       )
       .catch(() => {})
+  }
+
+  useEffect(() => {
+    load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  const filtered = payments.filter((p) => {
-    if (filterStatus !== ALL && p.status !== filterStatus) return false
-    if (filterType !== ALL && p.type !== filterType) return false
-    if (filterMethod !== ALL && p.method !== filterMethod) return false
+  const filtered = transactions.filter((t) => {
+    if (filterType !== ALL && t.type !== filterType) return false
     if (search) {
       const q = search.toLowerCase()
-      const username = p.user?.username || p.user?.telegramUsername || ""
+      const username =
+        t.user?.username || t.user?.telegramUsername || t.user?.firstName || ""
       if (
-        !p.id.toLowerCase().includes(q) &&
+        !t.id.toLowerCase().includes(q) &&
         !username.toLowerCase().includes(q) &&
-        !(p.externalPaymentId || "").toLowerCase().includes(q) &&
-        !(p.referenceId || "").toLowerCase().includes(q) &&
-        !(p.customerPhone || "").toLowerCase().includes(q)
+        !(t.note || "").toLowerCase().includes(q)
       )
         return false
     }
     return true
   })
-
-  const totalAmount = filtered.reduce(
-    (sum, p) => sum + Number(p.amount || 0),
-    0
-  )
 
   const selectStyle: React.CSSProperties = {
     background: "hsl(var(--background))",
@@ -114,7 +107,7 @@ const PaymentLogPage: React.FC = () => {
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Payment Log</h1>
+          <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Transaction Ledger</h1>
           <p
             style={{
               margin: "4px 0 0",
@@ -122,19 +115,12 @@ const PaymentLogPage: React.FC = () => {
               fontSize: "0.875rem",
             }}
           >
-            All payment transactions across the platform
+            All balance movements — bets, payouts, deposits, withdrawals,
+            bonuses
           </p>
         </div>
         <button
-          onClick={() =>
-            getPayments()
-              .then((res) =>
-                setPayments(
-                  ((res as Record<string, unknown>)?.data ?? res) as Payment[]
-                )
-              )
-              .catch(() => {})
-          }
+          onClick={load}
           className="glass-card"
           style={{
             padding: "8px 16px",
@@ -155,19 +141,18 @@ const PaymentLogPage: React.FC = () => {
           marginBottom: 24,
         }}
       >
-        {(["success", "pending", "failed", "cancelled"] as const).map((s) => {
-          const count = payments.filter((p) => p.status === s).length
-          const { color } = STATUS_COLORS[s]
+        {SUMMARY_TYPES.map(({ key, label, color }) => {
+          const count = transactions.filter((t) => t.type === key).length
           return (
             <div
-              key={s}
+              key={key}
               className="glass-card"
               style={{
                 padding: "14px 16px",
                 cursor: "pointer",
-                border: filterStatus === s ? `1px solid ${color}` : undefined,
+                border: filterType === key ? `1px solid ${color}` : undefined,
               }}
-              onClick={() => setFilterStatus(filterStatus === s ? ALL : s)}
+              onClick={() => setFilterType(filterType === key ? ALL : key)}
             >
               <div
                 style={{
@@ -179,7 +164,7 @@ const PaymentLogPage: React.FC = () => {
                   letterSpacing: "0.05em",
                 }}
               >
-                {s}
+                {label}
               </div>
               <div style={{ fontSize: "1.5rem", fontWeight: 700, color }}>
                 {count}
@@ -201,14 +186,10 @@ const PaymentLogPage: React.FC = () => {
       >
         <input
           type="text"
-          placeholder="Search by user, ID, phone..."
+          placeholder="Search by user, note, ID..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{
-            ...selectStyle,
-            flex: "1 1 200px",
-            minWidth: 180,
-          }}
+          style={{ ...selectStyle, flex: "1 1 200px", minWidth: 180 }}
         />
         <select
           value={filterType}
@@ -222,27 +203,10 @@ const PaymentLogPage: React.FC = () => {
             </option>
           ))}
         </select>
-        <select
-          value={filterMethod}
-          onChange={(e) => setFilterMethod(e.target.value)}
-          style={selectStyle}
-        >
-          <option value={ALL}>All Methods</option>
-          {Object.entries(METHOD_LABELS).map(([v, l]) => (
-            <option key={v} value={v}>
-              {l}
-            </option>
-          ))}
-        </select>
-        {(filterStatus !== ALL ||
-          filterType !== ALL ||
-          filterMethod !== ALL ||
-          search) && (
+        {(filterType !== ALL || search) && (
           <button
             onClick={() => {
-              setFilterStatus(ALL)
               setFilterType(ALL)
-              setFilterMethod(ALL)
               setSearch("")
             }}
             style={{ ...selectStyle, color: "hsl(var(--muted-foreground))" }}
@@ -257,8 +221,7 @@ const PaymentLogPage: React.FC = () => {
             color: "hsl(var(--muted-foreground))",
           }}
         >
-          {filtered.length} record{filtered.length !== 1 ? "s" : ""} · Total:{" "}
-          NU. {totalAmount.toFixed(2)}
+          {filtered.length} record{filtered.length !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -275,7 +238,7 @@ const PaymentLogPage: React.FC = () => {
         </div>
       )}
 
-      {loading && !payments.length ? (
+      {loading && !transactions.length ? (
         <div
           style={{
             textAlign: "center",
@@ -283,7 +246,7 @@ const PaymentLogPage: React.FC = () => {
             color: "hsl(var(--muted-foreground))",
           }}
         >
-          Loading payments...
+          Loading transactions...
         </div>
       ) : filtered.length === 0 ? (
         <div
@@ -294,7 +257,7 @@ const PaymentLogPage: React.FC = () => {
             color: "hsl(var(--muted-foreground))",
           }}
         >
-          No payments found
+          No transactions found
         </div>
       ) : (
         <div className="glass-card" style={{ overflow: "hidden" }}>
@@ -312,12 +275,9 @@ const PaymentLogPage: React.FC = () => {
                     "Date",
                     "User",
                     "Type",
-                    "Method",
                     "Amount",
-                    "Status",
-                    "Reference",
-                    "Phone",
-                    "Ext. ID",
+                    "Balance After",
+                    "Note",
                   ].map((h) => (
                     <th
                       key={h}
@@ -338,17 +298,17 @@ const PaymentLogPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((p, i) => {
-                  const { bg, color } =
-                    STATUS_COLORS[p.status] || STATUS_COLORS.cancelled
+                {filtered.map((t, i) => {
+                  const amt = Number(t.amount)
+                  const isCredit = amt >= 0
                   const username =
-                    p.user?.username ||
-                    p.user?.telegramUsername ||
-                    p.user?.firstName ||
-                    p.userId?.slice(0, 8)
+                    t.user?.username ||
+                    t.user?.telegramUsername ||
+                    t.user?.firstName ||
+                    t.userId?.slice(0, 8)
                   return (
                     <tr
-                      key={p.id}
+                      key={t.id}
                       style={{
                         borderBottom:
                           i < filtered.length - 1
@@ -364,7 +324,7 @@ const PaymentLogPage: React.FC = () => {
                           color: "hsl(var(--muted-foreground))",
                         }}
                       >
-                        {new Date(p.createdAt).toLocaleString(undefined, {
+                        {new Date(t.createdAt).toLocaleString(undefined, {
                           month: "short",
                           day: "numeric",
                           hour: "2-digit",
@@ -379,85 +339,63 @@ const PaymentLogPage: React.FC = () => {
                       <td
                         style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
                       >
-                        {TYPE_LABELS[p.type] || p.type}
-                      </td>
-                      <td
-                        style={{ padding: "10px 14px", whiteSpace: "nowrap" }}
-                      >
-                        {METHOD_LABELS[p.method] || p.method}
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          {TYPE_LABELS[t.type] || t.type}
+                          {t.isBonus && (
+                            <span
+                              style={{
+                                fontSize: "0.65rem",
+                                background: "#2e2a1a",
+                                color: "#ffb74d",
+                                padding: "1px 6px",
+                                borderRadius: 100,
+                                fontWeight: 700,
+                              }}
+                            >
+                              BONUS
+                            </span>
+                          )}
+                        </span>
                       </td>
                       <td
                         style={{
                           padding: "10px 14px",
                           whiteSpace: "nowrap",
                           fontWeight: 700,
+                          color: isCredit ? "#4caf50" : "#ef5350",
                         }}
                       >
-                        {Number(p.amount).toFixed(2)} {p.currency}
+                        {isCredit ? "+" : ""}
+                        {amt.toFixed(2)} Nu
                       </td>
-                      <td style={{ padding: "10px 14px" }}>
-                        <span
-                          style={{
-                            background: bg,
-                            color,
-                            padding: "3px 10px",
-                            borderRadius: 100,
-                            fontSize: "0.75rem",
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {p.status}
-                        </span>
-                        {p.failureReason && (
-                          <div
-                            style={{
-                              fontSize: "0.7rem",
-                              color: "hsl(var(--muted-foreground))",
-                              marginTop: 2,
-                            }}
-                          >
-                            {p.failureReason}
-                          </div>
-                        )}
+                      <td
+                        style={{
+                          padding: "10px 14px",
+                          whiteSpace: "nowrap",
+                          color: "hsl(var(--muted-foreground))",
+                          fontSize: "0.8rem",
+                        }}
+                      >
+                        {Number(t.balanceAfter).toFixed(2)} Nu
                       </td>
                       <td
                         style={{
                           padding: "10px 14px",
                           color: "hsl(var(--muted-foreground))",
                           fontSize: "0.8rem",
-                          maxWidth: 120,
+                          maxWidth: 200,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
                         }}
                       >
-                        {p.referenceId || "—"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "hsl(var(--muted-foreground))",
-                          fontSize: "0.8rem",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {p.customerPhone || "—"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "10px 14px",
-                          color: "hsl(var(--muted-foreground))",
-                          fontSize: "0.75rem",
-                          fontFamily: "monospace",
-                          maxWidth: 140,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {p.externalPaymentId || p.dkInquiryId || "—"}
+                        {t.note || "—"}
                       </td>
                     </tr>
                   )

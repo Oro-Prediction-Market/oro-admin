@@ -141,6 +141,13 @@ export function useAdminApi(token: string | null) {
         return apiFetch(`/admin/settlements${suffix}`)
       },
       getPayments: () => apiFetch("/admin/payments"),
+      getTransactions: (params?: { type?: string; limit?: number }) => {
+        const qs = new URLSearchParams()
+        if (params?.type && params.type !== "all") qs.set("type", params.type)
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/admin/transactions${suffix}`)
+      },
       getUsers: (params?: {
         search?: string
         role?: "all" | "admin" | "user"
