@@ -37,7 +37,7 @@ interface ResolutionEntry {
 
 const CATEGORY_COLORS: Record<string, string> = {
   sports: "hsl(210 80% 60%)",
-  politics: "hsl(280 70% 65%)",
+  gaming: "hsl(280 70% 65%)",
   weather: "hsl(190 80% 55%)",
   entertainment: "hsl(330 70% 65%)",
   economy: "hsl(45 80% 55%)",

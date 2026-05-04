@@ -9,7 +9,7 @@ import {
 
 const CATEGORY_COLORS: Record<string, string> = {
   sports: "#3b82f6",
-  politics: "#8b5cf6",
+  gaming: "#8b5cf6",
   weather: "#06b6d4",
   entertainment: "#f59e0b",
   economy: "#10b981",
@@ -18,7 +18,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 const CATEGORY_LABELS: Record<string, string> = {
   sports: "Sports",
-  politics: "Politics",
+  gaming: "Gaming",
   weather: "Weather",
   entertainment: "Entertainment",
   economy: "Economy",

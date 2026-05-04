@@ -8,7 +8,7 @@ interface Outcome {
 
 const CATEGORIES = [
   { value: "sports", label: "Sports" },
-  { value: "politics", label: "Politics" },
+  { value: "gaming", label: "Gaming" },
   { value: "weather", label: "Weather" },
   { value: "entertainment", label: "Entertainment" },
   { value: "economy", label: "Economy" },
