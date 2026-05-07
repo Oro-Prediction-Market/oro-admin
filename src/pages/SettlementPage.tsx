@@ -5,12 +5,13 @@ import { SettlementDetails } from "../components/SettlementDetails"
 
 interface Settlement {
   id: string
-  market?: { title?: string }
+  market?: { title?: string; houseEdgePct?: number }
   outcome?: { label?: string }
   winningOutcomeId?: string
   totalBets?: number
   winningBets?: number
   totalPool?: string | number
+  houseAmount?: string | number
   totalPaidOut?: string | number
   settledAt?: string
 }
@@ -29,6 +30,22 @@ const SettlementPage: React.FC = () => {
     useState<Settlement | null>(null)
 
   const [refreshKey, setRefreshKey] = useState(0)
+
+  const totals = React.useMemo(() => {
+    const totalPool = settlements.reduce(
+      (s, x) => s + parseFloat(String(x.totalPool ?? 0)),
+      0
+    )
+    const totalHouse = settlements.reduce(
+      (s, x) => s + parseFloat(String(x.houseAmount ?? 0)),
+      0
+    )
+    const totalPaidOut = settlements.reduce(
+      (s, x) => s + parseFloat(String(x.totalPaidOut ?? 0)),
+      0
+    )
+    return { totalPool, totalHouse, totalPaidOut }
+  }, [settlements])
 
   const getSettlementsRef = useRef(getSettlements)
   useEffect(() => {
@@ -119,6 +136,74 @@ const SettlementPage: React.FC = () => {
         </div>
       )}
 
+      {settlements.length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+            gap: "1rem",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <div className="glass-card" style={{ padding: "1rem" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              Total Pool (this page)
+            </div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
+              Nu. {totals.totalPool.toLocaleString()}
+            </div>
+          </div>
+          <div className="glass-card" style={{ padding: "1rem" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              Platform Fee Earned
+            </div>
+            <div
+              style={{
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: "hsl(142 71% 45%)",
+              }}
+            >
+              Nu. {totals.totalHouse.toLocaleString()}
+            </div>
+          </div>
+          <div className="glass-card" style={{ padding: "1rem" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              Total Paid Out
+            </div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>
+              Nu. {totals.totalPaidOut.toLocaleString()}
+            </div>
+          </div>
+          <div className="glass-card" style={{ padding: "1rem" }}>
+            <div
+              style={{
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              Settled Markets
+            </div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>{total}</div>
+          </div>
+        </div>
+      )}
+
       {loading ? (
         <div
           style={{
@@ -187,6 +272,14 @@ const SettlementPage: React.FC = () => {
                   }}
                 >
                   Pool Details
+                </th>
+                <th
+                  style={{
+                    padding: "1rem",
+                    color: "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  Platform Fee
                 </th>
                 <th
                   style={{
@@ -272,6 +365,24 @@ const SettlementPage: React.FC = () => {
                         ).toLocaleString()}
                       </div>
                     </td>
+                    <td style={{ padding: "1rem", fontSize: "0.85rem" }}>
+                      <div
+                        style={{ fontWeight: 600, color: "hsl(142 71% 45%)" }}
+                      >
+                        Nu.{" "}
+                        {parseFloat(
+                          String(s.houseAmount ?? 0)
+                        ).toLocaleString()}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "0.7rem",
+                          color: "hsl(var(--muted-foreground))",
+                        }}
+                      >
+                        {s.market?.houseEdgePct ?? "—"}% fee
+                      </div>
+                    </td>
                     <td
                       style={{
                         padding: "1rem",
@@ -307,7 +418,7 @@ const SettlementPage: React.FC = () => {
                   {selectedSettlement === s && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         style={{
                           padding: "0",
                           background: "hsl(var(--muted) / 0.05)",
