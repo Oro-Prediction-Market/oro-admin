@@ -13,6 +13,7 @@ import {
   ScrollText,
   ShieldCheck,
   Scale,
+  Wallet,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -137,6 +138,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Bot size={20} />
             Keeperbot
+          </li>
+          <li
+            className={current === "finance" ? "active" : ""}
+            onClick={() => onNavigate("finance")}
+          >
+            <Wallet size={20} />
+            Financials
           </li>
 
           <li
