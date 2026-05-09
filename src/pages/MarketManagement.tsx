@@ -554,7 +554,8 @@ const MarketManagement: React.FC = () => {
                               <Edit size={14} />
                             </button>
                           )}
-                          {m.status === "upcoming" && (
+                          {(m.status === "upcoming" ||
+                            m.status === "cancelled") && (
                             <button
                               onClick={() => handleDelete(m.id)}
                               className="secondary"
