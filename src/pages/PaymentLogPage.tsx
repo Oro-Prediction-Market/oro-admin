@@ -48,12 +48,15 @@ const SUMMARY_TYPES = [
 
 const ALL = "all"
 
+const PAGE_SIZE = 50
+
 const PaymentLogPage: React.FC = () => {
   const token = sessionStorage.getItem("admin_token")
   const { getTransactions, loading, error } = useAdminApi(token)
   const [transactions, setTransactions] = useState<Tx[]>([])
   const [filterType, setFilterType] = useState(ALL)
   const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
 
   const load = () => {
     if (!token) return
@@ -84,6 +87,23 @@ const PaymentLogPage: React.FC = () => {
     }
     return true
   })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  const handleFilterType = (val: string) => {
+    setFilterType(val)
+    setPage(1)
+  }
+  const handleSearch = (val: string) => {
+    setSearch(val)
+    setPage(1)
+  }
+  const handleClear = () => {
+    setFilterType(ALL)
+    setSearch("")
+    setPage(1)
+  }
 
   const selectStyle: React.CSSProperties = {
     background: "hsl(var(--background))",
@@ -188,12 +208,12 @@ const PaymentLogPage: React.FC = () => {
           type="text"
           placeholder="Search by user, note, ID..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
           style={{ ...selectStyle, flex: "1 1 200px", minWidth: 180 }}
         />
         <select
           value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
+          onChange={(e) => handleFilterType(e.target.value)}
           style={selectStyle}
         >
           <option value={ALL}>All Types</option>
@@ -205,10 +225,7 @@ const PaymentLogPage: React.FC = () => {
         </select>
         {(filterType !== ALL || search) && (
           <button
-            onClick={() => {
-              setFilterType(ALL)
-              setSearch("")
-            }}
+            onClick={handleClear}
             style={{ ...selectStyle, color: "hsl(var(--muted-foreground))" }}
           >
             Clear
@@ -298,7 +315,7 @@ const PaymentLogPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((t, i) => {
+                {paginated.map((t, i) => {
                   const amt = Number(t.amount)
                   const isCredit = amt >= 0
                   const username =
@@ -311,7 +328,7 @@ const PaymentLogPage: React.FC = () => {
                       key={t.id}
                       style={{
                         borderBottom:
-                          i < filtered.length - 1
+                          i < paginated.length - 1
                             ? "1px solid hsl(var(--border))"
                             : undefined,
                         background: i % 2 === 1 ? "var(--glass-bg)" : undefined,
@@ -403,6 +420,55 @@ const PaymentLogPage: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          <button
+            onClick={() => setPage(1)}
+            disabled={page === 1}
+            style={{ ...selectStyle, opacity: page === 1 ? 0.4 : 1 }}
+          >
+            «
+          </button>
+          <button
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page === 1}
+            style={{ ...selectStyle, opacity: page === 1 ? 0.4 : 1 }}
+          >
+            ‹
+          </button>
+          <span
+            style={{
+              fontSize: "0.85rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            Page {page} of {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page === totalPages}
+            style={{ ...selectStyle, opacity: page === totalPages ? 0.4 : 1 }}
+          >
+            ›
+          </button>
+          <button
+            onClick={() => setPage(totalPages)}
+            disabled={page === totalPages}
+            style={{ ...selectStyle, opacity: page === totalPages ? 0.4 : 1 }}
+          >
+            »
+          </button>
         </div>
       )}
     </div>

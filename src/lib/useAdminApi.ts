@@ -248,14 +248,17 @@ export function useAdminApi(token: string | null) {
 }
 
 // Convenience hook for fetching markets initially
-export function useAdminMarkets(token: string | null) {
+export function useAdminMarkets(
+  token: string | null,
+  params?: { page?: number; limit?: number; status?: string }
+) {
   const { getMarkets, loading, error } = useAdminApi(token)
   const [markets, setMarkets] = useState<Record<string, unknown>[]>([])
 
   const refresh = useCallback(async () => {
     if (!token) return
     try {
-      const res = await getMarkets()
+      const res = await getMarkets(params)
       setMarkets(
         ((res as Record<string, unknown>)?.data ?? res) as Record<
           string,
@@ -265,7 +268,7 @@ export function useAdminMarkets(token: string | null) {
     } catch {
       // Error handled by useAdminApi state
     }
-  }, [getMarkets, token])
+  }, [getMarkets, token, params])
 
   useEffect(() => {
     void refresh()

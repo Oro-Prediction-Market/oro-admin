@@ -7,7 +7,7 @@ import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 const AdminDashboard: React.FC = () => {
   const token =
     sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token")
-  const { markets, loading, error } = useAdminMarkets(token)
+  const { markets, loading, error } = useAdminMarkets(token, { limit: 500 })
 
   const stats = useMemo(() => {
     const activeMarkets = markets.filter(
