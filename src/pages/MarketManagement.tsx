@@ -185,6 +185,25 @@ const MarketManagement: React.FC = () => {
     }
   }
 
+  const handlePurgeEmpty = async () => {
+    if (
+      !confirm(
+        "This will permanently delete all markets with zero pool volume (no bets placed). Continue?"
+      )
+    )
+      return
+    try {
+      const result = (await api.purgeEmptyMarkets()) as { deleted: number }
+      refresh()
+      notify("success", `Purged ${result.deleted} empty market(s).`)
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error purging empty markets: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
   const handleTransition = async (id: string, status: string) => {
     try {
       await api.transitionMarket(id, status)
@@ -382,6 +401,19 @@ const MarketManagement: React.FC = () => {
             ↻ Refresh
           </button>
           <button
+            onClick={handlePurgeEmpty}
+            className="secondary"
+            title="Delete all markets with zero pool volume"
+            style={{
+              color: "hsl(var(--destructive))",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <Trash2 size={14} /> Purge Empty
+          </button>
+          <button
             onClick={() => setView("create")}
             style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
           >
@@ -555,7 +587,8 @@ const MarketManagement: React.FC = () => {
                             </button>
                           )}
                           {(m.status === "upcoming" ||
-                            m.status === "cancelled") && (
+                            m.status === "cancelled" ||
+                            parseFloat(String(m.totalPool ?? 0)) === 0) && (
                             <button
                               onClick={() => handleDelete(m.id)}
                               className="secondary"

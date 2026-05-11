@@ -99,6 +99,8 @@ export function useAdminApi(token: string | null) {
         }),
       deleteMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}`, { method: "DELETE" }),
+      purgeEmptyMarkets: () =>
+        apiFetch(`/admin/markets/cleanup/zero-pool`, { method: "DELETE" }),
       transitionMarket: (id: string, status: string) =>
         apiFetch(`/admin/markets/${id}/status`, {
           method: "PATCH",
