@@ -90,8 +90,15 @@ const ReconciliationPage: React.FC = () => {
       .current()
       .then((res) => {
         if (!cancelled) {
-          setFetchError(null)
-          setData(res as ReconciliationData)
+          const d = res as ReconciliationData & { message?: string }
+          if (d?.externalFlow && d?.reconciliation) {
+            setFetchError(null)
+            setData(d as ReconciliationData)
+          } else if (d?.message) {
+            setFetchError(d.message)
+          } else {
+            setFetchError("Unexpected response from server")
+          }
         }
       })
       .catch((e: unknown) => {

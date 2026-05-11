@@ -87,8 +87,8 @@ const FinancePage: React.FC = () => {
     ])
       .then(([f, r]) => {
         if (cancelled) return
-        setFinance(f)
-        setRecon(r)
+        if (f && typeof f.houseIncome === "number") setFinance(f)
+        if (r && r.externalFlow && r.reconciliation) setRecon(r)
       })
       .catch(() => {})
       .finally(() => {
