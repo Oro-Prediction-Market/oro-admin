@@ -61,6 +61,8 @@ interface ReconciliationData {
     netExternalFlow: number
     houseEarnings: number
     breakage: number
+    bonusFundedRealPayouts: number
+    totalBonusIssued: number
     expectedUserBalances: number
     actualUserBalances: number
     discrepancy: number
@@ -251,7 +253,7 @@ const ReconciliationPage: React.FC = () => {
                   }}
                 >
                   Actual user wallets vs. expected (deposits − withdrawals −
-                  house − breakage)
+                  house − breakage + bonus-funded real payouts)
                 </div>
               </div>
             </div>
@@ -408,6 +410,43 @@ const ReconciliationPage: React.FC = () => {
                 }}
               >
                 {activeBets!.pendingCount} open positions
+              </div>
+            </div>
+            {/* Bonus exposure */}
+            <div
+              className="stat-card"
+              style={{ borderLeft: "3px solid #f59e0b" }}
+            >
+              <div className="stat-label">Bonus Exposure Realised</div>
+              <div className="stat-value" style={{ color: "#f59e0b" }}>
+                {nu(rec!.bonusFundedRealPayouts)}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "hsl(var(--muted-foreground))",
+                  marginTop: 4,
+                }}
+              >
+                real Nu paid out when bonus bettors lost
+              </div>
+            </div>
+            <div
+              className="stat-card"
+              style={{ borderLeft: "3px solid #a78bfa" }}
+            >
+              <div className="stat-label">Total Bonus Issued</div>
+              <div className="stat-value" style={{ color: "#a78bfa" }}>
+                {nu(rec!.totalBonusIssued)}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.8rem",
+                  color: "hsl(var(--muted-foreground))",
+                  marginTop: 4,
+                }}
+              >
+                welcome + overflow credits ever given
               </div>
             </div>
           </div>

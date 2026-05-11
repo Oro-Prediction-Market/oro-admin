@@ -21,6 +21,11 @@ interface FinanceStats {
   activeCount: number
   allTimeVolume: number
   totalMarkets: number
+  bonus?: {
+    totalIssued: number
+    outstandingBalance: number
+    realPayoutsFundedByBonus: number
+  }
 }
 
 interface Reconciliation {
@@ -52,6 +57,8 @@ interface Reconciliation {
     netExternalFlow: number
     houseEarnings: number
     breakage: number
+    bonusFundedRealPayouts: number
+    totalBonusIssued: number
     expectedUserBalances: number
     actualUserBalances: number
     discrepancy: number
@@ -197,6 +204,55 @@ const FinancePage: React.FC = () => {
               {finance.totalMarkets} total markets
             </small>
           </div>
+
+          {/* Bonus / marketing cost cards */}
+          {finance.bonus && (
+            <>
+              <div
+                className="glass-card stat-card"
+                style={{ borderLeft: "3px solid #f59e0b" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "start",
+                  }}
+                >
+                  <h3 style={{ color: "#f59e0b" }}>Marketing Cost</h3>
+                  <DollarSign size={20} color="#f59e0b" />
+                </div>
+                <p style={{ color: "#f59e0b" }}>
+                  {fmt(finance.bonus.realPayoutsFundedByBonus)}
+                </p>
+                <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Real Nu paid out when bonus bettors lost
+                </small>
+              </div>
+
+              <div
+                className="glass-card stat-card"
+                style={{ borderLeft: "3px solid #a78bfa" }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "start",
+                  }}
+                >
+                  <h3 style={{ color: "#a78bfa" }}>Total Bonus Issued</h3>
+                  <PiggyBank size={20} color="#a78bfa" />
+                </div>
+                <p style={{ color: "#a78bfa" }}>
+                  {fmt(finance.bonus.totalIssued)}
+                </p>
+                <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                  Outstanding: {fmt(finance.bonus.outstandingBalance)} unspent
+                </small>
+              </div>
+            </>
+          )}
         </div>
       )}
 
