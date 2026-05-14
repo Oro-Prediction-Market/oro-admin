@@ -16,6 +16,7 @@ import {
   Wallet,
   Coins,
   Bitcoin,
+  TrendingUp,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -181,6 +182,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Wallet size={20} />
             Financials
+          </li>
+          <li
+            className={current === "reporting" ? "active" : ""}
+            onClick={() => onNavigate("reporting")}
+          >
+            <TrendingUp size={20} />
+            Reporting
           </li>
 
           <li

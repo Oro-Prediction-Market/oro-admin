@@ -243,6 +243,68 @@ export function useAdminApi(token: string | null) {
       spawnAutoMarket: (source: "ter" | "btc") =>
         apiFetch(`/${source}/spawn`, { method: "POST" }),
       getAutoPrice: (source: "ter" | "btc") => apiFetch(`/${source}/price`),
+      // ── Reporting ────────────────────────────────────────────────────────
+      getReportingTransactionAudits: (params?: {
+        userId?: string
+        type?: string
+        status?: string
+        marketId?: string
+        from?: string
+        to?: string
+        search?: string
+        page?: number
+        limit?: number
+      }) => {
+        const qs = new URLSearchParams()
+        if (params?.userId) qs.set("userId", params.userId)
+        if (params?.type) qs.set("type", params.type)
+        if (params?.status) qs.set("status", params.status)
+        if (params?.marketId) qs.set("marketId", params.marketId)
+        if (params?.from) qs.set("from", params.from)
+        if (params?.to) qs.set("to", params.to)
+        if (params?.search) qs.set("search", params.search)
+        if (params?.page) qs.set("page", String(params.page))
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/reporting/transaction-audits${suffix}`)
+      },
+      getReportingTransactionStats: (params?: {
+        from?: string
+        to?: string
+      }) => {
+        const qs = new URLSearchParams()
+        if (params?.from) qs.set("from", params.from)
+        if (params?.to) qs.set("to", params.to)
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/reporting/transaction-audits/stats${suffix}`)
+      },
+      getReportingDisputes: (params?: {
+        marketId?: string
+        from?: string
+        to?: string
+        page?: number
+        limit?: number
+      }) => {
+        const qs = new URLSearchParams()
+        if (params?.marketId) qs.set("marketId", params.marketId)
+        if (params?.from) qs.set("from", params.from)
+        if (params?.to) qs.set("to", params.to)
+        if (params?.page) qs.set("page", String(params.page))
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/reporting/disputes${suffix}`)
+      },
+      getReportingDisputeStats: () => apiFetch("/reporting/disputes/stats"),
+      getReportingPendingDisputes: (params?: {
+        page?: number
+        limit?: number
+      }) => {
+        const qs = new URLSearchParams()
+        if (params?.page) qs.set("page", String(params.page))
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/reporting/disputes/pending/gmc${suffix}`)
+      },
     }),
     [apiFetch]
   )
