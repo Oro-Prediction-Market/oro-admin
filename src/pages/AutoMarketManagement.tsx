@@ -1,15 +1,24 @@
-import React, { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, useRef } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 import { useToast } from "../components/Toast"
 import CancelMarketModal from "../components/CancelMarketModal"
+import ProposeMarketModal from "../components/ProposeMarketModal"
+import ResolveMarketModal from "../components/ResolveMarketModal"
+import MarketForm, { type MarketFormData } from "../components/MarketForm"
+import { OddsDisplay } from "../components/OddsDisplay"
+import { LateMoneyMonitor } from "../components/LateMoneyMonitor"
 import {
   RefreshCw,
   Zap,
   XCircle,
   TrendingUp,
   TrendingDown,
-  Clock,
   Activity,
+  Play,
+  Square,
+  CheckSquare,
+  Edit,
+  Trash2,
 } from "lucide-react"
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -17,7 +26,7 @@ import {
 interface Outcome {
   id: string
   label: string
-  totalBetAmount?: string | number // field name returned by admin API
+  totalBetAmount?: string | number
   isWinner?: boolean
 }
 
@@ -54,9 +63,9 @@ interface AutoMarket {
 }
 
 interface LivePrice {
-  price: number // mid price for TER, last price for BTC
-  buyPrice?: number // TER only
-  sellPrice?: number // TER only
+  price: number
+  buyPrice?: number
+  sellPrice?: number
   source: string
   fetchedAt: string
 }
@@ -68,6 +77,11 @@ interface TerPriceResponse {
   xauUsd: number
   usdInr: number
   fetchedAt: string
+}
+
+interface Dispute {
+  id: string
+  [key: string]: unknown
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -112,6 +126,19 @@ const SOURCE_CONFIG = {
   },
 }
 
+const PAGE_SIZE = 20
+
+const TABLE_STATUSES = [
+  "All",
+  "Upcoming",
+  "Open",
+  "Closed",
+  "Resolving",
+  "Resolved",
+  "Settled",
+  "Cancelled",
+]
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
@@ -122,42 +149,77 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
   const { notify, ToastContainer } = useToast()
   const cfg = SOURCE_CONFIG[source]
 
-  const [markets, setMarkets] = useState<AutoMarket[]>([])
+  // ── Open market card state ─────────────────────────────────────────────────
+  const [openMarket, setOpenMarket] = useState<AutoMarket | null>(null)
   const [livePrice, setLivePrice] = useState<LivePrice | null>(null)
-  const [fetching, setFetching] = useState(false)
   const [spawning, setSpawning] = useState(false)
+  const [countdown, setCountdown] = useState("")
+
+  // ── Table state ───────────────────────────────────────────────────────────
+  const [tableMarkets, setTableMarkets] = useState<AutoMarket[]>([])
+  const [tablePage, setTablePage] = useState(1)
+  const [tableTotal, setTableTotal] = useState(0)
+  const [tablePages, setTablePages] = useState(1)
+  const [tableStatus, setTableStatus] = useState("All")
+  const [tableFetching, setTableFetching] = useState(false)
+
+  // ── Modal / action state ──────────────────────────────────────────────────
+  const [view, setView] = useState<"list" | "edit">("list")
+  const [editingMarket, setEditingMarket] = useState<AutoMarket | null>(null)
+  const [proposingMarket, setProposingMarket] = useState<AutoMarket | null>(
+    null
+  )
+  const [resolvingMarket, setResolvingMarket] = useState<AutoMarket | null>(
+    null
+  )
+  const [resolvingDisputes, setResolvingDisputes] = useState<Dispute[]>([])
   const [cancellingMarket, setCancellingMarket] = useState<AutoMarket | null>(
     null
   )
-  const [countdown, setCountdown] = useState("")
+  const [expandedMarket, setExpandedMarket] = useState<string | null>(null)
 
   // ── Data fetching ──────────────────────────────────────────────────────────
 
-  const fetchMarkets = useCallback(async () => {
-    setFetching(true)
+  const fetchOpenMarket = useCallback(async () => {
     try {
-      const res = (await api.getMarkets({ limit: 60 })) as {
-        data: AutoMarket[]
-      } | null
-      const filtered = (res?.data ?? []).filter(
-        (m) => m.externalSource === source
-      )
-      filtered.sort((a, b) => {
-        if (a.status === "open" && b.status !== "open") return -1
-        if (b.status === "open" && a.status !== "open") return 1
-        return (
-          new Date(b.closesAt ?? 0).getTime() -
-          new Date(a.closesAt ?? 0).getTime()
-        )
-      })
-      setMarkets(filtered)
+      const res = (await api.getMarkets({
+        externalSource: source,
+        status: "Open",
+        limit: 1,
+      })) as { data: AutoMarket[] } | null
+      setOpenMarket((res?.data ?? [])[0] ?? null)
     } catch {
-      setMarkets([])
-    } finally {
-      setFetching(false)
+      // silently ignore
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source])
+
+  const fetchHistoryRef = useRef((p: number, status: string, src: string) => {
+    let cancelled = false
+    setTableFetching(true)
+    api
+      .getMarkets({ page: p, limit: PAGE_SIZE, status, externalSource: src })
+      .then((res) => {
+        if (cancelled) return
+        const r = res as {
+          data: AutoMarket[]
+          total: number
+          pages: number
+        }
+        setTableMarkets(r.data ?? [])
+        setTableTotal(r.total ?? 0)
+        setTablePages(r.pages ?? 1)
+      })
+      .catch(() => {
+        if (!cancelled) setTableMarkets([])
+      })
+      .finally(() => {
+        if (!cancelled) setTableFetching(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  })
 
   const fetchPrice = useCallback(async () => {
     try {
@@ -176,15 +238,19 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
         setLivePrice(res as unknown as LivePrice)
       }
     } catch {
-      // price fetch fails silently — stale value remains displayed
+      // price fetch fails silently
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [source])
 
   useEffect(() => {
-    fetchMarkets()
+    fetchOpenMarket()
     fetchPrice()
-  }, [fetchMarkets, fetchPrice])
+  }, [fetchOpenMarket, fetchPrice])
+
+  useEffect(() => {
+    return fetchHistoryRef.current(tablePage, tableStatus, source)
+  }, [tablePage, tableStatus, source])
 
   // Price refresh every 30 s
   useEffect(() => {
@@ -192,12 +258,7 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     return () => clearInterval(id)
   }, [fetchPrice])
 
-  // ── Derived state ──────────────────────────────────────────────────────────
-
-  const openMarket = markets.find((m) => m.status === "open")
-  const recentMarkets = markets.filter((m) => m.status !== "open")
-
-  // Countdown — updates every second while a market is open
+  // Countdown every second
   useEffect(() => {
     if (!openMarket?.closesAt) {
       setCountdown("")
@@ -208,6 +269,8 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     const id = setInterval(update, 1_000)
     return () => clearInterval(id)
   }, [openMarket?.closesAt])
+
+  // ── Derived ────────────────────────────────────────────────────────────────
 
   const upOutcome = openMarket?.outcomes.find((o) => o.label === "UP")
   const downOutcome = openMarket?.outcomes.find((o) => o.label === "DOWN")
@@ -228,11 +291,19 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
 
   // ── Actions ────────────────────────────────────────────────────────────────
 
+  const refresh = () => {
+    fetchOpenMarket()
+    fetchHistoryRef.current(tablePage, tableStatus, source)
+    fetchPrice()
+  }
+
   const handleSpawn = async () => {
     setSpawning(true)
     try {
       await api.spawnAutoMarket(source)
-      await fetchMarkets()
+      await fetchOpenMarket()
+      fetchHistoryRef.current(1, tableStatus, source)
+      setTablePage(1)
       notify("success", `${source.toUpperCase()} market spawned successfully.`)
     } catch (e: unknown) {
       notify(
@@ -244,13 +315,92 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     }
   }
 
-  const handleCancel = async () => {
+  const handleTransition = async (id: string, status: string) => {
+    try {
+      await api.transitionMarket(id, status)
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      await fetchOpenMarket()
+      notify("success", `Market moved to ${status}.`)
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error transitioning market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handlePropose = async (
+    proposedOutcomeId: string,
+    windowMinutes: number
+  ) => {
+    if (!proposingMarket) return
+    try {
+      await api.proposeMarket(
+        proposingMarket.id,
+        proposedOutcomeId,
+        windowMinutes
+      )
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      setProposingMarket(null)
+      const windowLabel =
+        windowMinutes >= 60
+          ? `${windowMinutes / 60} hour${windowMinutes > 60 ? "s" : ""}`
+          : `${windowMinutes} minutes`
+      notify(
+        "success",
+        `Objection window opened for "${proposingMarket.title}". Predictors have ${windowLabel} to object.`
+      )
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error proposing outcome: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleOpenResolve = async (market: AutoMarket) => {
+    setResolvingMarket(market)
+    try {
+      const disputes = await api.getMarketDisputes(market.id)
+      setResolvingDisputes((disputes as Dispute[]) ?? [])
+    } catch {
+      setResolvingDisputes([])
+    }
+  }
+
+  const handleResolve = async (
+    winningOutcomeId: string,
+    evidenceUrl: string,
+    evidenceNote: string
+  ) => {
+    if (!resolvingMarket) return
+    try {
+      await api.resolveMarket(
+        resolvingMarket.id,
+        winningOutcomeId,
+        evidenceUrl,
+        evidenceNote
+      )
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      setResolvingMarket(null)
+      setResolvingDisputes([])
+      notify("success", `Market "${resolvingMarket.title}" resolved.`)
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error resolving market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleCancelOpen = async () => {
     if (!cancellingMarket) return
     try {
       await api.cancelMarket(cancellingMarket.id)
       setCancellingMarket(null)
-      await fetchMarkets()
-      notify("success", "Market cancelled. All bets refunded.")
+      await fetchOpenMarket()
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      notify("success", `Market cancelled. All bets refunded.`)
     } catch (e: unknown) {
       notify(
         "error",
@@ -259,9 +409,60 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     }
   }
 
-  const refresh = () => {
-    fetchMarkets()
-    fetchPrice()
+  const handleDelete = async (id: string) => {
+    if (!confirm("Delete this market permanently?")) return
+    try {
+      await api.deleteMarket(id)
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      notify("success", "Market deleted.")
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error deleting market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleUpdate = async (data: MarketFormData) => {
+    if (!editingMarket) return
+    try {
+      await api.updateMarket(editingMarket.id, {
+        ...(data as unknown as Record<string, unknown>),
+        outcomes: data.outcomes.map((o) => ({
+          id: o.id,
+          label: o.label,
+          imageUrl: o.imageUrl ?? null,
+        })),
+      })
+      setView("list")
+      setEditingMarket(null)
+      fetchHistoryRef.current(tablePage, tableStatus, source)
+      notify("success", "Market updated.")
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error updating market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  // ── Edit view ──────────────────────────────────────────────────────────────
+
+  if (view === "edit") {
+    return (
+      <>
+        {ToastContainer}
+        <MarketForm
+          initialData={editingMarket ?? undefined}
+          onSubmit={handleUpdate}
+          onCancel={() => {
+            setView("list")
+            setEditingMarket(null)
+          }}
+          loading={api.loading}
+        />
+      </>
+    )
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -269,6 +470,7 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
   return (
     <div>
       {ToastContainer}
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Header */}
       <div
@@ -288,20 +490,23 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            {cfg.subtitle} · {markets.length} markets total
+            {cfg.subtitle} · {tableTotal} markets total
           </p>
         </div>
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-          <button onClick={refresh} className="secondary" disabled={fetching}>
+          <button
+            onClick={refresh}
+            className="secondary"
+            disabled={tableFetching}
+          >
             <RefreshCw
               size={14}
               style={{
                 marginRight: 6,
-                animation: fetching ? "spin 0.8s linear infinite" : "none",
+                animation: tableFetching ? "spin 0.8s linear infinite" : "none",
               }}
             />
-            {fetching ? "Refreshing…" : "Refresh"}
+            {tableFetching ? "Refreshing…" : "Refresh"}
           </button>
           <button
             onClick={handleSpawn}
@@ -417,14 +622,8 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
           )}
         </div>
 
-        {/* Current open market */}
-        <div
-          className="glass-card"
-          style={{
-            padding: "1.5rem",
-            borderColor: openMarket ? `${cfg.accent}55` : undefined,
-          }}
-        >
+        {/* Open market card */}
+        <div className="glass-card" style={{ padding: "1.5rem" }}>
           <div
             style={{
               fontSize: "0.7rem",
@@ -433,37 +632,43 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
               letterSpacing: "0.06em",
               color: "hsl(var(--muted-foreground))",
               marginBottom: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 5,
             }}
           >
-            <Clock size={12} />
             Current Market
           </div>
 
           {openMarket ? (
             <>
-              {/* Status + countdown */}
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 10,
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  marginBottom: 6,
                 }}
               >
-                <span className="badge badge-open">OPEN</span>
+                {openMarket.title}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "hsl(var(--muted-foreground))",
+                  marginBottom: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
                 <span
                   style={{
-                    fontFamily: "monospace",
-                    fontSize: "0.9rem",
-                    fontWeight: 700,
-                    color: cfg.accent,
+                    display: "inline-block",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#22c55e",
+                    animation: "heartbeat 2.4s ease-in-out infinite",
                   }}
-                >
-                  {countdown || "—"}
-                </span>
+                />
+                Closes in {countdown || "…"}
               </div>
 
               {/* Reference vs live */}
@@ -590,31 +795,38 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
         </div>
       </div>
 
-      {/* Recent markets table */}
+      {/* ── Full markets table ─────────────────────────────────────────────── */}
       <div className="glass-card" style={{ padding: 0 }}>
+        {/* Status filter pills */}
         <div
           style={{
-            padding: "1rem 1.5rem",
+            padding: "1.5rem",
             borderBottom: "1px solid hsl(var(--border))",
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
+            gap: "1rem",
+            overflowX: "auto",
           }}
         >
-          <span style={{ fontWeight: 700, fontSize: "0.875rem" }}>
-            Recent Markets
-          </span>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            {recentMarkets.length} past markets
-          </span>
+          {TABLE_STATUSES.map((s) => (
+            <button
+              key={s}
+              onClick={() => {
+                setTableStatus(s)
+                setTablePage(1)
+              }}
+              className={tableStatus === s ? "" : "secondary"}
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.5rem 1rem",
+                borderRadius: "9999px",
+              }}
+            >
+              {s}
+            </button>
+          ))}
         </div>
 
-        {fetching ? (
+        {tableFetching ? (
           <div
             style={{
               padding: "3rem",
@@ -624,135 +836,390 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
           >
             Loading markets…
           </div>
-        ) : recentMarkets.length === 0 ? (
-          <div
-            style={{
-              padding: "3rem",
-              textAlign: "center",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            No past markets yet.
-          </div>
         ) : (
           <table style={{ margin: 0 }}>
             <thead>
               <tr>
+                <th>Title</th>
                 <th>Status</th>
-                <th>Reference Price</th>
-                <th>Settlement Price</th>
-                <th>Winner</th>
+                <th>Ref Price</th>
+                <th>Settlement</th>
                 <th>Pool (Nu)</th>
-                <th>Opened At</th>
-                <th>Closed At</th>
+                <th>Closes At</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {recentMarkets.slice(0, 30).map((m) => {
-                const ref =
-                  source === "ter"
-                    ? m.metadata?.referenceTerPrice
-                    : m.metadata?.referencePrice
-                const settlement =
-                  source === "ter"
-                    ? m.metadata?.settlementTerPrice
-                    : m.metadata?.settlementPrice
-                const winner = m.outcomes.find((o) => o.isWinner)
-                const pool = Number(m.totalPool ?? 0)
-                const isUp = winner?.label === "UP"
+              {tableMarkets.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={7}
+                    style={{
+                      textAlign: "center",
+                      color: "hsl(var(--muted-foreground))",
+                      padding: "3rem",
+                    }}
+                  >
+                    No markets found.
+                  </td>
+                </tr>
+              ) : (
+                tableMarkets.map((m) => {
+                  const ref =
+                    source === "ter"
+                      ? m.metadata?.referenceTerPrice
+                      : m.metadata?.referencePrice
+                  const settlement =
+                    source === "ter"
+                      ? m.metadata?.settlementTerPrice
+                      : m.metadata?.settlementPrice
+                  const winner = m.outcomes.find((o) => o.isWinner)
+                  const pool = Number(m.totalPool ?? 0)
+                  const isUp = winner?.label === "UP"
 
-                return (
-                  <tr key={m.id}>
-                    <td>
-                      <span className={`badge badge-${m.status.toLowerCase()}`}>
-                        {m.status}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                      {ref != null
-                        ? `${cfg.pricePrefix} ${fmtNum(ref, cfg.priceDecimals)}`
-                        : "—"}
-                    </td>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                      {settlement != null ? (
-                        <span
-                          style={{
-                            color:
-                              ref != null
-                                ? settlement > ref
-                                  ? "#22c55e"
-                                  : "#ef4444"
-                                : undefined,
-                            fontWeight: 700,
-                          }}
-                        >
-                          {cfg.pricePrefix}{" "}
-                          {fmtNum(settlement, cfg.priceDecimals)}
-                        </span>
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-                    <td>
-                      {winner ? (
-                        <span
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4,
-                            fontWeight: 700,
-                            color: isUp ? "#22c55e" : "#ef4444",
-                          }}
-                        >
-                          {isUp ? (
-                            <TrendingUp size={13} />
-                          ) : (
-                            <TrendingDown size={13} />
+                  return (
+                    <React.Fragment key={m.id}>
+                      <tr>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{m.title}</div>
+                          <div
+                            style={{
+                              fontSize: "0.75rem",
+                              color: "hsl(var(--muted-foreground))",
+                            }}
+                          >
+                            {m.outcomes.map((o) => (
+                              <span
+                                key={o.id}
+                                style={{
+                                  marginRight: "0.5rem",
+                                  padding: "0.125rem 0.375rem",
+                                  borderRadius: "0.25rem",
+                                  background: o.isWinner
+                                    ? "hsl(var(--primary) / 0.2)"
+                                    : "hsl(var(--muted) / 0.3)",
+                                  color: o.isWinner
+                                    ? "hsl(var(--primary))"
+                                    : "hsl(var(--muted-foreground))",
+                                }}
+                              >
+                                {o.label}
+                                {o.isWinner && " ✓"}
+                              </span>
+                            ))}
+                          </div>
+                          {winner && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                fontSize: "0.75rem",
+                                fontWeight: 700,
+                                marginTop: 2,
+                                color: isUp ? "#22c55e" : "#ef4444",
+                              }}
+                            >
+                              {isUp ? (
+                                <TrendingUp size={12} />
+                              ) : (
+                                <TrendingDown size={12} />
+                              )}
+                              {winner.label}
+                            </div>
                           )}
-                          {winner.label}
-                        </span>
-                      ) : (
-                        <span style={{ color: "hsl(var(--muted-foreground))" }}>
-                          —
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ fontFamily: "monospace", fontSize: "0.8rem" }}>
-                      {pool > 0 ? pool.toLocaleString() : "—"}
-                    </td>
-                    <td style={{ fontSize: "0.75rem" }}>
-                      {m.opensAt
-                        ? new Date(m.opensAt).toLocaleString()
-                        : m.metadata?.openedAt
-                          ? new Date(m.metadata.openedAt).toLocaleString()
-                          : "—"}
-                    </td>
-                    <td style={{ fontSize: "0.75rem" }}>
-                      {m.closesAt ? new Date(m.closesAt).toLocaleString() : "—"}
-                    </td>
-                    <td>
-                      {(m.status === "open" ||
-                        m.status === "closed" ||
-                        m.status === "resolving") && (
-                        <button
-                          onClick={() => setCancellingMarket(m)}
-                          className="secondary"
-                          title="Cancel & Refund"
-                          style={{ color: "hsl(var(--destructive))" }}
+                        </td>
+                        <td>
+                          <span
+                            className={`badge badge-${m.status.toLowerCase()}`}
+                          >
+                            {m.status}
+                          </span>
+                        </td>
+                        <td
+                          style={{
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                          }}
                         >
-                          <XCircle size={14} />
-                        </button>
+                          {ref != null
+                            ? `${cfg.pricePrefix} ${fmtNum(ref, cfg.priceDecimals)}`
+                            : "—"}
+                        </td>
+                        <td
+                          style={{
+                            fontFamily: "monospace",
+                            fontSize: "0.8rem",
+                          }}
+                        >
+                          {settlement != null ? (
+                            <span
+                              style={{
+                                color:
+                                  ref != null
+                                    ? settlement > ref
+                                      ? "#22c55e"
+                                      : "#ef4444"
+                                    : undefined,
+                                fontWeight: 700,
+                              }}
+                            >
+                              {cfg.pricePrefix}{" "}
+                              {fmtNum(settlement, cfg.priceDecimals)}
+                            </span>
+                          ) : (
+                            "—"
+                          )}
+                        </td>
+                        <td style={{ fontFamily: "monospace" }}>
+                          {pool > 0 ? `Nu ${pool.toLocaleString()}` : "—"}
+                        </td>
+                        <td style={{ fontSize: "0.75rem" }}>
+                          {m.closesAt
+                            ? new Date(m.closesAt).toLocaleString()
+                            : "—"}
+                        </td>
+                        <td>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "0.5rem",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {m.status === "upcoming" && (
+                              <button
+                                onClick={() => handleTransition(m.id, "open")}
+                                className="secondary"
+                                title="Start Market"
+                              >
+                                <Play size={14} />
+                              </button>
+                            )}
+                            {m.status === "open" && (
+                              <button
+                                onClick={() => handleTransition(m.id, "closed")}
+                                className="secondary"
+                                title="Close Market"
+                              >
+                                <Square size={14} />
+                              </button>
+                            )}
+                            {m.status === "closed" && (
+                              <button
+                                onClick={() => setProposingMarket(m)}
+                                className="secondary"
+                                title="Propose Outcome & Open Dispute Window"
+                                style={{ color: "hsl(45, 80%, 60%)" }}
+                              >
+                                ⚖️
+                              </button>
+                            )}
+                            {m.status === "resolving" && (
+                              <button
+                                onClick={() => handleOpenResolve(m)}
+                                className="secondary"
+                                title="Final Resolution"
+                              >
+                                <CheckSquare size={14} />
+                              </button>
+                            )}
+                            {(m.status === "upcoming" ||
+                              m.status === "open") && (
+                              <button
+                                onClick={() => {
+                                  setEditingMarket(m)
+                                  setView("edit")
+                                }}
+                                className="secondary"
+                                title="Edit"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            )}
+                            {(m.status === "upcoming" ||
+                              m.status === "cancelled" ||
+                              pool === 0) && (
+                              <button
+                                onClick={() => handleDelete(m.id)}
+                                className="secondary"
+                                title="Delete"
+                                style={{ color: "hsl(var(--destructive))" }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                            {(m.status === "upcoming" ||
+                              m.status === "open" ||
+                              m.status === "closed" ||
+                              m.status === "resolving") && (
+                              <button
+                                onClick={() => setCancellingMarket(m)}
+                                className="secondary"
+                                title="Cancel & Refund all bets"
+                                style={{ color: "hsl(var(--destructive))" }}
+                              >
+                                <XCircle size={14} />
+                              </button>
+                            )}
+                            <button
+                              onClick={() =>
+                                setExpandedMarket(
+                                  expandedMarket === m.id ? null : m.id
+                                )
+                              }
+                              className="secondary"
+                              title="View Details"
+                              style={{ fontSize: "0.75rem" }}
+                            >
+                              {expandedMarket === m.id ? "▼" : "▶"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                      {expandedMarket === m.id && (
+                        <tr>
+                          <td
+                            colSpan={7}
+                            style={{
+                              padding: 0,
+                              background: "hsl(var(--muted) / 0.1)",
+                            }}
+                          >
+                            <div style={{ padding: "1.5rem" }}>
+                              <OddsDisplay
+                                outcomes={m.outcomes}
+                                totalPool={pool}
+                                houseEdgePct={Number(m.houseEdgePct || 5)}
+                                isEstimated={m.status === "open"}
+                                showWarnings={true}
+                              />
+                              {m.status === "open" && (
+                                <LateMoneyMonitor
+                                  market={m}
+                                  onLateMoneyDetected={(data) => {
+                                    console.log("Late money detected:", data)
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
                       )}
-                    </td>
-                  </tr>
-                )
-              })}
+                    </React.Fragment>
+                  )
+                })
+              )}
             </tbody>
           </table>
         )}
       </div>
 
+      {/* Pagination */}
+      {tableTotal > PAGE_SIZE && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            marginTop: "1.5rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <button
+            className="secondary"
+            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+            onClick={() => setTablePage(1)}
+            disabled={tablePage === 1 || tableFetching}
+          >
+            «
+          </button>
+          <button
+            className="secondary"
+            style={{ padding: "6px 14px", fontSize: "0.8rem" }}
+            onClick={() => setTablePage((p) => Math.max(1, p - 1))}
+            disabled={tablePage === 1 || tableFetching}
+          >
+            ‹ Prev
+          </button>
+          {Array.from({ length: Math.min(tablePages, 7) }, (_, i) => {
+            const start = Math.max(1, Math.min(tablePage - 3, tablePages - 6))
+            return start + i
+          }).map((p) => (
+            <button
+              key={p}
+              onClick={() => setTablePage(p)}
+              disabled={tableFetching}
+              style={{
+                padding: "6px 12px",
+                fontSize: "0.8rem",
+                borderRadius: 8,
+                border: "none",
+                background:
+                  p === tablePage
+                    ? "hsl(var(--primary))"
+                    : "hsl(var(--background))",
+                color:
+                  p === tablePage
+                    ? "hsl(var(--primary-foreground))"
+                    : "hsl(var(--foreground))",
+                fontWeight: p === tablePage ? 700 : 400,
+                cursor: "pointer",
+              }}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            className="secondary"
+            style={{ padding: "6px 14px", fontSize: "0.8rem" }}
+            onClick={() => setTablePage((p) => Math.min(tablePages, p + 1))}
+            disabled={tablePage === tablePages || tableFetching}
+          >
+            Next ›
+          </button>
+          <button
+            className="secondary"
+            style={{ padding: "6px 12px", fontSize: "0.8rem" }}
+            onClick={() => setTablePage(tablePages)}
+            disabled={tablePage === tablePages || tableFetching}
+          >
+            »
+          </button>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            Page {tablePage} / {tablePages} · {tableTotal} markets
+          </span>
+        </div>
+      )}
+
+      {/* ── Modals ─────────────────────────────────────────────────────────── */}
+
+      {proposingMarket && (
+        <ProposeMarketModal
+          market={proposingMarket}
+          onPropose={handlePropose}
+          onCancel={() => setProposingMarket(null)}
+          loading={api.loading}
+        />
+      )}
+      {resolvingMarket && (
+        <ResolveMarketModal
+          market={resolvingMarket}
+          disputes={resolvingDisputes}
+          onResolve={handleResolve}
+          onCancel={() => {
+            setResolvingMarket(null)
+            setResolvingDisputes([])
+          }}
+          loading={api.loading}
+        />
+      )}
       {cancellingMarket && (
         <CancelMarketModal
           market={{
@@ -769,7 +1236,7 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
               (o) => Number(o.totalBetAmount) > 0
             ).length
           }
-          onConfirm={handleCancel}
+          onConfirm={handleCancelOpen}
           onClose={() => setCancellingMarket(null)}
           loading={api.loading}
         />

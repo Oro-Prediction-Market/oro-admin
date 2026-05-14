@@ -78,12 +78,15 @@ export function useAdminApi(token: string | null) {
         page?: number
         limit?: number
         status?: string
+        externalSource?: string
       }) => {
         const qs = new URLSearchParams()
         if (params?.page) qs.set("page", String(params.page))
         if (params?.limit) qs.set("limit", String(params.limit))
         if (params?.status && params.status !== "All")
           qs.set("status", params.status)
+        if (params?.externalSource)
+          qs.set("externalSource", params.externalSource)
         const suffix = qs.toString() ? `?${qs.toString()}` : ""
         return apiFetch(`/admin/markets${suffix}`)
       },

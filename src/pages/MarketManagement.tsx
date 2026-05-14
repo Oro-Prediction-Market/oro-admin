@@ -77,7 +77,7 @@ const MarketManagement: React.FC = () => {
     let cancelled = false
     setFetching(true)
     getMarketsRef
-      .current({ page: p, limit: PAGE_SIZE, status })
+      .current({ page: p, limit: PAGE_SIZE, status, externalSource: "none" })
       .then((res) => {
         if (cancelled) return
         const r = res as {
