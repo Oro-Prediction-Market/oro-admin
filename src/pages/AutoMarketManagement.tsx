@@ -62,7 +62,8 @@ function fmtCountdown(closesAt: string): string {
   return `${s}s`
 }
 
-function fmtNum(n: number, decimals = 2): string {
+function fmtNum(n: number | undefined | null, decimals = 2): string {
+  if (n == null || !isFinite(n)) return "—"
   return n.toLocaleString("en-US", {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
