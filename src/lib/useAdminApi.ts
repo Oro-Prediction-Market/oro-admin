@@ -236,6 +236,10 @@ export function useAdminApi(token: string | null) {
           method: "POST",
         }),
       getReconciliation: () => apiFetch("/admin/reconciliation"),
+      // ── Auto markets (TER / BTC) ─────────────────────────────────────────
+      spawnAutoMarket: (source: "ter" | "btc") =>
+        apiFetch(`/${source}/spawn`, { method: "POST" }),
+      getAutoPrice: (source: "ter" | "btc") => apiFetch(`/${source}/price`),
     }),
     [apiFetch]
   )

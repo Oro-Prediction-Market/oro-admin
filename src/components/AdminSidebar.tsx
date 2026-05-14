@@ -14,6 +14,8 @@ import {
   ShieldCheck,
   Scale,
   Wallet,
+  Coins,
+  Bitcoin,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -28,7 +30,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
   onLogout,
 }) => {
   const [isMarketOpen, setIsMarketOpen] = useState(
-    ["markets", "discovery", "settlements"].includes(current)
+    [
+      "markets",
+      "discovery",
+      "settlements",
+      "ter-markets",
+      "btc-markets",
+    ].includes(current)
   )
   const [isLogsOpen, setIsLogsOpen] = useState(
     ["payments", "audit", "resolution-log", "reconciliation"].includes(current)
@@ -68,7 +76,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               alignItems: "center",
             }}
             className={
-              ["markets", "discovery", "settlements"].includes(current)
+              [
+                "markets",
+                "discovery",
+                "settlements",
+                "ter-markets",
+                "btc-markets",
+              ].includes(current)
                 ? "active-parent"
                 : ""
             }
@@ -113,6 +127,28 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               >
                 <BarChart3 size={18} />
                 Markets
+              </li>
+              <li
+                className={current === "ter-markets" ? "active" : ""}
+                onClick={() => onNavigate("ter-markets")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Coins
+                  size={18}
+                  color={current === "ter-markets" ? undefined : "#f59e0b"}
+                />
+                TER Markets
+              </li>
+              <li
+                className={current === "btc-markets" ? "active" : ""}
+                onClick={() => onNavigate("btc-markets")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Bitcoin
+                  size={18}
+                  color={current === "btc-markets" ? undefined : "#f7931a"}
+                />
+                BTC Markets
               </li>
               <li
                 className={current === "settlements" ? "active" : ""}
