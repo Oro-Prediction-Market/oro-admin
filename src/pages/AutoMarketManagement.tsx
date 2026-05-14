@@ -134,7 +134,8 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     } finally {
       setFetching(false)
     }
-  }, [api, source])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source])
 
   const fetchPrice = useCallback(async () => {
     try {
@@ -143,7 +144,8 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     } catch {
       // price fetch fails silently — stale value remains displayed
     }
-  }, [api, source])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [source])
 
   useEffect(() => {
     fetchMarkets()
