@@ -14,11 +14,11 @@ export async function loginWithDevSecret(
   secret: string,
   totp?: string
 ): Promise<{ token: string }> {
-  const params = new URLSearchParams({ secret })
-  if (totp) params.set("totp", totp)
-  const response = await fetch(
-    `${API_BASE}/auth/admin/login?${params.toString()}`
-  )
+  const response = await fetch(`${API_BASE}/auth/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret, ...(totp ? { totp } : {}) }),
+  })
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
     throw new Error(body?.message || "Invalid Secret")
