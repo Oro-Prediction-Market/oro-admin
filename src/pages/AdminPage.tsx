@@ -211,13 +211,11 @@ const AdminPage: React.FC = () => {
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       {/* Mobile overlay */}
-      {sidebarOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      {/* Mobile hamburger */}
+      <div
+        className={`sidebar-overlay ${sidebarOpen ? "visible" : ""}`}
+        onClick={() => setSidebarOpen(false)}
+      />
+      {/* Hamburger toggle */}
       <button
         className="mobile-menu-btn"
         onClick={() => setSidebarOpen(!sidebarOpen)}
