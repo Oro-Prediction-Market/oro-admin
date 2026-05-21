@@ -310,6 +310,16 @@ export function useAdminApi(token: string | null) {
         const suffix = qs.toString() ? `?${qs.toString()}` : ""
         return apiFetch(`/reporting/disputes/pending/gmc${suffix}`)
       },
+      // ── Revenue Distribution ──────────────────────────────────────────────
+      getRevenueSummary: () => apiFetch("/admin/revenue/summary"),
+      getRevenuePending: () => apiFetch("/admin/revenue/pending"),
+      getRevenueAll: () => apiFetch("/admin/revenue/all"),
+      getRevenueByMarket: (marketId: string) =>
+        apiFetch(`/admin/revenue/market/${marketId}`),
+      executeRevenueTransfer: (id: string) =>
+        apiFetch(`/admin/revenue/${id}/transfer`, { method: "POST" }),
+      processAllRevenue: () =>
+        apiFetch("/admin/revenue/process-all", { method: "POST" }),
     }),
     [apiFetch]
   )
