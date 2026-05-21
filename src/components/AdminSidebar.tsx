@@ -190,6 +190,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             <TrendingUp size={20} />
             Reporting
           </li>
+          <li
+            className={current === "revenue" ? "active" : ""}
+            onClick={() => onNavigate("revenue")}
+          >
+            <Coins size={20} />
+            Revenue
+          </li>
 
           <li
             onClick={() => setIsLogsOpen(!isLogsOpen)}

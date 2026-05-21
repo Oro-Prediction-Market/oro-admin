@@ -15,6 +15,7 @@ const ReconciliationPage = lazy(() => import("./ReconciliationPage"))
 const FinancePage = lazy(() => import("./FinancePage"))
 const AutoMarketManagement = lazy(() => import("./AutoMarketManagement"))
 const ReportingPage = lazy(() => import("./ReportingPage"))
+const RevenuePage = lazy(() => import("./RevenuePage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -207,6 +208,7 @@ const AdminPage: React.FC = () => {
   else if (page === "btc-markets")
     content = <AutoMarketManagement source="btc" />
   else if (page === "reporting") content = <ReportingPage />
+  else if (page === "revenue") content = <RevenuePage />
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
