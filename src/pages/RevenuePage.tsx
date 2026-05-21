@@ -33,15 +33,23 @@ const RevenuePage: React.FC = () => {
   const [processing, setProcessing] = useState(false)
   const [transferringId, setTransferringId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [accountNumber, setAccountNumber] = useState("")
+  const [accountSource, setAccountSource] = useState("")
+  const [editingAccount, setEditingAccount] = useState(false)
+  const [accountInput, setAccountInput] = useState("")
 
   const fetchData = async () => {
     try {
-      const [summaryData, allData] = await Promise.all([
+      const [summaryData, allData, acctData] = await Promise.all([
         api.getRevenueSummary(),
         api.getRevenueAll(),
+        api.getRevenueAccount(),
       ])
       setSummary(summaryData)
       setDistributions(allData || [])
+      setAccountNumber(acctData.accountNumber || "")
+      setAccountSource(acctData.source || "")
+      setAccountInput(acctData.accountNumber || "")
     } catch (err) {
       console.error("Failed to fetch revenue data", err)
     }
@@ -92,6 +100,33 @@ const RevenuePage: React.FC = () => {
     }
   }
 
+  const handleBackfill = async () => {
+    setMessage(null)
+    try {
+      const result = await api.backfillRevenue()
+      setMessage(
+        `✅ Backfilled ${result.backfilled} revenue distributions from existing settlements`
+      )
+      await fetchData()
+    } catch (err: unknown) {
+      setMessage(`❌ Backfill error: ${(err as Error).message}`)
+    }
+  }
+
+  const handleSaveAccount = async () => {
+    if (!accountInput.trim()) return
+    setMessage(null)
+    try {
+      const result = await api.setRevenueAccount(accountInput.trim())
+      setAccountNumber(result.accountNumber)
+      setAccountSource(result.source)
+      setEditingAccount(false)
+      setMessage(`✅ Destination account updated: ${result.accountNumber}`)
+    } catch (err: unknown) {
+      setMessage(`❌ Error: ${(err as Error).message}`)
+    }
+  }
+
   const filtered = distributions.filter((d) => {
     if (filter === "pending") return d.status === "pending"
     if (filter === "completed") return d.status === "completed"
@@ -111,6 +146,88 @@ const RevenuePage: React.FC = () => {
         House edge from settled markets → DK Public Account. Admin triggers
         transfers.
       </p>
+
+      {/* Destination Account Config */}
+      <div
+        className="glass-card"
+        style={{ marginBottom: "1.5rem", padding: "1rem 1.25rem" }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+            Destination Account:
+          </span>
+          {editingAccount ? (
+            <>
+              <input
+                type="text"
+                value={accountInput}
+                onChange={(e) => setAccountInput(e.target.value)}
+                placeholder="Enter DK Bank account number"
+                style={{
+                  padding: "0.4rem 0.6rem",
+                  fontSize: "0.8rem",
+                  border: "1px solid hsl(var(--border))",
+                  borderRadius: "0.375rem",
+                  background: "hsl(var(--background))",
+                  color: "hsl(var(--foreground))",
+                  width: "180px",
+                }}
+              />
+              <button
+                onClick={handleSaveAccount}
+                style={{ fontSize: "0.7rem", padding: "0.35rem 0.7rem" }}
+              >
+                Save
+              </button>
+              <button
+                className="secondary"
+                onClick={() => {
+                  setEditingAccount(false)
+                  setAccountInput(accountNumber)
+                }}
+                style={{ fontSize: "0.7rem", padding: "0.35rem 0.7rem" }}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <>
+              <code style={{ fontSize: "0.8rem" }}>
+                {accountNumber || "Not configured"}
+              </code>
+              <span
+                style={{
+                  fontSize: "0.65rem",
+                  color: "hsl(var(--muted-foreground))",
+                  background: "hsla(var(--muted), 0.3)",
+                  padding: "0.15rem 0.4rem",
+                  borderRadius: "0.25rem",
+                }}
+              >
+                {accountSource === "admin"
+                  ? "set by admin"
+                  : accountSource === "env"
+                    ? "from env"
+                    : "—"}
+              </span>
+              <button
+                className="secondary"
+                onClick={() => setEditingAccount(true)}
+                style={{ fontSize: "0.7rem", padding: "0.35rem 0.7rem" }}
+              >
+                Edit
+              </button>
+            </>
+          )}
+        </div>
+      </div>
 
       {/* Summary Cards */}
       {summary && (
@@ -179,6 +296,19 @@ const RevenuePage: React.FC = () => {
         >
           {processing ? "Processing…" : "Transfer All Pending to Public Acc"}
         </button>
+
+        {distributions.length === 0 && (
+          <button
+            onClick={handleBackfill}
+            style={{
+              background: "hsla(220, 100%, 50%, 0.15)",
+              color: "#60a5fa",
+              borderColor: "hsla(220, 100%, 50%, 0.4)",
+            }}
+          >
+            Backfill from Settlements
+          </button>
+        )}
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
           {(["all", "pending", "completed"] as const).map((f) => (

@@ -320,6 +320,14 @@ export function useAdminApi(token: string | null) {
         apiFetch(`/admin/revenue/${id}/transfer`, { method: "POST" }),
       processAllRevenue: () =>
         apiFetch("/admin/revenue/process-all", { method: "POST" }),
+      backfillRevenue: () =>
+        apiFetch("/admin/revenue/backfill", { method: "POST" }),
+      getRevenueAccount: () => apiFetch("/admin/revenue/account"),
+      setRevenueAccount: (accountNumber: string) =>
+        apiFetch("/admin/revenue/account", {
+          method: "PUT",
+          body: JSON.stringify({ accountNumber }),
+        }),
     }),
     [apiFetch]
   )
