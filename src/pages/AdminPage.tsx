@@ -1,5 +1,6 @@
 import React, { useState, lazy, Suspense } from "react"
 import AdminSidebar from "../components/AdminSidebar"
+import { Menu, X } from "lucide-react"
 
 const AdminDashboard = lazy(() => import("./AdminDashboard"))
 const MarketManagement = lazy(() => import("./MarketManagement"))
@@ -18,6 +19,7 @@ import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
   const [page, setPage] = useState("dashboard")
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [token, setToken] = useState<string | null>(
     sessionStorage.getItem("admin_token")
   )
@@ -51,9 +53,13 @@ const AdminPage: React.FC = () => {
           alignItems: "center",
           height: "100vh",
           background: "hsl(var(--background))",
+          padding: "1rem",
         }}
       >
-        <div className="glass-card" style={{ width: 400, padding: 32 }}>
+        <div
+          className="glass-card"
+          style={{ width: "100%", maxWidth: 400, padding: 32 }}
+        >
           <h2 style={{ marginBottom: 24, textAlign: "center" }}>
             Admin Uplink
           </h2>
@@ -204,12 +210,32 @@ const AdminPage: React.FC = () => {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <AdminSidebar
-        current={page}
-        onNavigate={setPage}
-        onLogout={handleLogout}
-      />
-      <main style={{ flex: 1, padding: 24, overflowY: "auto" }}>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      {/* Mobile hamburger */}
+      <button
+        className="mobile-menu-btn"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        aria-label="Toggle menu"
+      >
+        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+      <div className={`sidebar-wrapper ${sidebarOpen ? "open" : ""}`}>
+        <AdminSidebar
+          current={page}
+          onNavigate={(p) => {
+            setPage(p)
+            setSidebarOpen(false)
+          }}
+          onLogout={handleLogout}
+        />
+      </div>
+      <main className="admin-main">
         <Suspense
           fallback={
             <div
