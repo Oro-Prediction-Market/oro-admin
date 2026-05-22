@@ -37,6 +37,8 @@ const RevenuePage: React.FC = () => {
   const [accountSource, setAccountSource] = useState("")
   const [editingAccount, setEditingAccount] = useState(false)
   const [accountInput, setAccountInput] = useState("")
+  const [accountBalance, setAccountBalance] = useState<string | null>(null)
+  const [accountName, setAccountName] = useState("")
 
   const fetchData = async () => {
     try {
@@ -50,6 +52,17 @@ const RevenuePage: React.FC = () => {
       setAccountNumber(acctData.accountNumber || "")
       setAccountSource(acctData.source || "")
       setAccountInput(acctData.accountNumber || "")
+
+      // Fetch balance if account is configured
+      if (acctData.accountNumber) {
+        try {
+          const balData = await api.getRevenueAccountBalance()
+          setAccountBalance(balData.balance)
+          setAccountName(balData.accountName || "")
+        } catch {
+          setAccountBalance(null)
+        }
+      }
     } catch (err) {
       console.error("Failed to fetch revenue data", err)
     }
@@ -227,6 +240,24 @@ const RevenuePage: React.FC = () => {
             </>
           )}
         </div>
+        {accountNumber && (accountName || accountBalance) && (
+          <div
+            style={{
+              marginTop: "0.6rem",
+              fontSize: "0.75rem",
+              color: "hsl(var(--muted-foreground))",
+              display: "flex",
+              gap: "1.5rem",
+            }}
+          >
+            {accountName && <span>👤 {accountName}</span>}
+            {accountBalance && (
+              <span style={{ color: "#22c55e", fontWeight: 600 }}>
+                💰 Balance: Nu {accountBalance}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}

@@ -323,6 +323,8 @@ export function useAdminApi(token: string | null) {
       backfillRevenue: () =>
         apiFetch("/admin/revenue/backfill", { method: "POST" }),
       getRevenueAccount: () => apiFetch("/admin/revenue/account"),
+      getRevenueAccountBalance: () =>
+        apiFetch("/admin/revenue/account/balance"),
       setRevenueAccount: (accountNumber: string) =>
         apiFetch("/admin/revenue/account", {
           method: "PUT",
