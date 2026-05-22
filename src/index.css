@@ -184,16 +184,75 @@ h4 {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-right: 1px solid var(--glass-border);
-  padding: 2rem 1rem;
+  padding: 1.25rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: sticky;
   top: 0;
   flex-shrink: 0;
   z-index: 10;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-sidebar.collapsed {
+  width: 64px;
+}
+
+/* Brand row */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+  min-height: 2rem;
+}
+
+.admin-sidebar.collapsed .sidebar-brand {
+  justify-content: center;
+}
+
+/* Collapse toggle button */
+.sidebar-collapse-btn {
+  background: transparent;
+  border: none;
+  padding: 0.35rem;
+  border-radius: calc(var(--radius) * 0.6);
+  color: hsl(var(--muted-foreground));
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: inherit;
+}
+
+.sidebar-collapse-btn:hover {
+  background: var(--glass-bg);
+  color: hsl(var(--foreground));
+  transform: none;
+  box-shadow: none;
+  border-color: transparent;
+}
+
+/* Divider */
+.sidebar-divider {
+  height: 1px;
+  background: var(--glass-border);
+  margin: 0 0.25rem;
+  flex-shrink: 0;
+}
+
+/* Center icons when collapsed — use !important to beat any inline styles */
+.admin-sidebar.collapsed li {
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0.75rem !important;
 }
 
 .dark .admin-sidebar {
@@ -244,6 +303,12 @@ h4 {
 .dark .admin-sidebar li.active {
   background: hsla(var(--primary), 0.1);
   border-color: hsla(var(--primary), 0.3);
+}
+
+.admin-sidebar li.active-parent {
+  color: hsl(var(--foreground));
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
 }
 
 button {
@@ -441,69 +506,63 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   }
 }
 
-/* Mobile Responsive Layout */
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .admin-main {
   flex: 1;
-  padding: 24px;
+  padding: 1.5rem;
   overflow-y: auto;
+  min-width: 0;
 }
 
-.mobile-menu-btn {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 1001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(10, 10, 15, 0.8);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  padding: 0.5rem;
-  color: hsl(var(--primary));
-  cursor: pointer;
-  text-transform: none;
-  letter-spacing: normal;
-}
-
-.mobile-menu-btn:hover {
-  transform: none;
-}
-
-.sidebar-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 99;
-}
-
-.sidebar-overlay.visible {
-  display: block;
-}
-
+/* Sidebar wrapper — desktop: sticky in flow */
 .sidebar-wrapper {
-  position: fixed;
+  flex-shrink: 0;
+  position: sticky;
   top: 0;
-  left: 0;
-  z-index: 100;
   height: 100vh;
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
+  z-index: 100;
 }
 
-.sidebar-wrapper.open {
-  transform: translateX(0);
+/* Mobile backdrop — shown when sidebar is expanded on small screens */
+.sidebar-mobile-backdrop {
+  display: none;
 }
 
-.admin-main {
-  padding: 16px;
-  padding-top: 4rem;
-  padding-left: 24px;
-}
-
+/* ── Mobile ─────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+  .admin-main {
+    padding: 1rem;
+  }
+
+  /* Sidebar floats over content on mobile */
+  .sidebar-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+  }
+
+  /* Content always shifted by collapsed width so it's never fully hidden */
+  .admin-main {
+    margin-left: 64px;
+  }
+
+  /* Semi-transparent backdrop when sidebar is expanded */
+  .sidebar-mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(2px);
+    z-index: 99;
+  }
+
   .stat-grid {
     grid-template-columns: 1fr;
   }
@@ -516,9 +575,5 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
 
   .glass-card {
     padding: 1rem;
-  }
-
-  .admin-sidebar {
-    width: 280px;
   }
 }
