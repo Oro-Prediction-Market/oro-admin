@@ -181,7 +181,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             onClick={() => onNavigate("finance")}
           >
             <Wallet size={20} />
-            Financials
+            Balance Sheet
           </li>
           <li
             className={current === "reporting" ? "active" : ""}
