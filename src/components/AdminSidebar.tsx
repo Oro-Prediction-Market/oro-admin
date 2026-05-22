@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { clsx } from "clsx"
 import {
   LayoutDashboard,
   BarChart3,
@@ -76,7 +77,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
   }
 
   return (
-    <aside className={`admin-sidebar${collapsed ? "collapsed" : ""}`}>
+    <aside className={clsx("admin-sidebar", collapsed && "collapsed")}>
       {/* Brand + collapse toggle */}
       <div className="sidebar-brand">
         {!collapsed && (
