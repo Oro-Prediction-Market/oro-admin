@@ -26,6 +26,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Setup kubeconfig
+        if: secrets.KUBECONFIG != ''
         run: |
           mkdir -p $RUNNER_TEMP/.kube
           echo '${{ secrets.KUBECONFIG }}' | base64 -d > $RUNNER_TEMP/.kube/config
