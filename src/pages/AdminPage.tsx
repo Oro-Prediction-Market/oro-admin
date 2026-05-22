@@ -1,6 +1,5 @@
 import React, { useState, lazy, Suspense } from "react"
 import AdminSidebar from "../components/AdminSidebar"
-import { Menu, X } from "lucide-react"
 
 const AdminDashboard = lazy(() => import("./AdminDashboard"))
 const MarketManagement = lazy(() => import("./MarketManagement"))
@@ -20,7 +19,9 @@ import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
   const [page, setPage] = useState("dashboard")
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => window.innerWidth <= 768
+  )
   const [token, setToken] = useState<string | null>(
     sessionStorage.getItem("admin_token")
   )
@@ -211,30 +212,23 @@ const AdminPage: React.FC = () => {
   else if (page === "revenue") content = <RevenuePage />
 
   return (
-    <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      {/* Mobile overlay */}
-      <div
-        className={`sidebar-overlay ${sidebarOpen ? "visible" : ""}`}
-        onClick={() => setSidebarOpen(false)}
-      />
-      {/* Hamburger toggle */}
-      <button
-        className="mobile-menu-btn"
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label="Toggle menu"
-      >
-        {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-      <div className={`sidebar-wrapper ${sidebarOpen ? "open" : ""}`}>
-        <AdminSidebar
-          current={page}
-          onNavigate={(p) => {
-            setPage(p)
-            setSidebarOpen(false)
-          }}
-          onLogout={handleLogout}
+    <div className="admin-layout">
+      {!sidebarCollapsed && window.innerWidth <= 768 && (
+        <div
+          className="sidebar-mobile-backdrop"
+          onClick={() => setSidebarCollapsed(true)}
         />
-      </div>
+      )}
+      <AdminSidebar
+        current={page}
+        onNavigate={(p) => {
+          setPage(p)
+          if (window.innerWidth <= 768) setSidebarCollapsed(true)
+        }}
+        onLogout={handleLogout}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
+      />
       <main className="admin-main">
         <Suspense
           fallback={

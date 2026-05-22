@@ -1,4 +1,5 @@
 import React, { useState } from "react"
+import { clsx } from "clsx"
 import {
   LayoutDashboard,
   BarChart3,
@@ -17,18 +18,24 @@ import {
   Coins,
   Bitcoin,
   TrendingUp,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react"
 
 interface SidebarProps {
   current: string
   onNavigate: (page: string) => void
   onLogout: () => void
+  collapsed: boolean
+  onToggleCollapse: () => void
 }
 
 const AdminSidebar: React.FC<SidebarProps> = ({
   current,
   onNavigate,
   onLogout,
+  collapsed,
+  onToggleCollapse,
 }) => {
   const [isMarketOpen, setIsMarketOpen] = useState(
     [
@@ -43,65 +50,93 @@ const AdminSidebar: React.FC<SidebarProps> = ({
     ["payments", "audit", "resolution-log", "reconciliation"].includes(current)
   )
 
+  const handleMarketToggle = () => {
+    if (collapsed) {
+      onToggleCollapse()
+      setIsMarketOpen(true)
+    } else {
+      setIsMarketOpen(!isMarketOpen)
+    }
+  }
+
+  const handleLogsToggle = () => {
+    if (collapsed) {
+      onToggleCollapse()
+      setIsLogsOpen(true)
+    } else {
+      setIsLogsOpen(!isLogsOpen)
+    }
+  }
+
   return (
-    <aside className="admin-sidebar">
-      <div
-        className="brand"
-        style={{ padding: "0 1rem", marginBottom: "2rem" }}
-      >
-        <h1
-          style={{
-            fontSize: "1.5rem",
-            margin: 0,
-            color: "hsl(var(--primary))",
-          }}
+    <aside className={clsx("admin-sidebar", collapsed && "collapsed")}>
+      <div className="sidebar-brand">
+        {!collapsed && (
+          <h1
+            style={{
+              fontSize: "1.5rem",
+              margin: 0,
+              color: "hsl(var(--primary))",
+            }}
+          >
+            ORO <span style={{ color: "hsl(var(--foreground))" }}>ADMIN</span>
+          </h1>
+        )}
+        <button
+          className="sidebar-collapse-btn"
+          onClick={onToggleCollapse}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          ORO <span style={{ color: "hsl(var(--foreground))" }}>ADMIN</span>
-        </h1>
+          {collapsed ? (
+            <PanelLeftOpen size={18} />
+          ) : (
+            <PanelLeftClose size={18} />
+          )}
+        </button>
       </div>
+
       <nav>
         <ul>
           <li
             className={current === "dashboard" ? "active" : ""}
             onClick={() => onNavigate("dashboard")}
+            title={collapsed ? "Dashboard" : undefined}
           >
             <LayoutDashboard size={20} />
-            Dashboard
+            {!collapsed && <span className="nav-label">Dashboard</span>}
           </li>
 
           <li
-            onClick={() => setIsMarketOpen(!isMarketOpen)}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-            className={
+            onClick={handleMarketToggle}
+            style={collapsed ? undefined : { justifyContent: "space-between" }}
+            className={clsx(
               [
                 "markets",
                 "discovery",
                 "settlements",
                 "ter-markets",
                 "btc-markets",
-              ].includes(current)
-                ? "active-parent"
-                : ""
-            }
+              ].includes(current) && "active-parent"
+            )}
+            title={collapsed ? "Market Management" : undefined}
           >
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
             >
               <Briefcase size={20} />
-              <span>Market Management</span>
+              {!collapsed && (
+                <span className="nav-label">Market Management</span>
+              )}
             </div>
-            {isMarketOpen ? (
-              <ChevronDown size={16} />
-            ) : (
-              <ChevronRight size={16} />
-            )}
+            {!collapsed &&
+              (isMarketOpen ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
           </li>
 
-          {isMarketOpen && (
+          {!collapsed && isMarketOpen && (
             <div
               className="submenu"
               style={{
@@ -165,71 +200,72 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           <li
             className={current === "users" ? "active" : ""}
             onClick={() => onNavigate("users")}
+            title={collapsed ? "Users" : undefined}
           >
             <Users size={20} />
-            Users
+            {!collapsed && <span className="nav-label">Users</span>}
           </li>
           <li
             className={current === "keeper" ? "active" : ""}
             onClick={() => onNavigate("keeper")}
+            title={collapsed ? "Keeperbot" : undefined}
           >
             <Bot size={20} />
-            Keeperbot
+            {!collapsed && <span className="nav-label">Keeperbot</span>}
           </li>
           <li
             className={current === "finance" ? "active" : ""}
             onClick={() => onNavigate("finance")}
+            title={collapsed ? "Financials" : undefined}
           >
             <Wallet size={20} />
-            Financials
+            {!collapsed && <span className="nav-label">Financials</span>}
           </li>
           <li
             className={current === "reporting" ? "active" : ""}
             onClick={() => onNavigate("reporting")}
+            title={collapsed ? "Reporting" : undefined}
           >
             <TrendingUp size={20} />
-            Reporting
+            {!collapsed && <span className="nav-label">Reporting</span>}
           </li>
           <li
             className={current === "revenue" ? "active" : ""}
             onClick={() => onNavigate("revenue")}
+            title={collapsed ? "Revenue" : undefined}
           >
             <Coins size={20} />
-            Revenue
+            {!collapsed && <span className="nav-label">Revenue</span>}
           </li>
 
           <li
-            onClick={() => setIsLogsOpen(!isLogsOpen)}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-            className={
+            onClick={handleLogsToggle}
+            style={collapsed ? undefined : { justifyContent: "space-between" }}
+            className={clsx(
               [
                 "payments",
                 "audit",
                 "resolution-log",
                 "reconciliation",
-              ].includes(current)
-                ? "active-parent"
-                : ""
-            }
+              ].includes(current) && "active-parent"
+            )}
+            title={collapsed ? "Logs" : undefined}
           >
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
             >
               <ScrollText size={20} />
-              <span>Logs</span>
+              {!collapsed && <span className="nav-label">Logs</span>}
             </div>
-            {isLogsOpen ? (
-              <ChevronDown size={16} />
-            ) : (
-              <ChevronRight size={16} />
-            )}
+            {!collapsed &&
+              (isLogsOpen ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
           </li>
 
-          {isLogsOpen && (
+          {!collapsed && isLogsOpen && (
             <div
               className="submenu"
               style={{
@@ -276,15 +312,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          <div
-            style={{
-              margin: "1rem 0",
-              borderTop: "1px solid hsl(var(--border))",
-              opacity: 0.5,
-            }}
-          />
+          <div className="sidebar-divider" />
 
-          <li onClick={onLogout} style={{ color: "hsl(var(--destructive))" }}>
+          <li
+            onClick={onLogout}
+            style={{ color: "hsl(var(--destructive))" }}
+            title={collapsed ? "Logout" : undefined}
+          >
             <div
               style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
             >
@@ -292,18 +326,24 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 size={20}
                 style={{ transform: "rotate(180deg)" }}
               />
-              Logout
+              {!collapsed && <span className="nav-label">Logout</span>}
             </div>
           </li>
         </ul>
       </nav>
-      <div style={{ marginTop: "auto", padding: "1rem" }}>
-        <div
-          style={{ fontSize: "0.75rem", color: "hsl(var(--muted-foreground))" }}
-        >
-          v1.0.0-alpha
+
+      {!collapsed && (
+        <div style={{ marginTop: "auto", padding: "1rem" }}>
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            v1.0.0-alpha
+          </div>
         </div>
-      </div>
+      )}
     </aside>
   )
 }
