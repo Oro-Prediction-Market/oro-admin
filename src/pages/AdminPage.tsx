@@ -1,4 +1,5 @@
 import React, { useState, lazy, Suspense } from "react"
+import { Menu } from "lucide-react"
 import AdminSidebar from "../components/AdminSidebar"
 
 const AdminDashboard = lazy(() => import("./AdminDashboard"))
@@ -213,7 +214,18 @@ const AdminPage: React.FC = () => {
 
   return (
     <div className="admin-layout">
-      {!sidebarCollapsed && window.innerWidth <= 768 && (
+      {/* Floating open button — only rendered on mobile via CSS */}
+      {sidebarCollapsed && (
+        <button
+          className="mobile-open-btn"
+          onClick={() => setSidebarCollapsed(false)}
+          aria-label="Open menu"
+        >
+          <Menu size={20} />
+        </button>
+      )}
+      {/* Backdrop — CSS hides it on desktop */}
+      {!sidebarCollapsed && (
         <div
           className="sidebar-mobile-backdrop"
           onClick={() => setSidebarCollapsed(true)}

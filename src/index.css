@@ -518,6 +518,16 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   opacity: 0.5;
 }
 
+/* Floating open button — hidden on desktop */
+.mobile-open-btn {
+  display: none;
+}
+
+/* Backdrop — hidden on desktop */
+.sidebar-mobile-backdrop {
+  display: none;
+}
+
 /* Mobile: sidebar overlays content */
 @media (max-width: 768px) {
   .admin-sidebar {
@@ -539,7 +549,34 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     width: 280px;
   }
 
+  .mobile-open-btn {
+    display: flex;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 101;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: rgba(10, 10, 15, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    color: hsl(var(--primary));
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .mobile-open-btn:hover {
+    transform: none;
+    box-shadow: 0 0 12px hsla(var(--primary), 0.3);
+  }
+
   .sidebar-mobile-backdrop {
+    display: block;
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
