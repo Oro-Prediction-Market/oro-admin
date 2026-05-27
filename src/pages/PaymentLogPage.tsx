@@ -37,6 +37,7 @@ const TYPE_LABELS: Record<string, string> = {
   streak_bonus: "Streak Bonus",
   duel_wager: "Duel Wager",
   duel_payout: "Duel Payout",
+  season_prize: "Season Prize",
 }
 
 const SUMMARY_TYPES = [
