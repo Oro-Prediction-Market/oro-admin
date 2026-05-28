@@ -37,6 +37,7 @@ interface Market {
   totalPool?: string | number
   houseEdgePct?: number
   category?: string | null
+  subcategory?: string | null
   outcomes: Outcome[]
   [key: string]: unknown
 }
@@ -492,6 +493,46 @@ const MarketManagement: React.FC = () => {
                     <tr>
                       <td>
                         <div style={{ fontWeight: 600 }}>{m.title}</div>
+                        {(m.category || m.subcategory) && (
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 4,
+                              marginTop: 3,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            {m.category && (
+                              <span
+                                style={{
+                                  fontSize: "0.65rem",
+                                  fontWeight: 700,
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  background: "hsl(var(--primary) / 0.1)",
+                                  color: "hsl(var(--primary))",
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {m.category}
+                              </span>
+                            )}
+                            {m.subcategory && (
+                              <span
+                                style={{
+                                  fontSize: "0.65rem",
+                                  fontWeight: 700,
+                                  padding: "1px 6px",
+                                  borderRadius: 4,
+                                  background: "hsl(var(--muted) / 0.4)",
+                                  color: "hsl(var(--muted-foreground))",
+                                }}
+                              >
+                                {m.subcategory}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         <div
                           style={{
                             fontSize: "0.75rem",

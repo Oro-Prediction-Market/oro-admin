@@ -15,6 +15,19 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ] as const
 
+const SPORT_SUBCATEGORIES = [
+  "",
+  "International",
+  "National",
+  "UEFA Champions League",
+  "UEFA Europa League",
+  "Premier League (BPL)",
+  "World Cup",
+  "Bhutanese Archery",
+  "Cricket",
+  "Other",
+]
+
 interface MarketInitialData {
   title?: string
   description?: string
@@ -25,6 +38,7 @@ interface MarketInitialData {
   mechanism?: string
   liquidityParam?: number
   category?: string | null
+  subcategory?: string | null
   settlementSource?: string | null
 }
 
@@ -38,6 +52,7 @@ export interface MarketFormData {
   mechanism: string
   liquidityParam: number
   category: string
+  subcategory: string
   settlementSource: string
 }
 
@@ -100,6 +115,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     mechanism: initialData?.mechanism || "parimutuel",
     liquidityParam: initialData?.liquidityParam || 1000,
     category: initialData?.category || "other",
+    subcategory: initialData?.subcategory || "",
     settlementSource: initialData?.settlementSource || "",
   })
 
@@ -245,6 +261,53 @@ const MarketForm: React.FC<MarketFormProps> = ({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* ── Subcategory ───────────────────────────────────────────────────── */}
+        <div style={{ marginBottom: "1rem" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              fontSize: "0.75rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            SUBCATEGORY
+            <span
+              style={{
+                marginLeft: 6,
+                fontWeight: 400,
+                opacity: 0.6,
+                textTransform: "none",
+                fontSize: "0.7rem",
+              }}
+            >
+              (optional — used for filtering in the app)
+            </span>
+          </label>
+          {formData.category === "sports" ? (
+            <select
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleChange}
+              className="input-field"
+            >
+              {SPORT_SUBCATEGORIES.map((s) => (
+                <option key={s} value={s}>
+                  {s || "— None —"}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleChange}
+              className="input-field"
+              placeholder="e.g., Premier League, World Cup, Season 2026..."
+            />
+          )}
         </div>
 
         {/* ── Outcomes ─────────────────────────────────────────────────────── */}
