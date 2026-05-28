@@ -407,10 +407,7 @@ const PaymentLogPage: React.FC = () => {
                           padding: "10px 14px",
                           color: "hsl(var(--muted-foreground))",
                           fontSize: "0.8rem",
-                          maxWidth: 200,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          wordBreak: "break-word",
                         }}
                       >
                         {t.note || "—"}
