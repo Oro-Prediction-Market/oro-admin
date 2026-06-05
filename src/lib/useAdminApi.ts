@@ -330,13 +330,88 @@ export function useAdminApi(token: string | null) {
           method: "PUT",
           body: JSON.stringify({ accountNumber }),
         }),
+      // ── AML ─────────────────────────────────────────────────────────────────
+      getAmlSummary: () => apiFetch("/aml/summary"),
+      runAmlScan: (params?: { from?: string; to?: string }) =>
+        apiFetch("/aml/scan", {
+          method: "POST",
+          body: JSON.stringify(params ?? {}),
+        }),
+      getAmlAlerts: (params?: {
+        userId?: string
+        alertType?: string
+        riskLevel?: string
+        isResolved?: boolean
+        from?: string
+        to?: string
+        page?: number
+        limit?: number
+      }) => {
+        const qs = new URLSearchParams()
+        if (params?.userId) qs.set("userId", params.userId)
+        if (params?.alertType) qs.set("alertType", params.alertType)
+        if (params?.riskLevel) qs.set("riskLevel", params.riskLevel)
+        if (params?.isResolved !== undefined)
+          qs.set("isResolved", String(params.isResolved))
+        if (params?.from) qs.set("from", params.from)
+        if (params?.to) qs.set("to", params.to)
+        if (params?.page) qs.set("page", String(params.page))
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/aml/alerts${suffix}`)
+      },
+      resolveAmlAlert: (id: string, resolution: string) =>
+        apiFetch(`/aml/alerts/${id}/resolve`, {
+          method: "PATCH",
+          body: JSON.stringify({ resolution }),
+        }),
+      getAmlReports: (params?: { page?: number; limit?: number }) => {
+        const qs = new URLSearchParams()
+        if (params?.page) qs.set("page", String(params.page))
+        if (params?.limit) qs.set("limit", String(params.limit))
+        const suffix = qs.toString() ? `?${qs.toString()}` : ""
+        return apiFetch(`/aml/reports${suffix}`)
+      },
+      generateAmlReport: (params: {
+        reportType: "periodic" | "sar"
+        from: string
+        to: string
+        notes?: string
+      }) =>
+        apiFetch("/aml/reports/generate", {
+          method: "POST",
+          body: JSON.stringify(params),
+        }),
     }),
     [apiFetch]
+  )
+
+  // Download helper — returns a blob, not JSON, so cannot use apiFetch
+  const downloadAmlReport = useCallback(
+    async (reportId: string, format: "pdf" | "csv") => {
+      if (!token) throw new Error("No admin token provided")
+      const response = await fetch(
+        `${API_BASE}/aml/reports/${reportId}/download?format=${format}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `aml-report-${reportId.slice(0, 8)}.${format}`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    },
+    [token]
   )
 
   return {
     loading,
     error,
+    downloadAmlReport,
     ...api,
   }
 }

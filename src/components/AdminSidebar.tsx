@@ -20,6 +20,7 @@ import {
   TrendingUp,
   PanelLeftClose,
   PanelLeftOpen,
+  ShieldAlert,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -236,6 +237,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Coins size={20} />
             {!collapsed && <span className="nav-label">Revenue</span>}
+          </li>
+          <li
+            className={current === "aml" ? "active" : ""}
+            onClick={() => onNavigate("aml")}
+            title={collapsed ? "AML Compliance" : undefined}
+          >
+            <ShieldAlert size={20} />
+            {!collapsed && <span className="nav-label">AML Compliance</span>}
           </li>
 
           <li
