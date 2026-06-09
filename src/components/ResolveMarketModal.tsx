@@ -23,7 +23,7 @@ interface ResolveMarketModalProps {
   }
   disputes?: Dispute[]
   onResolve: (
-    winningOutcomeId: string,
+    winningOutcomeIds: string[],
     evidenceUrl: string,
     evidenceNote: string
   ) => void
@@ -38,12 +38,18 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
   onCancel,
   loading,
 }) => {
-  const [selectedOutcomeId, setSelectedOutcomeId] = useState<string>(
-    market.proposedOutcomeId ?? ""
+  const [selectedOutcomeIds, setSelectedOutcomeIds] = useState<string[]>(
+    market.proposedOutcomeId ? [market.proposedOutcomeId] : []
   )
   const [evidenceUrl, setEvidenceUrl] = useState("")
   const [evidenceNote, setEvidenceNote] = useState("")
   const [urlError, setUrlError] = useState<string | null>(null)
+
+  const toggleOutcome = (id: string) => {
+    setSelectedOutcomeIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
 
   const validateUrl = (v: string) => {
     try {
@@ -54,8 +60,12 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
     }
   }
 
+  const proposalChanged =
+    market.proposedOutcomeId != null &&
+    !selectedOutcomeIds.includes(market.proposedOutcomeId)
+
   const canSubmit =
-    selectedOutcomeId &&
+    selectedOutcomeIds.length > 0 &&
     evidenceUrl &&
     !urlError &&
     evidenceNote.trim().length > 0 &&
@@ -90,12 +100,22 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
         <p
           style={{
             color: "hsl(var(--muted-foreground))",
-            marginBottom: "1rem",
+            marginBottom: "0.25rem",
           }}
         >
           <strong style={{ color: "hsl(var(--foreground))" }}>
             {market.title}
           </strong>
+        </p>
+        <p
+          style={{
+            fontSize: "0.75rem",
+            color: "hsl(var(--muted-foreground))",
+            marginBottom: "1rem",
+          }}
+        >
+          Select all winning outcomes — check multiple for group/qualifier
+          markets.
         </p>
 
         {/* Objections panel */}
@@ -132,8 +152,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
               }}
             >
               <strong>Bond settlement:</strong>{" "}
-              {selectedOutcomeId !== market.proposedOutcomeId &&
-              selectedOutcomeId
+              {proposalChanged
                 ? "✅ You are changing the outcome — objectors' bonds will be RETURNED + rewarded."
                 : "❌ If you keep the proposed outcome — objectors' bonds will be FORFEITED."}
             </div>
@@ -178,83 +197,88 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
             marginBottom: "1.5rem",
           }}
         >
-          {market.outcomes.map((outcome: MarketOutcome) => (
-            <label
-              key={outcome.id}
-              style={{
-                padding: "1rem",
-                borderRadius: "var(--radius)",
-                background:
-                  selectedOutcomeId === outcome.id
+          {market.outcomes.map((outcome: MarketOutcome) => {
+            const isSelected = selectedOutcomeIds.includes(outcome.id)
+            return (
+              <label
+                key={outcome.id}
+                style={{
+                  padding: "1rem",
+                  borderRadius: "var(--radius)",
+                  background: isSelected
                     ? "hsl(var(--primary) / 0.1)"
                     : "hsl(var(--muted) / 0.2)",
-                border: `1px solid ${selectedOutcomeId === outcome.id ? "hsl(var(--primary))" : "transparent"}`,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "1rem",
-              }}
-            >
-              <input
-                type="radio"
-                name="outcome"
-                value={outcome.id}
-                checked={selectedOutcomeId === outcome.id}
-                onChange={() => setSelectedOutcomeId(outcome.id)}
-                style={{ accentColor: "hsl(var(--primary))" }}
-              />
-              <div style={{ flex: 1 }}>
-                <div
+                  border: `1px solid ${isSelected ? "hsl(var(--primary))" : "transparent"}`,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "1rem",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  value={outcome.id}
+                  checked={isSelected}
+                  onChange={() => toggleOutcome(outcome.id)}
                   style={{
-                    fontWeight: 600,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "0.5rem",
-                    color: "hsl(var(--foreground))",
+                    accentColor: "hsl(var(--primary))",
+                    width: 16,
+                    height: 16,
                   }}
-                >
-                  {outcome.label}
-                  {outcome.id === market.proposedOutcomeId && (
-                    <span
-                      style={{
-                        fontSize: "0.7rem",
-                        fontWeight: 700,
-                        color: "hsl(var(--primary))",
-                        background: "hsl(var(--primary) / 0.1)",
-                        padding: "0.1rem 0.4rem",
-                        borderRadius: 4,
-                      }}
-                    >
-                      Proposed
-                    </span>
-                  )}
+                />
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontWeight: 600,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "0.5rem",
+                      color: "hsl(var(--foreground))",
+                    }}
+                  >
+                    {outcome.label}
+                    {outcome.id === market.proposedOutcomeId && (
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          fontWeight: 700,
+                          color: "hsl(var(--primary))",
+                          background: "hsl(var(--primary) / 0.1)",
+                          padding: "0.1rem 0.4rem",
+                          borderRadius: 4,
+                        }}
+                      >
+                        Proposed
+                      </span>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.75rem",
+                      color: "hsl(var(--muted-foreground))",
+                    }}
+                  >
+                    Pool:{" "}
+                    {parseFloat(
+                      String(outcome.totalBetAmount ?? 0)
+                    ).toLocaleString()}{" "}
+                    credits
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "hsl(var(--muted-foreground))",
-                  }}
-                >
-                  Pool:{" "}
-                  {parseFloat(
-                    String(outcome.totalBetAmount ?? 0)
-                  ).toLocaleString()}{" "}
-                  credits
-                </div>
-              </div>
-              {selectedOutcomeId === outcome.id && (
-                <div
-                  style={{
-                    color: "hsl(var(--primary))",
-                    fontSize: "0.875rem",
-                    fontWeight: 700,
-                  }}
-                >
-                  ✓
-                </div>
-              )}
-            </label>
-          ))}
+                {isSelected && (
+                  <div
+                    style={{
+                      color: "hsl(var(--primary))",
+                      fontSize: "0.875rem",
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓
+                  </div>
+                )}
+              </label>
+            )
+          })}
         </div>
 
         {/* Evidence — mandatory */}
@@ -394,7 +418,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
           </button>
           <button
             onClick={() =>
-              onResolve(selectedOutcomeId, evidenceUrl, evidenceNote)
+              onResolve(selectedOutcomeIds, evidenceUrl, evidenceNote)
             }
             disabled={!canSubmit}
           >

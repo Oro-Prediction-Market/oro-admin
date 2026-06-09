@@ -258,7 +258,7 @@ const MarketManagement: React.FC = () => {
   }
 
   const handleResolve = async (
-    winningOutcomeId: string,
+    winningOutcomeIds: string[],
     evidenceUrl: string,
     evidenceNote: string
   ) => {
@@ -266,7 +266,7 @@ const MarketManagement: React.FC = () => {
     try {
       await api.resolveMarket(
         resolvingMarket.id,
-        winningOutcomeId,
+        winningOutcomeIds,
         evidenceUrl,
         evidenceNote
       )

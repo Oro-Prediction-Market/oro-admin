@@ -128,13 +128,17 @@ export function useAdminApi(token: string | null) {
         }),
       resolveMarket: (
         id: string,
-        winningOutcomeId: string,
+        winningOutcomeIds: string[],
         evidenceUrl: string,
         evidenceNote: string
       ) =>
         apiFetch(`/admin/markets/${id}/resolve`, {
           method: "POST",
-          body: JSON.stringify({ winningOutcomeId, evidenceUrl, evidenceNote }),
+          body: JSON.stringify({
+            winningOutcomeIds,
+            evidenceUrl,
+            evidenceNote,
+          }),
         }),
       cancelMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}/cancel`, { method: "POST" }),
