@@ -412,10 +412,37 @@ export function useAdminApi(token: string | null) {
     [token]
   )
 
+  // Download helper — returns a blob, not JSON, so cannot use apiFetch
+  const downloadTransactionsCsv = useCallback(
+    async (type?: string) => {
+      if (!token) throw new Error("No admin token provided")
+      const qs =
+        type && type !== "all" ? `?type=${encodeURIComponent(type)}` : ""
+      const response = await fetch(
+        `${API_BASE}/admin/transactions/export${qs}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      )
+      if (!response.ok) throw new Error(`Download failed: ${response.status}`)
+      const blob = await response.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      const date = new Date().toISOString().slice(0, 10)
+      const suffix = type && type !== "all" ? `-${type}` : ""
+      a.download = `transactions${suffix}-${date}.csv`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    },
+    [token]
+  )
+
   return {
     loading,
     error,
     downloadAmlReport,
+    downloadTransactionsCsv,
     ...api,
   }
 }

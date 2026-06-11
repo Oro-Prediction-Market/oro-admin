@@ -53,11 +53,24 @@ const PAGE_SIZE = 50
 
 const PaymentLogPage: React.FC = () => {
   const token = sessionStorage.getItem("admin_token")
-  const { getTransactions, loading, error } = useAdminApi(token)
+  const { getTransactions, downloadTransactionsCsv, loading, error } =
+    useAdminApi(token)
   const [transactions, setTransactions] = useState<Tx[]>([])
   const [filterType, setFilterType] = useState(ALL)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [exporting, setExporting] = useState(false)
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      await downloadTransactionsCsv(filterType)
+    } catch {
+      // Swallow — button re-enables and the admin can retry
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const load = () => {
     if (!token) return
@@ -140,17 +153,32 @@ const PaymentLogPage: React.FC = () => {
             bonuses
           </p>
         </div>
-        <button
-          onClick={load}
-          className="glass-card"
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-            fontSize: "0.85rem",
-          }}
-        >
-          ↻ Refresh
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="glass-card"
+            style={{
+              padding: "8px 16px",
+              cursor: exporting ? "default" : "pointer",
+              fontSize: "0.85rem",
+              opacity: exporting ? 0.6 : 1,
+            }}
+          >
+            {exporting ? "Exporting..." : "⬇ Export CSV"}
+          </button>
+          <button
+            onClick={load}
+            className="glass-card"
+            style={{
+              padding: "8px 16px",
+              cursor: "pointer",
+              fontSize: "0.85rem",
+            }}
+          >
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}
