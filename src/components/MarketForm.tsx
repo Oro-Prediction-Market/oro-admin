@@ -21,6 +21,9 @@ const SPORT_SUBCATEGORIES = [
   "National",
   "UEFA Champions League",
   "UEFA Europa League",
+  "bpl-match",
+  "bpl-winner",
+  "bpl-topscorer",
   "Premier League (BPL)",
   "World Cup",
   "wc-winner",
@@ -30,6 +33,22 @@ const SPORT_SUBCATEGORIES = [
   "Cricket",
   "Other",
 ]
+
+// BoB Bhutan Premier League — 2026 season clubs (keep in sync with the PWA/TMA BplHubPage)
+const BPL_CLUBS = [
+  "Paro FC",
+  "Thimphu City FC",
+  "Transport United FC",
+  "Drukpa FC",
+  "RTC FC",
+  "Tensung FC",
+  "Thimphu FC",
+  "Tsirang FC",
+  "Ugyen Academy FC",
+  "BFF Academy U20",
+]
+
+const BPL_SETTLEMENT_SOURCE = "https://bhutanfootball.org"
 
 interface MarketInitialData {
   title?: string
@@ -151,6 +170,29 @@ const MarketForm: React.FC<MarketFormProps> = ({
       }))
       return
     }
+    // BPL presets — seed outcomes/title/settlement source per market type
+    if (name === "subcategory" && value.startsWith("bpl-") && !initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        settlementSource: prev.settlementSource || BPL_SETTLEMENT_SOURCE,
+        title:
+          prev.title ||
+          (value === "bpl-winner"
+            ? "Who will win the BoB Bhutan Premier League?"
+            : value === "bpl-topscorer"
+              ? "Who will be the BoB Bhutan Premier League top scorer?"
+              : ""),
+        outcomes:
+          value === "bpl-winner"
+            ? BPL_CLUBS.map((c) => ({ label: c, imageUrl: null }))
+            : [
+                { label: "", imageUrl: null },
+                { label: "", imageUrl: null },
+              ],
+      }))
+      return
+    }
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
@@ -218,7 +260,11 @@ const MarketForm: React.FC<MarketFormProps> = ({
             onChange={handleChange}
             className="input-field"
             required
-            placeholder="e.g., Argentina vs Portugal — Who wins?"
+            placeholder={
+              formData.subcategory === "bpl-match"
+                ? "e.g., Paro FC Vs Thimphu City FC : Who will win?"
+                : "e.g., Argentina vs Portugal — Who wins?"
+            }
           />
         </div>
 
@@ -522,8 +568,32 @@ const MarketForm: React.FC<MarketFormProps> = ({
               )}
             </div>
           ) : (
-            /* ── default: standard outcomes ── */
+            /* ── default: standard outcomes (also bpl-match / bpl-winner / bpl-topscorer) ── */
             <div>
+              {formData.subcategory.startsWith("bpl-") && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  {formData.subcategory === "bpl-match"
+                    ? "Pick the two clubs playing (add a third outcome for Draw if needed). Use the image URL fields for club crests — they show on the cards and the BPL banner."
+                    : formData.subcategory === "bpl-winner"
+                      ? "Each club is one outcome — remove any clubs not competing this season. Add crest image URLs for a nicer hub display."
+                      : 'Add each player as an outcome (e.g. "Tshering Dorji — Paro FC").'}
+                </p>
+              )}
+              {(formData.subcategory === "bpl-match" ||
+                formData.subcategory === "bpl-winner") && (
+                <datalist id="bpl-clubs">
+                  {BPL_CLUBS.map((c) => (
+                    <option key={c} value={c} />
+                  ))}
+                </datalist>
+              )}
               {formData.outcomes.map((outcome, index) => (
                 <div key={index} style={{ marginBottom: "0.75rem" }}>
                   <div
@@ -541,7 +611,19 @@ const MarketForm: React.FC<MarketFormProps> = ({
                       className="input-field"
                       style={{ marginBottom: 0 }}
                       required
-                      placeholder={`Outcome ${index + 1} label`}
+                      list={
+                        formData.subcategory === "bpl-match" ||
+                        formData.subcategory === "bpl-winner"
+                          ? "bpl-clubs"
+                          : undefined
+                      }
+                      placeholder={
+                        formData.subcategory === "bpl-match"
+                          ? `Club ${index + 1} (e.g. ${BPL_CLUBS[index] ?? "Paro FC"})`
+                          : formData.subcategory === "bpl-topscorer"
+                            ? `Player ${index + 1}`
+                            : `Outcome ${index + 1} label`
+                      }
                     />
                     {!initialData && formData.outcomes.length > 2 && (
                       <button
