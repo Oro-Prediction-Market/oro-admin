@@ -20,11 +20,11 @@ interface Settlement {
   }
   outcome?: { label?: string }
   winningOutcomeId?: string
-  totalBets: number
-  winningBets: number
+  totalBets?: number
+  winningBets?: number
   losingBets?: number
   totalPool?: string | number
-  totalPaidOut: string | number
+  totalPaidOut?: string | number
   houseEdge?: string | number
   houseAmount?: string | number
   payoutPool?: string | number
@@ -54,19 +54,19 @@ export const SettlementDetails: React.FC<SettlementDetailsProps> = ({
     return payoutPool - totalPaidOut
   }
 
+  const totalBets = settlement.totalBets ?? 0
+  const winningBets = settlement.winningBets ?? 0
+
   const getSettlementType = () => {
     if (!settlement.outcome?.label) return "Unknown"
 
     // Check for dead heat scenario (multiple winners)
-    if (
-      settlement.winningBets > 1 &&
-      settlement.totalBets > settlement.winningBets
-    ) {
+    if (winningBets > 1 && totalBets > winningBets) {
       return "Dead Heat"
     }
 
     // Check for void/refund scenario
-    if (settlement.totalPaidOut === 0 && settlement.totalBets > 0) {
+    if (settlement.totalPaidOut === 0 && totalBets > 0) {
       return "Void/Refund"
     }
 
@@ -76,8 +76,7 @@ export const SettlementDetails: React.FC<SettlementDetailsProps> = ({
   const settlementType = getSettlementType()
   const breakage = calculateBreakage()
   const minPayoutGuaranteed =
-    settlementType === "Standard Settlement" &&
-    settlement.winningBets / settlement.totalBets > 0.85
+    settlementType === "Standard Settlement" && winningBets / totalBets > 0.85
 
   return (
     <div
@@ -207,19 +206,16 @@ export const SettlementDetails: React.FC<SettlementDetailsProps> = ({
             style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
           >
             <div style={{ fontSize: "0.875rem" }}>
-              Total Bets: <strong>{settlement.totalBets}</strong>
+              Total Predictions: <strong>{totalBets}</strong>
             </div>
             <div style={{ fontSize: "0.875rem" }}>
-              Winning Bets: <strong>{settlement.winningBets}</strong>
+              Winning Predictions: <strong>{winningBets}</strong>
             </div>
             <div style={{ fontSize: "0.875rem" }}>
               Win Rate:{" "}
               <strong>
-                {settlement.totalBets > 0
-                  ? (
-                      (settlement.winningBets / settlement.totalBets) *
-                      100
-                    ).toFixed(1)
+                {totalBets > 0
+                  ? ((winningBets / totalBets) * 100).toFixed(1)
                   : 0}
                 %
               </strong>

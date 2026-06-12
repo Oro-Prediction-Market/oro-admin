@@ -404,7 +404,7 @@ const SettlementPage: React.FC = () => {
                           color: "hsl(var(--muted-foreground))",
                         }}
                       >
-                        {s.totalBets} total bets
+                        {s.totalBets} total predictions
                       </div>
                     </td>
                     <td style={{ padding: "1rem" }}>
@@ -426,7 +426,7 @@ const SettlementPage: React.FC = () => {
                           marginTop: "0.25rem",
                         }}
                       >
-                        {s.winningBets} winning bets
+                        {s.winningBets} winning predictions
                       </div>
                     </td>
                     <td style={{ padding: "1rem", fontSize: "0.85rem" }}>
