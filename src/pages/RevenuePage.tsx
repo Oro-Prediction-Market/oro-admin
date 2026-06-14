@@ -403,7 +403,7 @@ const RevenuePage: React.FC = () => {
                   style={{ fontFamily: "monospace", fontSize: "0.75rem" }}
                   title={d.marketId}
                 >
-                  {d.marketId.slice(0, 8)}…
+                  {d.marketId?.slice(0, 8) ?? "—"}…
                 </td>
                 <td>Nu {Number(d.totalPool).toFixed(0)}</td>
                 <td>{Number(d.houseEdgePct)}%</td>
