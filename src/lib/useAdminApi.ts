@@ -334,6 +334,8 @@ export function useAdminApi(token: string | null) {
           method: "PUT",
           body: JSON.stringify({ accountNumber }),
         }),
+      // ── Platform Accuracy ────────────────────────────────────────────────────
+      getPlatformAccuracy: () => apiFetch("/admin/platform-accuracy"),
       // ── AML ─────────────────────────────────────────────────────────────────
       getAmlSummary: () => apiFetch("/aml/summary"),
       runAmlScan: (params?: { from?: string; to?: string }) =>

@@ -18,6 +18,7 @@ import {
   Coins,
   Bitcoin,
   TrendingUp,
+  Target,
   PanelLeftClose,
   PanelLeftOpen,
   ShieldAlert,
@@ -237,6 +238,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Coins size={20} />
             {!collapsed && <span className="nav-label">Revenue</span>}
+          </li>
+          <li
+            className={current === "platform-accuracy" ? "active" : ""}
+            onClick={() => onNavigate("platform-accuracy")}
+            title={collapsed ? "Platform Accuracy" : undefined}
+          >
+            <Target size={20} />
+            {!collapsed && <span className="nav-label">Platform Accuracy</span>}
           </li>
           <li
             className={current === "aml" ? "active" : ""}

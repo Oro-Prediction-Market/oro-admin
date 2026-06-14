@@ -17,6 +17,7 @@ const AutoMarketManagement = lazy(() => import("./AutoMarketManagement"))
 const ReportingPage = lazy(() => import("./ReportingPage"))
 const RevenuePage = lazy(() => import("./RevenuePage"))
 const AMLPage = lazy(() => import("./AMLPage"))
+const PlatformAccuracyPage = lazy(() => import("./PlatformAccuracyPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -213,6 +214,7 @@ const AdminPage: React.FC = () => {
   else if (page === "reporting") content = <ReportingPage />
   else if (page === "revenue") content = <RevenuePage />
   else if (page === "aml") content = <AMLPage />
+  else if (page === "platform-accuracy") content = <PlatformAccuracyPage />
 
   return (
     <div className="admin-layout">
