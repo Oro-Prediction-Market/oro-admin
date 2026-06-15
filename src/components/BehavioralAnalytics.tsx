@@ -98,7 +98,12 @@ function FunnelBar({
         </span>
       </div>
       <div
-        style={{ height: 6, borderRadius: 4, background: "hsl(var(--muted))" }}
+        style={{
+          height: 6,
+          borderRadius: 4,
+          background: "hsl(var(--muted))",
+          overflow: "hidden",
+        }}
       >
         <div
           style={{
