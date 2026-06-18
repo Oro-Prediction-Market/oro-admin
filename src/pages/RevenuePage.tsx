@@ -30,6 +30,9 @@ const RevenuePage: React.FC = () => {
   const [summary, setSummary] = useState<RevenueSummary | null>(null)
   const [distributions, setDistributions] = useState<RevenueDistribution[]>([])
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all")
+  const [page, setPage] = useState(1)
+  const [total, setTotal] = useState(0)
+  const PAGE_SIZE = 20
   const [processing, setProcessing] = useState(false)
   const [transferringId, setTransferringId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -40,15 +43,20 @@ const RevenuePage: React.FC = () => {
   const [accountBalance, setAccountBalance] = useState<string | null>(null)
   const [accountName, setAccountName] = useState("")
 
-  const fetchData = async () => {
+  const fetchData = async (currentPage = page, currentFilter = filter) => {
     try {
       const [summaryData, allData, acctData] = await Promise.all([
         api.getRevenueSummary(),
-        api.getRevenueAll(),
+        api.getRevenueAll({
+          page: currentPage,
+          limit: PAGE_SIZE,
+          status: currentFilter,
+        }),
         api.getRevenueAccount(),
       ])
       setSummary(summaryData)
-      setDistributions(allData || [])
+      setDistributions(allData?.data || [])
+      setTotal(allData?.total ?? 0)
       setAccountNumber(acctData.accountNumber || "")
       setAccountSource(acctData.source || "")
       setAccountInput(acctData.accountNumber || "")
@@ -69,9 +77,9 @@ const RevenuePage: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchData()
+    fetchData(page, filter)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [page, filter])
 
   const handleTransfer = async (id: string) => {
     setTransferringId(id)
@@ -140,11 +148,7 @@ const RevenuePage: React.FC = () => {
     }
   }
 
-  const filtered = distributions.filter((d) => {
-    if (filter === "pending") return d.status === "pending"
-    if (filter === "completed") return d.status === "completed"
-    return true
-  })
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   return (
     <div>
@@ -328,7 +332,7 @@ const RevenuePage: React.FC = () => {
           {processing ? "Processing…" : "Transfer All Pending to Public Acc"}
         </button>
 
-        {distributions.length === 0 && (
+        {total === 0 && (
           <button
             onClick={handleBackfill}
             style={{
@@ -346,7 +350,10 @@ const RevenuePage: React.FC = () => {
             <button
               key={f}
               className={filter === f ? "" : "secondary"}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f)
+                setPage(1)
+              }}
               style={{ fontSize: "0.75rem", padding: "0.4rem 0.8rem" }}
             >
               {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -380,7 +387,7 @@ const RevenuePage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 && (
+            {distributions.length === 0 && (
               <tr>
                 <td
                   colSpan={8}
@@ -394,7 +401,7 @@ const RevenuePage: React.FC = () => {
                 </td>
               </tr>
             )}
-            {filtered.map((d) => (
+            {distributions.map((d) => (
               <tr key={d.id}>
                 <td style={{ whiteSpace: "nowrap" }}>
                   {new Date(d.createdAt).toLocaleDateString()}
@@ -454,6 +461,44 @@ const RevenuePage: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "0.75rem",
+            marginTop: "1rem",
+          }}
+        >
+          <button
+            className="secondary"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            style={{ fontSize: "0.75rem", padding: "0.35rem 0.8rem" }}
+          >
+            ← Prev
+          </button>
+          <span
+            style={{
+              fontSize: "0.8rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            Page {page} of {totalPages} &nbsp;·&nbsp; {total} total
+          </span>
+          <button
+            className="secondary"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            style={{ fontSize: "0.75rem", padding: "0.35rem 0.8rem" }}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   )
 }
