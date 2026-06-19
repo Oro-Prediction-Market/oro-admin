@@ -55,8 +55,14 @@ const RevenuePage: React.FC = () => {
         api.getRevenueAccount(),
       ])
       setSummary(summaryData)
-      setDistributions(allData?.data || [])
-      setTotal(allData?.total ?? 0)
+      setDistributions(
+        Array.isArray(allData?.data)
+          ? allData.data
+          : Array.isArray(allData)
+            ? allData
+            : []
+      )
+      setTotal(typeof allData?.total === "number" ? allData.total : 0)
       setAccountNumber(acctData.accountNumber || "")
       setAccountSource(acctData.source || "")
       setAccountInput(acctData.accountNumber || "")
