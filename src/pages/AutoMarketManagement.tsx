@@ -282,10 +282,13 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
 
   const refPrice =
     source === "ter"
-      ? openMarket?.metadata?.referenceTerPrice
+      ? (openMarket?.metadata?.referenceBuyPrice ??
+        openMarket?.metadata?.referenceTerPrice)
       : openMarket?.metadata?.referencePrice
   const priceDiff =
-    livePrice && refPrice != null ? livePrice.price - refPrice : null
+    livePrice && refPrice != null
+      ? (livePrice.buyPrice ?? livePrice.price) - refPrice
+      : null
   const priceDiffPct =
     refPrice && priceDiff != null ? (priceDiff / refPrice) * 100 : null
 
@@ -569,38 +572,46 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                   marginBottom: 6,
                 }}
               >
-                {cfg.pricePrefix} {fmtNum(livePrice.price, cfg.priceDecimals)}
+                {cfg.pricePrefix}{" "}
+                {fmtNum(
+                  source === "ter"
+                    ? (livePrice.buyPrice ?? livePrice.price)
+                    : livePrice.price,
+                  cfg.priceDecimals
+                )}
               </div>
-              {livePrice.buyPrice != null && livePrice.sellPrice != null && (
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 16,
-                    fontSize: "0.75rem",
-                    fontFamily: "monospace",
-                    marginBottom: 4,
-                  }}
-                >
-                  <span>
-                    <span style={{ color: "#22c55e", fontWeight: 700 }}>
-                      Buy{" "}
+              {livePrice.buyPrice != null &&
+                livePrice.sellPrice != null &&
+                source === "ter" && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 16,
+                      fontSize: "0.75rem",
+                      fontFamily: "monospace",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span>
+                      <span style={{ color: "#22c55e", fontWeight: 700 }}>
+                        Buy{" "}
+                      </span>
+                      <span style={{ color: "hsl(var(--foreground))" }}>
+                        {cfg.pricePrefix}{" "}
+                        {fmtNum(livePrice.buyPrice, cfg.priceDecimals)}
+                      </span>
                     </span>
-                    <span style={{ color: "hsl(var(--foreground))" }}>
-                      {cfg.pricePrefix}{" "}
-                      {fmtNum(livePrice.buyPrice, cfg.priceDecimals)}
+                    <span>
+                      <span style={{ color: "#ef4444", fontWeight: 700 }}>
+                        Sell{" "}
+                      </span>
+                      <span style={{ color: "hsl(var(--foreground))" }}>
+                        {cfg.pricePrefix}{" "}
+                        {fmtNum(livePrice.sellPrice, cfg.priceDecimals)}
+                      </span>
                     </span>
-                  </span>
-                  <span>
-                    <span style={{ color: "#ef4444", fontWeight: 700 }}>
-                      Sell{" "}
-                    </span>
-                    <span style={{ color: "hsl(var(--foreground))" }}>
-                      {cfg.pricePrefix}{" "}
-                      {fmtNum(livePrice.sellPrice, cfg.priceDecimals)}
-                    </span>
-                  </span>
-                </div>
-              )}
+                  </div>
+                )}
               <div
                 style={{
                   fontSize: "0.75rem",
@@ -867,11 +878,13 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                 tableMarkets.map((m) => {
                   const ref =
                     source === "ter"
-                      ? m.metadata?.referenceTerPrice
+                      ? (m.metadata?.referenceBuyPrice ??
+                        m.metadata?.referenceTerPrice)
                       : m.metadata?.referencePrice
                   const settlement =
                     source === "ter"
-                      ? m.metadata?.settlementTerPrice
+                      ? (m.metadata?.settlementBuyPrice ??
+                        m.metadata?.settlementTerPrice)
                       : m.metadata?.settlementPrice
                   const winner = m.outcomes.find((o) => o.isWinner)
                   const pool = Number(m.totalPool ?? 0)
