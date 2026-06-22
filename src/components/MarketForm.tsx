@@ -34,6 +34,29 @@ const SPORT_SUBCATEGORIES = [
   "Other",
 ]
 
+// World Cup knockout bracket slots — keep ids in sync with shared/data/wcKnockout.ts
+// in the PWA/TMA. A wc-match market tagged with one of these renders in that slot.
+const WC_BRACKET_SLOTS: { id: string; label: string }[] = [
+  { id: "", label: "— None —" },
+  ...Array.from({ length: 16 }, (_, i) => ({
+    id: `r32-${i + 1}`,
+    label: `Round of 32 — #${i + 1}`,
+  })),
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `r16-${i + 1}`,
+    label: `Round of 16 — #${i + 1}`,
+  })),
+  ...Array.from({ length: 4 }, (_, i) => ({
+    id: `qf-${i + 1}`,
+    label: `Quarter-final — #${i + 1}`,
+  })),
+  ...Array.from({ length: 2 }, (_, i) => ({
+    id: `sf-${i + 1}`,
+    label: `Semi-final — #${i + 1}`,
+  })),
+  { id: "final-1", label: "Final" },
+]
+
 // BoB Bhutan Premier League — 2026 season clubs (keep in sync with the PWA/TMA BplHubPage)
 const BPL_CLUBS = [
   "Paro FC",
@@ -62,6 +85,7 @@ interface MarketInitialData {
   category?: string | null
   subcategory?: string | null
   settlementSource?: string | null
+  metadata?: Record<string, unknown> | null
 }
 
 export interface MarketFormData {
@@ -76,6 +100,7 @@ export interface MarketFormData {
   category: string
   subcategory: string
   settlementSource: string
+  bracketSlot: string
 }
 
 interface MarketFormProps {
@@ -153,6 +178,8 @@ const MarketForm: React.FC<MarketFormProps> = ({
     category: initialData?.category || "other",
     subcategory: initialData?.subcategory || "",
     settlementSource: initialData?.settlementSource || "",
+    bracketSlot:
+      (initialData?.metadata?.bracketSlot as string | undefined) || "",
   })
 
   const handleChange = (
@@ -433,6 +460,45 @@ const MarketForm: React.FC<MarketFormProps> = ({
             />
           )}
         </div>
+
+        {/* ── Bracket slot (wc-match only) ──────────────────────────────────── */}
+        {formData.subcategory === "wc-match" && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              KNOCKOUT BRACKET SLOT
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontWeight: 400,
+                  opacity: 0.6,
+                  textTransform: "none",
+                  fontSize: "0.7rem",
+                }}
+              >
+                (which slot this fixture fills in the World Cup hub bracket)
+              </span>
+            </label>
+            <select
+              name="bracketSlot"
+              value={formData.bracketSlot}
+              onChange={handleChange}
+              className="input-field"
+            >
+              {WC_BRACKET_SLOTS.map((slot) => (
+                <option key={slot.id} value={slot.id}>
+                  {slot.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* ── Outcomes ─────────────────────────────────────────────────────── */}
         <div style={{ marginBottom: "1rem" }}>
