@@ -100,6 +100,14 @@ export function useAdminApi(token: string | null) {
           method: "PATCH",
           body: JSON.stringify(data),
         }),
+      addOutcome: (
+        id: string,
+        data: { label: string; imageUrl?: string | null }
+      ) =>
+        apiFetch(`/admin/markets/${id}/outcomes`, {
+          method: "POST",
+          body: JSON.stringify(data),
+        }),
       deleteMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}`, { method: "DELETE" }),
       purgeEmptyMarkets: () =>

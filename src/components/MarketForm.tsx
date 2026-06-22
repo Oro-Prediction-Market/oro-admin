@@ -83,6 +83,15 @@ interface MarketFormProps {
   onSubmit: (data: MarketFormData) => void
   onCancel: () => void
   loading?: boolean
+  /**
+   * Edit-mode only: persist a brand-new outcome to an existing market.
+   * Resolves with the created outcome so the form can show it in the
+   * rename list immediately.
+   */
+  onAddOutcome?: (data: {
+    label: string
+    imageUrl?: string | null
+  }) => Promise<{ id: string; label: string; imageUrl?: string | null } | void>
 }
 
 // ── Main form component ───────────────────────────────────────────────────────
@@ -111,7 +120,12 @@ const MarketForm: React.FC<MarketFormProps> = ({
   onSubmit,
   onCancel,
   loading,
+  onAddOutcome,
 }) => {
+  const [newOutcomeLabel, setNewOutcomeLabel] = useState("")
+  const [newOutcomeImage, setNewOutcomeImage] = useState("")
+  const [addingOutcome, setAddingOutcome] = useState(false)
+  const [addOutcomeError, setAddOutcomeError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     title: initialData?.title || "",
     description: initialData?.description || "",
@@ -220,6 +234,44 @@ const MarketForm: React.FC<MarketFormProps> = ({
       ...prev,
       outcomes: prev.outcomes.filter((_, i) => i !== index),
     }))
+  }
+
+  // Edit-mode only: persist a brand-new outcome to the existing market, then
+  // append it to the local rename list so it shows up immediately.
+  const handleAddNewOutcome = async () => {
+    if (!onAddOutcome) return
+    const label = newOutcomeLabel.trim()
+    if (!label) {
+      setAddOutcomeError("Outcome label is required")
+      return
+    }
+    setAddingOutcome(true)
+    setAddOutcomeError(null)
+    try {
+      const created = await onAddOutcome({
+        label,
+        imageUrl: newOutcomeImage.trim() || null,
+      })
+      if (created) {
+        setFormData((prev) => ({
+          ...prev,
+          outcomes: [
+            ...prev.outcomes,
+            {
+              id: created.id,
+              label: created.label,
+              imageUrl: created.imageUrl ?? null,
+            },
+          ],
+        }))
+      }
+      setNewOutcomeLabel("")
+      setNewOutcomeImage("")
+    } catch (e: unknown) {
+      setAddOutcomeError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setAddingOutcome(false)
+    }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -705,6 +757,77 @@ const MarketForm: React.FC<MarketFormProps> = ({
                 >
                   + Add Outcome
                 </button>
+              )}
+            </div>
+          )}
+
+          {/* ── Edit mode: add a brand-new outcome to the live market ── */}
+          {initialData && onAddOutcome && (
+            <div
+              style={{
+                marginTop: "0.75rem",
+                paddingTop: "0.75rem",
+                borderTop: "1px dashed hsl(var(--border))",
+              }}
+            >
+              <p
+                style={{
+                  fontSize: "0.72rem",
+                  color: "hsl(var(--muted-foreground))",
+                  marginBottom: "0.5rem",
+                  opacity: 0.8,
+                }}
+              >
+                Add a new outcome (starts with an empty pool; existing bets are
+                unaffected).
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "0.5rem",
+                  marginBottom: "0.35rem",
+                }}
+              >
+                <input
+                  value={newOutcomeLabel}
+                  onChange={(e) => setNewOutcomeLabel(e.target.value)}
+                  className="input-field"
+                  style={{ marginBottom: 0 }}
+                  placeholder="New outcome label (e.g. Draw)"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      void handleAddNewOutcome()
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleAddNewOutcome()}
+                  className="secondary"
+                  disabled={addingOutcome || !newOutcomeLabel.trim()}
+                  style={{ padding: "0 1rem", whiteSpace: "nowrap" }}
+                >
+                  {addingOutcome ? "Adding…" : "+ Add"}
+                </button>
+              </div>
+              <input
+                value={newOutcomeImage}
+                onChange={(e) => setNewOutcomeImage(e.target.value)}
+                className="input-field"
+                style={{ marginBottom: 0, fontSize: "0.75rem" }}
+                placeholder="New outcome image URL (optional)"
+              />
+              {addOutcomeError && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--destructive))",
+                    marginTop: "0.4rem",
+                  }}
+                >
+                  {addOutcomeError}
+                </p>
               )}
             </div>
           )}

@@ -172,6 +172,25 @@ const MarketManagement: React.FC = () => {
     }
   }
 
+  const handleAddOutcome = async (data: {
+    label: string
+    imageUrl?: string | null
+  }) => {
+    if (!editingMarket) return
+    const updated = (await api.addOutcome(editingMarket.id, data)) as Market
+    setEditingMarket(updated)
+    await refresh()
+    notify("success", `Outcome "${data.label}" added.`)
+    const created = updated.outcomes?.find((o) => o.label === data.label)
+    return created
+      ? {
+          id: created.id,
+          label: created.label,
+          imageUrl: created.imageUrl ?? null,
+        }
+      : undefined
+  }
+
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this market?")) return
     try {
@@ -325,6 +344,7 @@ const MarketManagement: React.FC = () => {
           onSubmit={handleUpdate}
           onCancel={() => setView("list")}
           loading={api.loading}
+          onAddOutcome={handleAddOutcome}
         />
       </>
     )
