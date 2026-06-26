@@ -18,6 +18,7 @@ import {
   Wifi,
   WifiOff,
   XCircle,
+  Megaphone,
 } from "lucide-react"
 
 interface Outcome {
@@ -220,6 +221,24 @@ const MarketManagement: React.FC = () => {
       notify(
         "error",
         `Error purging empty markets: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleAnnounce = async (m: Market) => {
+    if (
+      !window.confirm(
+        `Announce "${m.title}" to the Telegram channel? This will notify all channel members.`
+      )
+    )
+      return
+    try {
+      await api.announceMarket(m.id)
+      notify("success", "Market announced to the Telegram channel.")
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error announcing market: ${e instanceof Error ? e.message : String(e)}`
       )
     }
   }
@@ -598,6 +617,15 @@ const MarketManagement: React.FC = () => {
                       </td>
                       <td>
                         <div style={{ display: "flex", gap: "0.5rem" }}>
+                          {(m.status === "upcoming" || m.status === "open") && (
+                            <button
+                              onClick={() => handleAnnounce(m)}
+                              className="secondary"
+                              title="Announce to Telegram channel"
+                            >
+                              <Megaphone size={14} />
+                            </button>
+                          )}
                           {m.status === "upcoming" && (
                             <button
                               onClick={() => handleTransition(m.id, "open")}

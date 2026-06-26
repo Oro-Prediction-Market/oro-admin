@@ -95,6 +95,8 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(data),
         }),
+      announceMarket: (id: string) =>
+        apiFetch(`/admin/markets/${id}/announce`, { method: "POST" }),
       updateMarket: (id: string, data: Record<string, unknown>) =>
         apiFetch(`/admin/markets/${id}`, {
           method: "PATCH",
