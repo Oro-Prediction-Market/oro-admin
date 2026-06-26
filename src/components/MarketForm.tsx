@@ -29,6 +29,7 @@ const SPORT_SUBCATEGORIES = [
   "wc-winner",
   "wc-group",
   "wc-match",
+  "wc-player",
   "Bhutanese Archery",
   "Cricket",
   "Other",
@@ -553,9 +554,31 @@ const MarketForm: React.FC<MarketFormProps> = ({
                     value={outcome.label}
                     onChange={(e) => handleOutcomeChange(index, e.target.value)}
                     className="input-field"
-                    style={{ marginBottom: 0 }}
+                    style={{ marginBottom: 0, flex: "1 1 40%" }}
                     required
                     placeholder={`Country ${index + 1} (e.g. Brazil)`}
+                  />
+                  {outcome.imageUrl && (
+                    <img
+                      src={outcome.imageUrl}
+                      alt=""
+                      style={{
+                        width: 38,
+                        height: 38,
+                        borderRadius: 6,
+                        objectFit: "cover",
+                        flexShrink: 0,
+                      }}
+                    />
+                  )}
+                  <input
+                    value={outcome.imageUrl ?? ""}
+                    onChange={(e) =>
+                      handleOutcomeImageChange(index, e.target.value)
+                    }
+                    className="input-field"
+                    style={{ marginBottom: 0, flex: "1 1 40%" }}
+                    placeholder="Image URL (optional)"
                   />
                   {!initialData && formData.outcomes.length > 1 && (
                     <button
@@ -625,6 +648,17 @@ const MarketForm: React.FC<MarketFormProps> = ({
                     >
                       TEAM
                     </th>
+                    <th
+                      style={{
+                        textAlign: "left",
+                        padding: "4px 8px",
+                        fontSize: "0.7rem",
+                        color: "hsl(var(--muted-foreground))",
+                        fontWeight: 700,
+                      }}
+                    >
+                      IMAGE URL
+                    </th>
                     {!initialData && <th style={{ width: 36 }} />}
                   </tr>
                 </thead>
@@ -655,6 +689,38 @@ const MarketForm: React.FC<MarketFormProps> = ({
                           required
                           placeholder={`Team ${index + 1}`}
                         />
+                      </td>
+                      <td style={{ padding: "4px 8px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          {outcome.imageUrl && (
+                            <img
+                              src={outcome.imageUrl}
+                              alt=""
+                              style={{
+                                width: 28,
+                                height: 28,
+                                borderRadius: 6,
+                                objectFit: "cover",
+                                flexShrink: 0,
+                              }}
+                            />
+                          )}
+                          <input
+                            value={outcome.imageUrl ?? ""}
+                            onChange={(e) =>
+                              handleOutcomeImageChange(index, e.target.value)
+                            }
+                            className="input-field"
+                            style={{ marginBottom: 0 }}
+                            placeholder="https://… (optional)"
+                          />
+                        </div>
                       </td>
                       {!initialData && (
                         <td style={{ padding: "4px 8px" }}>
