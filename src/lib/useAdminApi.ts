@@ -110,6 +110,15 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(data),
         }),
+      setOutcomeEliminated: (
+        id: string,
+        outcomeId: string,
+        isEliminated: boolean
+      ) =>
+        apiFetch(`/admin/markets/${id}/outcomes/${outcomeId}/eliminated`, {
+          method: "PATCH",
+          body: JSON.stringify({ isEliminated }),
+        }),
       deleteMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}`, { method: "DELETE" }),
       purgeEmptyMarkets: () =>

@@ -25,6 +25,7 @@ interface Outcome {
   id: string
   label: string
   isWinner?: boolean
+  isEliminated?: boolean
   totalBetAmount?: string | number
   [key: string]: unknown
 }
@@ -190,6 +191,34 @@ const MarketManagement: React.FC = () => {
           imageUrl: created.imageUrl ?? null,
         }
       : undefined
+  }
+
+  const handleToggleEliminated = async (marketId: string, outcome: Outcome) => {
+    const next = !outcome.isEliminated
+    const verb = next ? "Eliminate" : "Restore"
+    if (
+      !confirm(
+        `${verb} "${outcome.label}"? ${
+          next
+            ? "No new bets will be accepted on it; existing bets lose at resolution."
+            : "It will accept bets again."
+        }`
+      )
+    )
+      return
+    try {
+      await api.setOutcomeEliminated(marketId, outcome.id, next)
+      await refresh()
+      notify(
+        "success",
+        `"${outcome.label}" ${next ? "eliminated" : "restored"}.`
+      )
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error updating outcome: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -574,29 +603,81 @@ const MarketManagement: React.FC = () => {
                         )}
                         <div
                           style={{
-                            fontSize: "0.75rem",
-                            color: "hsl(var(--muted-foreground))",
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "0.3rem",
+                            marginTop: "0.4rem",
+                            fontSize: "0.72rem",
                           }}
                         >
-                          {m.outcomes.map((o: Outcome) => (
-                            <span
-                              key={o.id}
-                              style={{
-                                marginRight: "0.5rem",
-                                padding: "0.125rem 0.375rem",
-                                borderRadius: "0.25rem",
-                                background: o.isWinner
-                                  ? "hsl(var(--primary) / 0.2)"
-                                  : "hsl(var(--muted) / 0.3)",
-                                color: o.isWinner
-                                  ? "hsl(var(--primary))"
-                                  : "hsl(var(--muted-foreground))",
-                              }}
-                            >
-                              {o.label}
-                              {o.isWinner && " ✓"}
-                            </span>
-                          ))}
+                          {m.outcomes.map((o: Outcome) => {
+                            // Eliminating an outcome only makes sense while the
+                            // market is still taking bets and the outcome isn't
+                            // already the declared winner.
+                            const canToggle =
+                              !o.isWinner &&
+                              (m.status === "open" || m.status === "upcoming")
+                            return (
+                              <button
+                                key={o.id}
+                                type="button"
+                                disabled={!canToggle}
+                                onClick={
+                                  canToggle
+                                    ? () => handleToggleEliminated(m.id, o)
+                                    : undefined
+                                }
+                                title={
+                                  canToggle
+                                    ? o.isEliminated
+                                      ? "Click to restore (allow bets again)"
+                                      : "Click to eliminate (stop new bets)"
+                                    : o.isWinner
+                                      ? "Declared winner"
+                                      : "Only editable while the market is open or upcoming"
+                                }
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  gap: "0.25rem",
+                                  padding: "0.2rem 0.5rem",
+                                  borderRadius: "999px",
+                                  fontSize: "0.72rem",
+                                  fontWeight: 600,
+                                  lineHeight: 1.2,
+                                  cursor: canToggle ? "pointer" : "default",
+                                  textDecoration: o.isEliminated
+                                    ? "line-through"
+                                    : "none",
+                                  border: o.isWinner
+                                    ? "1px solid hsl(var(--primary) / 0.5)"
+                                    : o.isEliminated
+                                      ? "1px solid hsl(0 84% 60% / 0.6)"
+                                      : canToggle
+                                        ? "1px dashed hsl(var(--muted-foreground) / 0.5)"
+                                        : "1px solid hsl(var(--muted) / 0.4)",
+                                  background: o.isWinner
+                                    ? "hsl(var(--primary) / 0.2)"
+                                    : o.isEliminated
+                                      ? "hsl(0 84% 60% / 0.18)"
+                                      : "hsl(var(--muted) / 0.3)",
+                                  color: o.isWinner
+                                    ? "hsl(var(--primary))"
+                                    : o.isEliminated
+                                      ? "hsl(0 84% 60%)"
+                                      : "hsl(var(--foreground))",
+                                }}
+                              >
+                                {o.label}
+                                {o.isWinner && " ✓"}
+                                {o.isEliminated
+                                  ? " ✕"
+                                  : canToggle && (
+                                      <span style={{ opacity: 0.6 }}>✕</span>
+                                    )}
+                              </button>
+                            )
+                          })}
                         </div>
                       </td>
                       <td>
