@@ -30,6 +30,10 @@ interface AdminUser {
   // phoneNumber: string | null
   reputationTier: string
   totalPredictions: number
+  referredByUserId: string | null
+  referredByName: string | null
+  referredByUsername: string | null
+  referredByTelegramId: string | null
   createdAt: string
   // computed by backend — never raw hashes
   // balance?: string | number
@@ -497,6 +501,19 @@ const UserManagement: React.FC = () => {
                       letterSpacing: "0.05em",
                     }}
                   >
+                    Referred By
+                  </th>
+                  <th
+                    style={{
+                      padding: "1rem",
+                      textAlign: "left",
+                      fontWeight: 600,
+                      color: "hsl(var(--muted-foreground))",
+                      textTransform: "uppercase",
+                      fontSize: "0.75rem",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
                     Joined
                   </th>
                   <th
@@ -719,6 +736,60 @@ const UserManagement: React.FC = () => {
                               Acc: {user.dkAccountNumber}
                             </span>
                           )}
+                        </div>
+                      ) : (
+                        <span
+                          style={{
+                            color: "hsl(var(--muted-foreground))",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          —
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Referred By */}
+                    <td style={{ padding: "1rem" }}>
+                      {user.referredByUserId ? (
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "hsl(var(--foreground))",
+                              fontWeight: 600,
+                            }}
+                          >
+                            {user.referredByName ||
+                              (user.referredByUsername
+                                ? `@${user.referredByUsername}`
+                                : "Unknown")}
+                          </span>
+                          {user.referredByUsername && user.referredByName && (
+                            <span
+                              style={{
+                                color: "hsl(var(--muted-foreground))",
+                              }}
+                            >
+                              @{user.referredByUsername}
+                            </span>
+                          )}
+                          <span
+                            style={{
+                              fontFamily: "monospace",
+                              fontSize: "0.7rem",
+                              color: "hsl(var(--muted-foreground))",
+                            }}
+                            title={user.referredByUserId}
+                          >
+                            {user.referredByUserId.slice(0, 8)}…
+                          </span>
                         </div>
                       ) : (
                         <span
