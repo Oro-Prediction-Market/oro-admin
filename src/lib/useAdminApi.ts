@@ -174,9 +174,16 @@ export function useAdminApi(token: string | null) {
         return apiFetch(`/admin/settlements${suffix}`)
       },
       getPayments: () => apiFetch("/admin/payments"),
-      getTransactions: (params?: { type?: string; limit?: number }) => {
+      getTransactions: (params?: {
+        type?: string
+        search?: string
+        page?: number
+        limit?: number
+      }) => {
         const qs = new URLSearchParams()
         if (params?.type && params.type !== "all") qs.set("type", params.type)
+        if (params?.search) qs.set("search", params.search)
+        if (params?.page) qs.set("page", String(params.page))
         if (params?.limit) qs.set("limit", String(params.limit))
         const suffix = qs.toString() ? `?${qs.toString()}` : ""
         return apiFetch(`/admin/transactions${suffix}`)

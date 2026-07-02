@@ -56,8 +56,12 @@ const PaymentLogPage: React.FC = () => {
   const { getTransactions, downloadTransactionsCsv, loading, error } =
     useAdminApi(token)
   const [transactions, setTransactions] = useState<Tx[]>([])
+  const [total, setTotal] = useState(0)
+  const [pages, setPages] = useState(1)
+  const [counts, setCounts] = useState<Record<string, number>>({})
   const [filterType, setFilterType] = useState(ALL)
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState("") // raw input
+  const [committedSearch, setCommittedSearch] = useState("") // debounced
   const [page, setPage] = useState(1)
   const [exporting, setExporting] = useState(false)
 
@@ -74,36 +78,43 @@ const PaymentLogPage: React.FC = () => {
 
   const load = () => {
     if (!token) return
-    getTransactions()
-      .then((res) =>
-        setTransactions(((res as Record<string, unknown>)?.data ?? res) as Tx[])
-      )
+    getTransactions({
+      type: filterType,
+      search: committedSearch || undefined,
+      page,
+      limit: PAGE_SIZE,
+    })
+      .then((res) => {
+        const r = (res ?? {}) as {
+          data?: Tx[]
+          total?: number
+          pages?: number
+          counts?: Record<string, number>
+        }
+        setTransactions(r.data ?? [])
+        setTotal(r.total ?? 0)
+        setPages(Math.max(1, r.pages ?? 1))
+        if (r.counts) setCounts(r.counts)
+      })
       .catch(() => {})
   }
 
+  // Refetch whenever the page, type filter, or committed search changes.
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token])
+  }, [token, page, filterType, committedSearch])
 
-  const filtered = transactions.filter((t) => {
-    if (filterType !== ALL && t.type !== filterType) return false
-    if (search) {
-      const q = search.toLowerCase()
-      const username =
-        t.user?.username || t.user?.telegramUsername || t.user?.firstName || ""
-      if (
-        !t.id.toLowerCase().includes(q) &&
-        !username.toLowerCase().includes(q) &&
-        !(t.note || "").toLowerCase().includes(q)
-      )
-        return false
-    }
-    return true
-  })
+  // Debounce the search box → commit after 400 ms and reset to page 1.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setPage(1)
+      setCommittedSearch(search)
+    }, 400)
+    return () => clearTimeout(t)
+  }, [search])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.max(1, pages)
 
   const handleFilterType = (val: string) => {
     setFilterType(val)
@@ -111,11 +122,11 @@ const PaymentLogPage: React.FC = () => {
   }
   const handleSearch = (val: string) => {
     setSearch(val)
-    setPage(1)
   }
   const handleClear = () => {
     setFilterType(ALL)
     setSearch("")
+    setCommittedSearch("")
     setPage(1)
   }
 
@@ -191,7 +202,7 @@ const PaymentLogPage: React.FC = () => {
         }}
       >
         {SUMMARY_TYPES.map(({ key, label, color }) => {
-          const count = transactions.filter((t) => t.type === key).length
+          const count = counts[key] ?? 0
           return (
             <div
               key={key}
@@ -201,7 +212,7 @@ const PaymentLogPage: React.FC = () => {
                 cursor: "pointer",
                 border: filterType === key ? `1px solid ${color}` : undefined,
               }}
-              onClick={() => setFilterType(filterType === key ? ALL : key)}
+              onClick={() => handleFilterType(filterType === key ? ALL : key)}
             >
               <div
                 style={{
@@ -267,7 +278,7 @@ const PaymentLogPage: React.FC = () => {
             color: "hsl(var(--muted-foreground))",
           }}
         >
-          {filtered.length} record{filtered.length !== 1 ? "s" : ""}
+          {total} record{total !== 1 ? "s" : ""}
         </span>
       </div>
 
@@ -294,7 +305,7 @@ const PaymentLogPage: React.FC = () => {
         >
           Loading transactions...
         </div>
-      ) : filtered.length === 0 ? (
+      ) : transactions.length === 0 ? (
         <div
           className="glass-card"
           style={{
@@ -344,7 +355,7 @@ const PaymentLogPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {paginated.map((t, i) => {
+                {transactions.map((t, i) => {
                   const amt = Number(t.amount)
                   const isCredit = amt >= 0
                   const username =
@@ -357,7 +368,7 @@ const PaymentLogPage: React.FC = () => {
                       key={t.id}
                       style={{
                         borderBottom:
-                          i < paginated.length - 1
+                          i < transactions.length - 1
                             ? "1px solid hsl(var(--border))"
                             : undefined,
                         background: i % 2 === 1 ? "var(--glass-bg)" : undefined,
