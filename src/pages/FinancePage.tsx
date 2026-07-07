@@ -27,6 +27,13 @@ interface FinanceStats {
     outstandingBalance: number
     realPayoutsFundedByBonus: number
   }
+  marketing?: {
+    total: number
+    referral: number
+    streak: number
+    season: number
+    count: number
+  }
 }
 
 interface Reconciliation {
@@ -270,7 +277,7 @@ const FinancePage: React.FC = () => {
                     alignItems: "start",
                   }}
                 >
-                  <h3 style={{ color: "#f59e0b" }}>Marketing Cost</h3>
+                  <h3 style={{ color: "#f59e0b" }}>Bonus Loss Exposure</h3>
                   <DollarSign size={20} color="#f59e0b" />
                 </div>
                 <p style={{ color: "#f59e0b" }}>
@@ -303,6 +310,39 @@ const FinancePage: React.FC = () => {
                 </small>
               </div>
             </>
+          )}
+
+          {/* Marketing Cost — promotional rewards paid to users as real money */}
+          {finance.marketing && (
+            <div
+              className="glass-card stat-card"
+              style={{ borderLeft: "3px solid #f59e0b" }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3 style={{ color: "#f59e0b" }}>Marketing Cost</h3>
+                <PiggyBank size={20} color="#f59e0b" />
+              </div>
+              <p style={{ color: "#f59e0b" }}>{fmt(finance.marketing.total)}</p>
+              <small
+                style={{
+                  color: "hsl(var(--muted-foreground))",
+                  display: "block",
+                  lineHeight: 1.6,
+                }}
+              >
+                Referral: {fmt(finance.marketing.referral)}
+                <br />
+                Streak: {fmt(finance.marketing.streak)}
+                <br />
+                Season prizes: {fmt(finance.marketing.season)}
+              </small>
+            </div>
           )}
         </div>
       )}
