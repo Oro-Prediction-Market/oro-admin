@@ -266,6 +266,7 @@ const FinancePage: React.FC = () => {
           {/* Bonus / marketing cost cards */}
           {finance.bonus && (
             <>
+              {/* Bonus Loss Exposure card hidden from admin — kept for reference.
               <div
                 className="glass-card stat-card"
                 style={{ borderLeft: "3px solid #f59e0b" }}
@@ -287,6 +288,7 @@ const FinancePage: React.FC = () => {
                   Real Nu paid out when bonus bettors lost
                 </small>
               </div>
+              */}
 
               <div
                 className="glass-card stat-card"
