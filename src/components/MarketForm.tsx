@@ -32,6 +32,7 @@ const SPORT_SUBCATEGORIES = [
   "wc-player",
   "Bhutanese Archery",
   "Cricket",
+  "UFC",
   "Other",
 ]
 
