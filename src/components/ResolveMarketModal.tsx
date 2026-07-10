@@ -85,14 +85,17 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
+        padding: "1rem",
       }}
     >
       <div
         className="glass-card"
         style={{
-          width: "480px",
-          maxHeight: "90vh",
+          width: "100%",
+          maxWidth: 480,
+          maxHeight: "85vh",
           overflowY: "auto",
+          overscrollBehavior: "contain",
           boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
         }}
       >

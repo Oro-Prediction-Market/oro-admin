@@ -44,11 +44,19 @@ const ProposeMarketModal: React.FC<ProposeMarketModalProps> = ({
         alignItems: "center",
         justifyContent: "center",
         zIndex: 1000,
+        padding: "1rem",
       }}
     >
       <div
         className="glass-card"
-        style={{ width: "420px", boxShadow: "0 20px 50px rgba(0,0,0,0.2)" }}
+        style={{
+          width: "100%",
+          maxWidth: 420,
+          maxHeight: "85vh",
+          overflowY: "auto",
+          overscrollBehavior: "contain",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+        }}
       >
         <h3>Propose Outcome</h3>
         <p
