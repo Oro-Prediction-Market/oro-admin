@@ -132,17 +132,42 @@ const MarketManagement: React.FC = () => {
 
   const handleCreate = async (data: MarketFormData) => {
     try {
-      await api.createMarket({
-        ...(data as unknown as Record<string, unknown>),
-        outcomes: data.outcomes.map((o) => ({
-          label: o.label,
-          imageUrl: o.imageUrl ?? null,
-        })),
-      })
+      if (data.candidates?.length) {
+        await api.createMarketGroup({
+          title: data.title,
+          ...(data.description ? { description: data.description } : {}),
+          ...(data.opensAt ? { opensAt: data.opensAt } : {}),
+          ...(data.closesAt ? { closesAt: data.closesAt } : {}),
+          houseEdgePct: data.houseEdgePct,
+          liquidityParam: data.liquidityParam,
+          category: data.category,
+          ...(data.subcategory ? { subcategory: data.subcategory } : {}),
+          ...(data.settlementSource
+            ? { settlementSource: data.settlementSource }
+            : {}),
+          candidates: data.candidates.map((c) => ({
+            name: c.name,
+            imageUrl: c.imageUrl ?? null,
+          })),
+        })
+      } else {
+        await api.createMarket({
+          ...(data as unknown as Record<string, unknown>),
+          outcomes: data.outcomes.map((o) => ({
+            label: o.label,
+            imageUrl: o.imageUrl ?? null,
+          })),
+        })
+      }
       setPage(1)
       refresh()
       setView("list")
-      notify("success", "Market created successfully.")
+      notify(
+        "success",
+        data.candidates?.length
+          ? `Market group created — ${data.candidates.length} Yes/No candidate markets.`
+          : "Market created successfully."
+      )
     } catch (e: unknown) {
       notify(
         "error",

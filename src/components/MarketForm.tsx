@@ -12,6 +12,7 @@ const CATEGORIES = [
   { value: "weather", label: "Weather" },
   { value: "entertainment", label: "Entertainment" },
   { value: "economy", label: "Economy" },
+  { value: "political", label: "Political" },
   { value: "other", label: "Other" },
 ] as const
 
@@ -94,6 +95,12 @@ export interface MarketFormData {
   title: string
   description: string
   outcomes: { id?: string; label: string; imageUrl?: string | null }[]
+  /**
+   * Political grouped event only: each candidate becomes its own Yes/No child
+   * market on the backend (POST /admin/markets/group). When set, `outcomes`
+   * should be ignored by the submit handler.
+   */
+  candidates?: { name: string; imageUrl?: string | null }[]
   opensAt: string
   closesAt: string
   houseEdgePct: number
@@ -190,6 +197,42 @@ const MarketForm: React.FC<MarketFormProps> = ({
     >
   ) => {
     const { name, value } = e.target
+    // Political grouped event: outcomes become the candidate list (one Yes/No
+    // child market is created per candidate). Seed two blank candidate slots
+    // on the way in, restore the plain Yes/No default on the way out.
+    if (name === "category" && !initialData) {
+      const wasPolitical = formData.category === "political"
+      if (value === "political" && !wasPolitical) {
+        // Clear sports-specific leftovers (subcategory, bracket slot, BPL
+        // settlement source) — the PWA/TMA route markets to the WC/BPL hubs
+        // based on those fields, which would hide the group from the feed.
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          subcategory: "",
+          bracketSlot: "",
+          settlementSource: prev.settlementSource.includes("bhutanfootball")
+            ? ""
+            : prev.settlementSource,
+          outcomes: [
+            { label: "", imageUrl: null },
+            { label: "", imageUrl: null },
+          ],
+        }))
+        return
+      }
+      if (value !== "political" && wasPolitical) {
+        setFormData((prev) => ({
+          ...prev,
+          [name]: value,
+          outcomes: [
+            { label: "Yes", imageUrl: null },
+            { label: "No", imageUrl: null },
+          ],
+        }))
+        return
+      }
+    }
     // When switching to wc-winner, lock to one outcome
     if (name === "subcategory" && value === "wc-winner" && !initialData) {
       setFormData((prev) => ({
@@ -310,12 +353,19 @@ const MarketForm: React.FC<MarketFormProps> = ({
     // correct instant regardless of server timezone.
     const toUTC = (local: string) =>
       local ? new Date(local).toISOString() : local
+    const isPoliticalGroup = formData.category === "political" && !initialData
     onSubmit({
       ...formData,
       opensAt: toUTC(formData.opensAt),
       closesAt: toUTC(formData.closesAt),
       houseEdgePct: Number(formData.houseEdgePct),
       liquidityParam: Number(formData.liquidityParam),
+      candidates: isPoliticalGroup
+        ? formData.outcomes.map((o) => ({
+            name: o.label,
+            imageUrl: o.imageUrl ?? null,
+          }))
+        : undefined,
     })
   }
 
@@ -512,7 +562,9 @@ const MarketForm: React.FC<MarketFormProps> = ({
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            OUTCOMES
+            {formData.category === "political" && !initialData
+              ? "CANDIDATES"
+              : "OUTCOMES"}
             {initialData && (
               <span
                 style={{
@@ -755,6 +807,21 @@ const MarketForm: React.FC<MarketFormProps> = ({
           ) : (
             /* ── default: standard outcomes (also bpl-match / bpl-winner / bpl-topscorer) ── */
             <div>
+              {formData.category === "political" && !initialData && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  Each candidate gets their own Yes/No market (e.g. "
+                  {formData.title || "Who will win?"}. When it settles, resolve
+                  the winner's market to Yes and every other candidate's market
+                  to No.
+                </p>
+              )}
               {formData.subcategory.startsWith("bpl-") && (
                 <p
                   style={{
@@ -807,7 +874,9 @@ const MarketForm: React.FC<MarketFormProps> = ({
                           ? `Club ${index + 1} (e.g. ${BPL_CLUBS[index] ?? "Paro FC"})`
                           : formData.subcategory === "bpl-topscorer"
                             ? `Player ${index + 1}`
-                            : `Outcome ${index + 1} label`
+                            : formData.category === "political" && !initialData
+                              ? `Candidate ${index + 1} name (e.g. ${index === 0 ? "Sonam" : "Tenzin"})`
+                              : `Outcome ${index + 1} label`
                       }
                     />
                     {!initialData && formData.outcomes.length > 2 && (
@@ -888,7 +957,9 @@ const MarketForm: React.FC<MarketFormProps> = ({
                   className="secondary"
                   style={{ width: "100%", fontSize: "0.75rem" }}
                 >
-                  + Add Outcome
+                  {formData.category === "political"
+                    ? "+ Add Candidate"
+                    : "+ Add Outcome"}
                 </button>
               )}
             </div>
