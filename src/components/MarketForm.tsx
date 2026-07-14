@@ -110,6 +110,7 @@ export interface MarketFormData {
   subcategory: string
   settlementSource: string
   bracketSlot: string
+  matchLabel: string
 }
 
 interface MarketFormProps {
@@ -189,6 +190,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     settlementSource: initialData?.settlementSource || "",
     bracketSlot:
       (initialData?.metadata?.bracketSlot as string | undefined) || "",
+    matchLabel: (initialData?.metadata?.matchLabel as string | undefined) || "",
   })
 
   const handleChange = (
@@ -211,6 +213,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
           [name]: value,
           subcategory: "",
           bracketSlot: "",
+          matchLabel: "",
           settlementSource: prev.settlementSource.includes("bhutanfootball")
             ? ""
             : prev.settlementSource,
@@ -549,6 +552,42 @@ const MarketForm: React.FC<MarketFormProps> = ({
                 </option>
               ))}
             </select>
+          </div>
+        )}
+
+        {/* ── Match label (WC props only) ───────────────────────────────────── */}
+        {(formData.subcategory === "wc-player" ||
+          formData.subcategory === "wc-group") && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              MATCH
+              <span
+                style={{
+                  marginLeft: 6,
+                  fontWeight: 400,
+                  opacity: 0.6,
+                  textTransform: "none",
+                  fontSize: "0.7rem",
+                }}
+              >
+                (optional — props with the same match are grouped together in
+                the hub, e.g. "France vs Spain")
+              </span>
+            </label>
+            <input
+              name="matchLabel"
+              value={formData.matchLabel}
+              onChange={handleChange}
+              className="input-field"
+              placeholder="e.g., France vs Spain"
+            />
           </div>
         )}
 
