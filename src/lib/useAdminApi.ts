@@ -138,6 +138,13 @@ export function useAdminApi(token: string | null) {
           method: "PATCH",
           body: JSON.stringify({ status }),
         }),
+      // World Cup hub markets only (subcategory "wc-*") — reopens a closed
+      // market for betting with a new future closesAt (ISO string).
+      reopenMarket: (id: string, closesAt: string) =>
+        apiFetch(`/admin/markets/${id}/reopen`, {
+          method: "POST",
+          body: JSON.stringify({ closesAt }),
+        }),
       proposeMarket: (
         id: string,
         proposedOutcomeId: string,
