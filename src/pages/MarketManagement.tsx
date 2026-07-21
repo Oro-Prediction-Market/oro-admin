@@ -20,6 +20,7 @@ import {
   XCircle,
   Megaphone,
   Star,
+  RotateCcw,
 } from "lucide-react"
 
 interface Outcome {
@@ -326,6 +327,37 @@ const MarketManagement: React.FC = () => {
       notify(
         "error",
         `Error transitioning market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  // World Cup hub markets only — backend rejects any non-"wc-*" subcategory.
+  // Asks for a duration in minutes so the admin never has to type a date;
+  // the new closesAt is computed as now + minutes (always in the future).
+  const handleReopen = async (m: Market) => {
+    const input = window.prompt(
+      `Reopen "${m.title}" for how many minutes?\nBetting closes again at now + minutes.`,
+      "120"
+    )
+    if (input === null) return
+    const minutes = Number(input.trim())
+    if (!Number.isFinite(minutes) || minutes <= 0) {
+      notify("error", "Enter a positive number of minutes.")
+      return
+    }
+    try {
+      // eslint-disable-next-line react-hooks/purity -- event handler, not render (false positive)
+      const closesAt = new Date(Date.now() + minutes * 60_000).toISOString()
+      await api.reopenMarket(m.id, closesAt)
+      refresh()
+      notify(
+        "success",
+        `Market reopened — betting closes at ${new Date(closesAt).toLocaleString()}.`
+      )
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error reopening market: ${e instanceof Error ? e.message : String(e)}`
       )
     }
   }
@@ -805,6 +837,17 @@ const MarketManagement: React.FC = () => {
                               ⚖️
                             </button>
                           )}
+                          {m.status === "closed" &&
+                            m.subcategory?.startsWith("wc-") && (
+                              <button
+                                onClick={() => handleReopen(m)}
+                                className="secondary"
+                                title="Reopen Market (World Cup only)"
+                                style={{ color: "hsl(140, 60%, 55%)" }}
+                              >
+                                <RotateCcw size={14} />
+                              </button>
+                            )}
                           {m.status === "resolving" && (
                             <button
                               onClick={() => handleOpenResolve(m)}
