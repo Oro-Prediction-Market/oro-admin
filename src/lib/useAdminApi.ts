@@ -95,6 +95,17 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(data),
         }),
+      // ── EPL stat markets (one-click from the live leaderboard) ──
+      getEplStatMarketPreview: () => apiFetch("/admin/epl/stat-market/preview"),
+      createEplStatMarket: (body: {
+        stat: string
+        closesAt?: string
+        topN?: number
+      }) =>
+        apiFetch("/admin/epl/stat-market", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
       createMarketGroup: (data: Record<string, unknown>) =>
         apiFetch("/admin/markets/group", {
           method: "POST",

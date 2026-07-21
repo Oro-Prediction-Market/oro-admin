@@ -22,6 +22,8 @@ const SPORT_SUBCATEGORIES = [
   "National",
   "UEFA Champions League",
   "UEFA Europa League",
+  "epl-match",
+  "epl-season",
   "bpl-match",
   "bpl-winner",
   "bpl-topscorer",
@@ -75,6 +77,8 @@ const BPL_CLUBS = [
 ]
 
 const BPL_SETTLEMENT_SOURCE = "https://bhutanfootball.org"
+const EPL_SETTLEMENT_SOURCE =
+  "Premier League official results (premierleague.com)"
 
 interface MarketInitialData {
   title?: string
@@ -182,7 +186,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     closesAt: initialData?.closesAt
       ? toLocalDatetimeInput(new Date(initialData.closesAt))
       : "",
-    houseEdgePct: initialData?.houseEdgePct || 5,
+    houseEdgePct: initialData?.houseEdgePct || 10,
     mechanism: initialData?.mechanism || "parimutuel",
     liquidityParam: initialData?.liquidityParam || 1000,
     category: initialData?.category || "other",
@@ -256,6 +260,36 @@ const MarketForm: React.FC<MarketFormProps> = ({
           { label: "", imageUrl: null },
           { label: "", imageUrl: null },
         ],
+      }))
+      return
+    }
+    // EPL match preset — seed Home / Draw / Away (team slots blank, "Draw"
+    // prefilled so the EPL hub crest logic maps outcome[0]=home, outcome[2]=away
+    // correctly). Stat markets (top scorer/assists/cards) are intentionally NOT
+    // creatable here — they are auto-created each season and via the dedicated
+    // "EPL Markets" admin page, both of which seed correct current-season data.
+    if (name === "subcategory" && value === "epl-match" && !initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        settlementSource: prev.settlementSource || EPL_SETTLEMENT_SOURCE,
+        outcomes: [
+          { label: "", imageUrl: null },
+          { label: "Draw", imageUrl: null },
+          { label: "", imageUrl: null },
+        ],
+      }))
+      return
+    }
+    // EPL season/outright preset — title winner, relegation, top 4, etc. Just
+    // seed the settlement source; outcomes are left to the admin (clubs for an
+    // outright, Yes/No for a relegation question, …). Lands in the Season tab as
+    // long as the title has no "vs".
+    if (name === "subcategory" && value === "epl-season" && !initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        settlementSource: prev.settlementSource || EPL_SETTLEMENT_SOURCE,
       }))
       return
     }
@@ -884,6 +918,38 @@ const MarketForm: React.FC<MarketFormProps> = ({
                     <option key={c} value={c} />
                   ))}
                 </datalist>
+              )}
+              {formData.subcategory === "epl-match" && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  Title must contain "vs" (e.g. "Arsenal vs Chelsea — Who
+                  wins?") so it lands in the EPL hub Matches tab. Fill the two
+                  club names in the Home/Away slots; keep "Draw" in the middle.
+                  Use the image URL fields for club crests. (Stat markets — top
+                  scorer, assists, cards — aren't created here; use the "EPL
+                  Markets" page or let them auto-create each season.)
+                </p>
+              )}
+              {formData.subcategory === "epl-season" && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  Season-long / outright market — lands in the EPL hub's Season
+                  tab. Keep "vs" OUT of the title (that's for matches).
+                  Examples: "Who will win the Premier League 2026/27?" (one
+                  outcome per club) or "Will Leeds be relegated?" (Yes / No).
+                </p>
               )}
               {formData.outcomes.map((outcome, index) => (
                 <div key={index} style={{ marginBottom: "0.75rem" }}>

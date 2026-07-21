@@ -22,6 +22,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ShieldAlert,
+  Trophy,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -254,6 +255,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <ShieldAlert size={20} />
             {!collapsed && <span className="nav-label">AML Compliance</span>}
+          </li>
+          <li
+            className={current === "epl-markets" ? "active" : ""}
+            onClick={() => onNavigate("epl-markets")}
+            title={collapsed ? "EPL Stat Markets" : undefined}
+          >
+            <Trophy size={20} />
+            {!collapsed && <span className="nav-label">EPL Markets</span>}
           </li>
 
           <li

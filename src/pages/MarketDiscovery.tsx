@@ -140,7 +140,7 @@ const MarketDiscovery: React.FC = () => {
               description: `Auto-imported from ${reviewingMarket.source}. Match: ${reviewingMarket.matchData.homeTeam} vs ${reviewingMarket.matchData.awayTeam} at ${reviewingMarket.matchData.venue}`,
               outcomes: reviewingMarket.outcomes.map((label) => ({ label })),
               closesAt: reviewingMarket.closesAt,
-              houseEdgePct: 5,
+              houseEdgePct: 10,
               mechanism: "parimutuel",
               liquidityParam: 1000,
               category: reviewingMarket.category,

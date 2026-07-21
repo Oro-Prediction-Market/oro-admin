@@ -19,6 +19,7 @@ import {
   WifiOff,
   XCircle,
   Megaphone,
+  Star,
 } from "lucide-react"
 
 interface Outcome {
@@ -293,6 +294,25 @@ const MarketManagement: React.FC = () => {
       notify(
         "error",
         `Error announcing market: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleToggleFeatured = async (m: Market) => {
+    const next = !m.isFeatured
+    try {
+      await api.updateMarket(m.id, { isFeatured: next })
+      refresh()
+      notify(
+        "success",
+        next
+          ? "Pinned as the featured match."
+          : "Unpinned — featured match reverts to the biggest-pool pick."
+      )
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error updating featured flag: ${e instanceof Error ? e.message : String(e)}`
       )
     }
   }
@@ -732,6 +752,31 @@ const MarketManagement: React.FC = () => {
                               <Megaphone size={14} />
                             </button>
                           )}
+                          {(m.status === "upcoming" || m.status === "open") &&
+                            (m.subcategory || "")
+                              .toLowerCase()
+                              .includes("epl") &&
+                            m.title.toLowerCase().includes(" vs ") && (
+                              <button
+                                onClick={() => handleToggleFeatured(m)}
+                                className="secondary"
+                                title={
+                                  m.isFeatured
+                                    ? "Featured match — click to unpin"
+                                    : "Pin as the featured match in the EPL hub"
+                                }
+                                style={{
+                                  color: m.isFeatured
+                                    ? "hsl(45, 90%, 55%)"
+                                    : undefined,
+                                }}
+                              >
+                                <Star
+                                  size={14}
+                                  fill={m.isFeatured ? "currentColor" : "none"}
+                                />
+                              </button>
+                            )}
                           {m.status === "upcoming" && (
                             <button
                               onClick={() => handleTransition(m.id, "open")}
