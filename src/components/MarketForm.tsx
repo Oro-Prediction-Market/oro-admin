@@ -203,15 +203,30 @@ const MarketForm: React.FC<MarketFormProps> = ({
     >
   ) => {
     const { name, value } = e.target
-    // Political grouped event: outcomes become the candidate list (one Yes/No
-    // child market is created per candidate). Seed two blank candidate slots
-    // on the way in, restore the plain Yes/No default on the way out.
+
+    if (
+      name === "category" &&
+      !initialData &&
+      formData.category === "sports" &&
+      value !== "sports"
+    ) {
+      const src = formData.settlementSource.toLowerCase()
+      const sportSource =
+        src.includes("bhutanfootball") || src.includes("premierleague")
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        subcategory: "",
+        bracketSlot: "",
+        matchLabel: "",
+        settlementSource: sportSource ? "" : prev.settlementSource,
+      }))
+      return
+    }
+
     if (name === "category" && !initialData) {
       const wasPolitical = formData.category === "political"
       if (value === "political" && !wasPolitical) {
-        // Clear sports-specific leftovers (subcategory, bracket slot, BPL
-        // settlement source) — the PWA/TMA route markets to the WC/BPL hubs
-        // based on those fields, which would hide the group from the feed.
         setFormData((prev) => ({
           ...prev,
           [name]: value,
