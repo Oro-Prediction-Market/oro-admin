@@ -35,9 +35,16 @@ export function useAdminApi(token: string | null) {
       if (!token) throw new Error("No admin token provided")
       setLoading(true)
       setError(null)
+      // Abort a stalled request instead of hanging forever. A dead keep-alive
+      // connection (tab left open, laptop slept, backend cold-started) would
+      // otherwise leave the promise unsettled — button stuck spinning, only a
+      // full page refresh recovers. 45s is generous for market creation.
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 45_000)
       try {
         const response = await fetch(`${API_BASE}${path}`, {
           ...options,
+          signal: controller.signal,
           headers: {
             ...options.headers,
             Authorization: `Bearer ${token}`,
@@ -62,10 +69,16 @@ export function useAdminApi(token: string | null) {
         }
         return response.json().catch(() => null)
       } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : String(e)
+        const msg =
+          e instanceof DOMException && e.name === "AbortError"
+            ? "Request timed out — the server didn't respond. Please try again."
+            : e instanceof Error
+              ? e.message
+              : String(e)
         setError(msg)
-        throw e
+        throw new Error(msg)
       } finally {
+        clearTimeout(timeout)
         setLoading(false)
       }
     },
