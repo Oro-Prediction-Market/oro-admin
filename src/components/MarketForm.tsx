@@ -39,6 +39,22 @@ const SPORT_SUBCATEGORIES = [
   "Other",
 ]
 
+// Esports disciplines — value is the slug the /esports hub buckets on, label is
+// the game shown to admins. Keep in sync with ESPORTS_CATEGORIES in the
+// PWA/TMA EsportsHubPage.tsx.
+const GAMING_SUBCATEGORIES: { value: string; label: string }[] = [
+  { value: "", label: "— None —" },
+  { value: "mlbb", label: "MLBB" },
+  { value: "pubg", label: "PUBG" },
+  { value: "dota2", label: "Dota 2" },
+  { value: "lol", label: "League of Legends" },
+  { value: "cod", label: "Call of Duty" },
+  { value: "ea-fc", label: "EA FC Pro" },
+  { value: "street-fighter", label: "Street Fighter" },
+  { value: "tekken", label: "Tekken 8" },
+  { value: "chess", label: "Chess" },
+]
+
 // World Cup knockout bracket slots — keep ids in sync with shared/data/wcKnockout.ts
 // in the PWA/TMA. A wc-match market tagged with one of these renders in that slot.
 const WC_BRACKET_SLOTS: { id: string; label: string }[] = [
@@ -551,6 +567,28 @@ const MarketForm: React.FC<MarketFormProps> = ({
               {SPORT_SUBCATEGORIES.map((s) => (
                 <option key={s} value={s}>
                   {s || "— None —"}
+                </option>
+              ))}
+            </select>
+          ) : formData.category === "gaming" ? (
+            <select
+              name="subcategory"
+              value={formData.subcategory}
+              onChange={handleChange}
+              className="input-field"
+            >
+              {/* Preserve a pre-existing custom slug when editing so it isn't dropped */}
+              {formData.subcategory &&
+                !GAMING_SUBCATEGORIES.some(
+                  (g) => g.value === formData.subcategory
+                ) && (
+                  <option value={formData.subcategory}>
+                    {formData.subcategory}
+                  </option>
+                )}
+              {GAMING_SUBCATEGORIES.map((g) => (
+                <option key={g.value} value={g.value}>
+                  {g.label}
                 </option>
               ))}
             </select>
