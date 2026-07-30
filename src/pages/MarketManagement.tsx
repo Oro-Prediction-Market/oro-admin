@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
+import {
+  CATEGORIES,
+  SPORT_SUBCATEGORIES,
+  GAMING_SUBCATEGORIES,
+} from "../lib/marketCategories"
 import ResolveMarketModal from "../components/ResolveMarketModal"
 import ProposeMarketModal from "../components/ProposeMarketModal"
 import CancelMarketModal from "../components/CancelMarketModal"
@@ -21,6 +26,7 @@ import {
   Megaphone,
   Star,
   RotateCcw,
+  Search,
 } from "lucide-react"
 
 interface Outcome {
@@ -71,6 +77,9 @@ const MarketManagement: React.FC = () => {
   const [resolvingDisputes, setResolvingDisputes] = useState<Dispute[]>([])
   const [cancellingMarket, setCancellingMarket] = useState<Market | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>("All")
+  const [search, setSearch] = useState("")
+  const [filterCategory, setFilterCategory] = useState("All")
+  const [filterSubcategory, setFilterSubcategory] = useState("All")
   const [expandedMarket, setExpandedMarket] = useState<string | null>(null)
 
   const getMarketsRef = useRef(api.getMarkets)
@@ -78,39 +87,75 @@ const MarketManagement: React.FC = () => {
     getMarketsRef.current = api.getMarkets
   })
 
-  const fetchMarkets = useRef((p: number, status: string) => {
-    let cancelled = false
-    setFetching(true)
-    getMarketsRef
-      .current({ page: p, limit: PAGE_SIZE, status, externalSource: "none" })
-      .then((res) => {
-        if (cancelled) return
-        const r = res as {
-          data: Market[]
-          total: number
-          page: number
-          pages: number
-        }
-        setMarkets(r.data ?? [])
-        setTotal(r.total ?? 0)
-        setPages(r.pages ?? 1)
-      })
-      .catch(() => {
-        if (!cancelled) setMarkets([])
-      })
-      .finally(() => {
-        if (!cancelled) setFetching(false)
-      })
-    return () => {
-      cancelled = true
+  // Debounce the search box so we don't refetch on every keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
+  const fetchMarkets = useRef(
+    (
+      p: number,
+      status: string,
+      category: string,
+      subcategory: string,
+      searchQ: string
+    ) => {
+      let cancelled = false
+      setFetching(true)
+      getMarketsRef
+        .current({
+          page: p,
+          limit: PAGE_SIZE,
+          status,
+          externalSource: "none",
+          category,
+          subcategory,
+          search: searchQ,
+        })
+        .then((res) => {
+          if (cancelled) return
+          const r = res as {
+            data: Market[]
+            total: number
+            page: number
+            pages: number
+          }
+          setMarkets(r.data ?? [])
+          setTotal(r.total ?? 0)
+          setPages(r.pages ?? 1)
+        })
+        .catch(() => {
+          if (!cancelled) setMarkets([])
+        })
+        .finally(() => {
+          if (!cancelled) setFetching(false)
+        })
+      return () => {
+        cancelled = true
+      }
     }
-  })
+  )
 
   useEffect(() => {
-    return fetchMarkets.current(page, filterStatus)
-  }, [page, filterStatus])
+    return fetchMarkets.current(
+      page,
+      filterStatus,
+      filterCategory,
+      filterSubcategory,
+      debouncedSearch
+    )
+  }, [page, filterStatus, filterCategory, filterSubcategory, debouncedSearch])
 
-  const refresh = () => fetchMarkets.current(page, filterStatus)
+  const refresh = () =>
+    fetchMarkets.current(
+      page,
+      filterStatus,
+      filterCategory,
+      filterSubcategory,
+      debouncedSearch
+    )
 
   const statuses = [
     "All",
@@ -131,6 +176,38 @@ const MarketManagement: React.FC = () => {
   } = useRealTimeUpdates(markets)
   const displayMarkets =
     realtimeMarkets.length > 0 && view === "list" ? realtimeMarkets : markets
+
+  // Full category list = the canonical set used when creating markets.
+  const categoryOptions = CATEGORIES.map((c) => ({
+    value: c.value,
+    label: c.label,
+  }))
+
+  // Canonical subcategories per category (from the market-creation form), plus
+  // any extra subcategory values that actually appear in the loaded markets.
+  const gamingSubLabel = (v: string) =>
+    GAMING_SUBCATEGORIES.find((g) => g.value === v)?.label ?? v
+  const canonicalSubs = (cat: string): string[] => {
+    if (cat === "sports") return SPORT_SUBCATEGORIES.filter(Boolean)
+    if (cat === "gaming")
+      return GAMING_SUBCATEGORIES.map((g) => g.value).filter(Boolean)
+    if (cat === "All")
+      return [
+        ...SPORT_SUBCATEGORIES.filter(Boolean),
+        ...GAMING_SUBCATEGORIES.map((g) => g.value).filter(Boolean),
+      ]
+    return []
+  }
+  const derivedSubs = displayMarkets
+    .filter((m) => filterCategory === "All" || m.category === filterCategory)
+    .map((m) => m.subcategory)
+    .filter(Boolean) as string[]
+  const subcategoryOptions = Array.from(
+    new Set([...canonicalSubs(filterCategory), ...derivedSubs])
+  ).sort()
+
+  const filtersActive =
+    !!search.trim() || filterCategory !== "All" || filterSubcategory !== "All"
 
   const handleCreate = async (data: MarketFormData) => {
     try {
@@ -402,7 +479,7 @@ const MarketManagement: React.FC = () => {
   }
 
   const handleResolve = async (
-    winningOutcomeIds: string[],
+    winningOutcomeId: string,
     evidenceUrl: string,
     evidenceNote: string
   ) => {
@@ -410,7 +487,7 @@ const MarketManagement: React.FC = () => {
     try {
       await api.resolveMarket(
         resolvingMarket.id,
-        winningOutcomeIds,
+        winningOutcomeId,
         evidenceUrl,
         evidenceNote
       )
@@ -595,6 +672,121 @@ const MarketManagement: React.FC = () => {
               {status}
             </button>
           ))}
+        </div>
+
+        {/* Search + category / subcategory filters */}
+        <div
+          style={{
+            padding: "0.75rem 1rem",
+            borderBottom: "1px solid hsl(var(--border))",
+            display: "flex",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{ position: "relative", flex: "1 1 220px", minWidth: 180 }}
+          >
+            <Search
+              size={15}
+              style={{
+                position: "absolute",
+                left: 10,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "hsl(var(--muted-foreground))",
+                pointerEvents: "none",
+              }}
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+              placeholder="Search markets by title…"
+              style={{
+                width: "100%",
+                padding: "8px 10px 8px 32px",
+                borderRadius: 8,
+                border: "1px solid hsl(var(--border))",
+                background: "hsl(var(--background))",
+                color: "hsl(var(--foreground))",
+                fontSize: "0.82rem",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+          <select
+            value={filterCategory}
+            onChange={(e) => {
+              setFilterCategory(e.target.value)
+              setFilterSubcategory("All")
+              setPage(1)
+            }}
+            style={{
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              fontSize: "0.82rem",
+              flex: "0 1 180px",
+            }}
+          >
+            <option value="All">All categories</option>
+            {categoryOptions.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterSubcategory}
+            onChange={(e) => {
+              setFilterSubcategory(e.target.value)
+              setPage(1)
+            }}
+            disabled={subcategoryOptions.length === 0}
+            style={{
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              fontSize: "0.82rem",
+              flex: "0 1 180px",
+              opacity: subcategoryOptions.length === 0 ? 0.5 : 1,
+            }}
+          >
+            <option value="All">All subcategories</option>
+            {subcategoryOptions.map((s) => (
+              <option key={s} value={s}>
+                {filterCategory === "gaming" ? gamingSubLabel(s) : s}
+              </option>
+            ))}
+          </select>
+          {filtersActive && (
+            <button
+              className="secondary"
+              onClick={() => {
+                setSearch("")
+                setFilterCategory("All")
+                setFilterSubcategory("All")
+                setPage(1)
+              }}
+              style={{
+                fontSize: "0.75rem",
+                padding: "0.5rem 0.9rem",
+                borderRadius: 8,
+              }}
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         {fetching ? (

@@ -92,6 +92,9 @@ export function useAdminApi(token: string | null) {
         limit?: number
         status?: string
         externalSource?: string
+        category?: string
+        subcategory?: string
+        search?: string
       }) => {
         const qs = new URLSearchParams()
         if (params?.page) qs.set("page", String(params.page))
@@ -100,6 +103,11 @@ export function useAdminApi(token: string | null) {
           qs.set("status", params.status)
         if (params?.externalSource)
           qs.set("externalSource", params.externalSource)
+        if (params?.category && params.category !== "All")
+          qs.set("category", params.category)
+        if (params?.subcategory && params.subcategory !== "All")
+          qs.set("subcategory", params.subcategory)
+        if (params?.search?.trim()) qs.set("search", params.search.trim())
         const suffix = qs.toString() ? `?${qs.toString()}` : ""
         return apiFetch(`/admin/markets${suffix}`)
       },
@@ -183,14 +191,14 @@ export function useAdminApi(token: string | null) {
         }),
       resolveMarket: (
         id: string,
-        winningOutcomeIds: string[],
+        winningOutcomeId: string,
         evidenceUrl: string,
         evidenceNote: string
       ) =>
         apiFetch(`/admin/markets/${id}/resolve`, {
           method: "POST",
           body: JSON.stringify({
-            winningOutcomeIds,
+            winningOutcomeId,
             evidenceUrl,
             evidenceNote,
           }),

@@ -23,7 +23,7 @@ interface ResolveMarketModalProps {
   }
   disputes?: Dispute[]
   onResolve: (
-    winningOutcomeIds: string[],
+    winningOutcomeId: string,
     evidenceUrl: string,
     evidenceNote: string
   ) => void
@@ -38,18 +38,12 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
   onCancel,
   loading,
 }) => {
-  const [selectedOutcomeIds, setSelectedOutcomeIds] = useState<string[]>(
-    market.proposedOutcomeId ? [market.proposedOutcomeId] : []
+  const [selectedOutcomeId, setSelectedOutcomeId] = useState<string | null>(
+    market.proposedOutcomeId ?? null
   )
   const [evidenceUrl, setEvidenceUrl] = useState("")
   const [evidenceNote, setEvidenceNote] = useState("")
   const [urlError, setUrlError] = useState<string | null>(null)
-
-  const toggleOutcome = (id: string) => {
-    setSelectedOutcomeIds((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    )
-  }
 
   const validateUrl = (v: string) => {
     try {
@@ -62,10 +56,10 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
 
   const proposalChanged =
     market.proposedOutcomeId != null &&
-    !selectedOutcomeIds.includes(market.proposedOutcomeId)
+    selectedOutcomeId !== market.proposedOutcomeId
 
   const canSubmit =
-    selectedOutcomeIds.length > 0 &&
+    selectedOutcomeId != null &&
     evidenceUrl &&
     !urlError &&
     evidenceNote.trim().length > 0 &&
@@ -117,8 +111,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
             marginBottom: "1rem",
           }}
         >
-          Select all winning outcomes — check multiple for group/qualifier
-          markets.
+          Select the winning outcome for this market.
         </p>
 
         {/* Objections panel */}
@@ -201,7 +194,7 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
           }}
         >
           {market.outcomes.map((outcome: MarketOutcome) => {
-            const isSelected = selectedOutcomeIds.includes(outcome.id)
+            const isSelected = selectedOutcomeId === outcome.id
             return (
               <label
                 key={outcome.id}
@@ -219,10 +212,11 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
                 }}
               >
                 <input
-                  type="checkbox"
+                  type="radio"
+                  name="winningOutcome"
                   value={outcome.id}
                   checked={isSelected}
-                  onChange={() => toggleOutcome(outcome.id)}
+                  onChange={() => setSelectedOutcomeId(outcome.id)}
                   style={{
                     accentColor: "hsl(var(--primary))",
                     width: 16,
@@ -421,7 +415,8 @@ const ResolveMarketModal: React.FC<ResolveMarketModalProps> = ({
           </button>
           <button
             onClick={() =>
-              onResolve(selectedOutcomeIds, evidenceUrl, evidenceNote)
+              selectedOutcomeId &&
+              onResolve(selectedOutcomeId, evidenceUrl, evidenceNote)
             }
             disabled={!canSubmit}
           >
