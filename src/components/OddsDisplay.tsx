@@ -42,15 +42,27 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
   const isThinLiquidity = totalPool > 0 && totalPool < 500
 
   const getMinusPoolWarning = () => {
+    if (totalPool <= 0) return { warning: false, message: "", minPayout: 0 }
     const maxPoolShare = Math.max(
       ...outcomes.map((o) => Number(o.totalBetAmount || 0))
     )
     const maxPercentage = (maxPoolShare / totalPool) * 100
 
-    if (maxPercentage > 85) {
+    // The 1.05x floor starts biting once the winning side's parimutuel return
+    // falls below 1.05x — i.e. its share exceeds (1 - fee) / 1.05. This is
+    // fee-aware: ~87.6% at an 8% edge, ~90.5% at 5%, ~85.7% at 10%.
+    const floorThreshold = ((1 - houseEdgePct / 100) / 1.05) * 100
+    // Above ~95.24% even a fully-waived edge can't fund the floor, so winner
+    // payouts scale down pro-rata to keep the settlement funded.
+    const scaleThreshold = (1 / 1.05) * 100
+
+    if (maxPercentage > floorThreshold) {
+      const scaled = maxPercentage > scaleThreshold
       return {
         warning: true,
-        message: `⚠️ Minus pool detected: One outcome holds ${maxPercentage.toFixed(1)}% of pool. Guaranteed minimum payout of 1.05x will apply.`,
+        message: scaled
+          ? `⚠️ One outcome holds ${maxPercentage.toFixed(1)}% of the pool. Above ${scaleThreshold.toFixed(1)}% the 1.05x floor can't be fully funded — winner payouts scale down pro-rata.`
+          : `⚠️ One outcome holds ${maxPercentage.toFixed(1)}% of the pool (the 1.05x floor engages above ${floorThreshold.toFixed(1)}% at a ${houseEdgePct}% edge). The guaranteed payout will be funded by reducing the house edge.`,
         minPayout: 1.05,
       }
     }
