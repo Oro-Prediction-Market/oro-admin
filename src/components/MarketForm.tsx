@@ -4,6 +4,7 @@ import {
   SPORT_SUBCATEGORIES,
   GAMING_SUBCATEGORIES,
 } from "../lib/marketCategories"
+import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 
 interface Outcome {
   id?: string
@@ -158,7 +159,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     closesAt: initialData?.closesAt
       ? toLocalDatetimeInput(new Date(initialData.closesAt))
       : "",
-    houseEdgePct: initialData?.houseEdgePct || 10,
+    houseEdgePct: initialData?.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT,
     mechanism: initialData?.mechanism || "parimutuel",
     liquidityParam: initialData?.liquidityParam || 1000,
     category: initialData?.category || "other",

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
 import {
@@ -1114,7 +1115,9 @@ const MarketManagement: React.FC = () => {
                             <OddsDisplay
                               outcomes={m.outcomes}
                               totalPool={Number(m.totalPool || 0)}
-                              houseEdgePct={Number(m.houseEdgePct || 5)}
+                              houseEdgePct={Number(
+                                m.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT
+                              )}
                               isEstimated={m.status === "open"}
                               showWarnings={true}
                             />

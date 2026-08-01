@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { Search, Globe, Plus, Zap, Calendar, MapPin, Clock } from "lucide-react"
 import { fifaService, type FifaMarket } from "../services/fifaService"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
+import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 import { useToast } from "../components/Toast"
 
 interface ImportResult {
@@ -140,7 +141,7 @@ const MarketDiscovery: React.FC = () => {
               description: `Auto-imported from ${reviewingMarket.source}. Match: ${reviewingMarket.matchData.homeTeam} vs ${reviewingMarket.matchData.awayTeam} at ${reviewingMarket.matchData.venue}`,
               outcomes: reviewingMarket.outcomes.map((label) => ({ label })),
               closesAt: reviewingMarket.closesAt,
-              houseEdgePct: 10,
+              houseEdgePct: DEFAULT_HOUSE_EDGE_PCT,
               mechanism: "parimutuel",
               liquidityParam: 1000,
               category: reviewingMarket.category,
