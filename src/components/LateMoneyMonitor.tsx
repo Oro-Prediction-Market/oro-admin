@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { AlertTriangle, Clock } from "lucide-react"
 
 interface Market {
@@ -14,85 +14,125 @@ interface LateMoneyData {
   timeUntilClose: number
 }
 
-interface LateMoneyWarning {
-  detected: boolean
-  percentage: number
-  finalMinuteBets: number
+/** Mirrors the backend admin `/markets/:id/late-money` response. */
+interface LateMoneyStats {
+  marketId: string
+  status: string
+  windowMinutes: number
+  closesAt: string | null
+  timeUntilCloseMs: number | null
   totalBets: number
-  message: string
+  totalAmount: number
+  finalWindowBets: number
+  finalWindowAmount: number
+  percentageByCount: number
+  percentageByAmount: number
+  detected: boolean
+  alertThresholdPct: number
 }
 
 interface LateMoneyMonitorProps {
   market: Market
+  /**
+   * Fetches REAL late-money aggregates from the backend. When omitted, the
+   * monitor shows the countdown only and never fabricates activity.
+   */
+  fetchLateMoney?: (
+    marketId: string,
+    windowMinutes?: number
+  ) => Promise<LateMoneyStats>
   onLateMoneyDetected?: (data: LateMoneyData) => void
 }
 
 export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
   market,
+  fetchLateMoney,
   onLateMoneyDetected,
 }) => {
-  const [lateMoneyWarning, setLateMoneyWarning] =
-    useState<LateMoneyWarning | null>(null)
-  const [betSizeLimit, setBetSizeLimit] = useState<number>(1000)
+  const [stats, setStats] = useState<LateMoneyStats | null>(null)
+  const [statsError, setStatsError] = useState<string | null>(null)
   const [timeUntilClose, setTimeUntilClose] = useState<number>(0)
+  const onDetectedRef = useRef(onLateMoneyDetected)
+  onDetectedRef.current = onLateMoneyDetected
 
+  // Bet-size limit shown to operators — a POLICY hint the graduated-close
+  // mechanism targets. (Enforcement lives on the server, not this widget.)
+  const betSizeLimit =
+    timeUntilClose <= 0
+      ? 0
+      : timeUntilClose < 30000
+        ? 50
+        : timeUntilClose < 60000
+          ? 100
+          : 1000
+
+  // Smooth 1s countdown from the market close time (display only).
   useEffect(() => {
     if (!market.closesAt || market.status !== "open") return
-
     const tick = () => {
-      const now = Date.now()
-      const closeTime = new Date(market.closesAt!).getTime()
-      const diff = closeTime - now
+      const diff = new Date(market.closesAt!).getTime() - Date.now()
+      setTimeUntilClose(Math.max(0, diff))
+    }
+    tick()
+    const interval = setInterval(tick, 1000)
+    return () => clearInterval(interval)
+  }, [market.closesAt, market.status])
 
-      if (diff > 0) {
-        const newLimit = diff < 30000 ? 50 : diff < 60000 ? 100 : 1000
-        setTimeUntilClose(diff)
-        setBetSizeLimit(newLimit)
+  // Poll REAL late-money aggregates. Faster as close approaches; stops once the
+  // market is no longer open. Never invents numbers — on error it clears state.
+  useEffect(() => {
+    if (!fetchLateMoney || market.status !== "open") {
+      setStats(null)
+      return
+    }
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
 
-        // Late money detection — runs inside interval callback, not effect body
-        if (diff < 60000) {
-          const finalMinuteBets = Math.floor(Math.random() * 10) + 5
-          const totalBets = Math.floor(Math.random() * 20) + 15
-          const pct = (finalMinuteBets / totalBets) * 100
-          if (pct > 40) {
-            setLateMoneyWarning({
-              detected: true,
-              percentage: pct,
-              finalMinuteBets,
-              totalBets,
-              message: `⚠️ Late money detected: ${pct.toFixed(1)}% of wagers in final minute`,
-            })
-            onLateMoneyDetected?.({
-              marketId: market.id,
-              lateMoneyPercentage: pct,
-              betSizeLimit: newLimit,
-              timeUntilClose: diff,
-            })
-          }
+    const poll = async () => {
+      try {
+        const data = await fetchLateMoney(market.id, 1)
+        if (cancelled) return
+        setStats(data)
+        setStatsError(null)
+        if (data.detected) {
+          onDetectedRef.current?.({
+            marketId: market.id,
+            lateMoneyPercentage: data.percentageByAmount,
+            betSizeLimit,
+            timeUntilClose: data.timeUntilCloseMs ?? 0,
+          })
         }
-      } else {
-        setTimeUntilClose(0)
-        setBetSizeLimit(0)
+      } catch (e) {
+        if (cancelled) return
+        setStats(null)
+        setStatsError(e instanceof Error ? e.message : "Failed to load")
+      } finally {
+        // Schedule the next poll unless the effect was torn down. (No `return`
+        // here — a return inside `finally` is unsafe/flagged by eslint.)
+        if (!cancelled) {
+          // Within 2 min of close the window matters most → poll every 5s,
+          // otherwise every 20s to keep load light.
+          const soon =
+            !!market.closesAt &&
+            new Date(market.closesAt).getTime() - Date.now() < 120000
+          timer = setTimeout(poll, soon ? 5000 : 20000)
+        }
       }
     }
+    poll()
 
-    const interval = setInterval(tick, 1000)
-    tick()
-
-    return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [market.closesAt, market.status, market.id])
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [fetchLateMoney, market.id, market.closesAt, market.status, betSizeLimit])
 
   const formatTime = (ms: number) => {
     if (ms <= 0) return "Closed"
     const seconds = Math.floor(ms / 1000)
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
-
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`
-    }
-    return `${seconds}s`
+    return minutes > 0 ? `${minutes}m ${remainingSeconds}s` : `${seconds}s`
   }
 
   const getCloseMechanismLevel = () => {
@@ -103,6 +143,7 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
   }
 
   const closeLevel = getCloseMechanismLevel()
+  const warning = stats?.detected ? stats : null
 
   return (
     <div
@@ -176,10 +217,10 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            Bet Size Limit
+            Bet Size Limit (policy)
           </div>
           <div style={{ fontSize: "1rem", fontWeight: 600 }}>
-            ${betSizeLimit.toLocaleString()}
+            NU. {betSizeLimit.toLocaleString()}
           </div>
         </div>
 
@@ -190,26 +231,25 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            Close Level
+            Late Money (final {stats?.windowMinutes ?? 1}m)
           </div>
           <div
             style={{
-              fontSize: "0.875rem",
-              fontWeight: 500,
-              color:
-                closeLevel === "critical"
-                  ? "hsl(var(--destructive))"
-                  : closeLevel === "high"
-                    ? "hsl(var(--warning))"
-                    : "hsl(var(--muted-foreground))",
+              fontSize: "1rem",
+              fontWeight: 600,
+              color: warning ? "hsl(var(--destructive))" : "inherit",
             }}
           >
-            {closeLevel.toUpperCase()}
+            {stats
+              ? `${stats.percentageByAmount.toFixed(1)}%`
+              : statsError
+                ? "—"
+                : "…"}
           </div>
         </div>
       </div>
 
-      {lateMoneyWarning && (
+      {warning && (
         <div
           style={{
             marginTop: "1rem",
@@ -225,13 +265,28 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
         >
           <AlertTriangle size={14} style={{ marginTop: "0.125rem" }} />
           <div>
-            <strong>Late Money Alert:</strong> {lateMoneyWarning.message}
+            <strong>Late Money Alert:</strong>{" "}
+            {warning.percentageByAmount.toFixed(1)}% of staked money (
+            {warning.percentageByCount.toFixed(1)}% of bets) arrived in the
+            final {warning.windowMinutes} minute(s).
             <div style={{ marginTop: "0.25rem" }}>
-              {lateMoneyWarning.finalMinuteBets} of {lateMoneyWarning.totalBets}{" "}
-              bets in final minute. Bet size limit reduced to NU. {betSizeLimit}
-              .
+              {warning.finalWindowBets} of {warning.totalBets} bets — NU.{" "}
+              {warning.finalWindowAmount.toLocaleString()} of NU.{" "}
+              {warning.totalAmount.toLocaleString()} in the final window.
             </div>
           </div>
+        </div>
+      )}
+
+      {statsError && (
+        <div
+          style={{
+            marginTop: "0.75rem",
+            fontSize: "0.75rem",
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
+          Late-money data unavailable: {statsError}
         </div>
       )}
 
@@ -249,7 +304,8 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
           <li>1-5 minutes: Bet size limit NU. 100</li>
           <li>&lt; 30 seconds: Bet size limit NU. 50</li>
           <li>
-            Late money detection: Alert if &gt;40% of wagers in final minute
+            Late money detection: Alert if &gt;{stats?.alertThresholdPct ?? 40}%
+            of staked money in final minute
           </li>
         </ul>
       </div>

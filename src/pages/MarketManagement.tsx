@@ -1124,6 +1124,7 @@ const MarketManagement: React.FC = () => {
                             {m.status === "open" && (
                               <LateMoneyMonitor
                                 market={m}
+                                fetchLateMoney={api.getLateMoney}
                                 onLateMoneyDetected={(data) => {
                                   console.log("Late money detected:", data)
                                   // Could trigger notifications or automatic actions
