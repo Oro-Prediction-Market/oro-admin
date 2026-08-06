@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import {
   CATEGORIES,
   SPORT_SUBCATEGORIES,
@@ -92,7 +92,7 @@ export interface MarketFormData {
 
 interface MarketFormProps {
   initialData?: MarketInitialData
-  onSubmit: (data: MarketFormData) => void
+  onSubmit: (data: MarketFormData) => void | Promise<void>
   onCancel: () => void
   loading?: boolean
   /**
@@ -127,32 +127,42 @@ function toLocalDatetimeInput(date: Date): string {
   )
 }
 
-const MarketForm: React.FC<MarketFormProps> = ({
-  initialData,
-  onSubmit,
-  onCancel,
-  loading,
-  onAddOutcome,
-}) => {
-  const [newOutcomeLabel, setNewOutcomeLabel] = useState("")
-  const [newOutcomeImage, setNewOutcomeImage] = useState("")
-  const [addingOutcome, setAddingOutcome] = useState(false)
-  const [addOutcomeError, setAddOutcomeError] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+// ── Draft autosave ────────────────────────────────────────────────────────────
+// The create form holds a lot of hand-typed data — a label + image URL for every
+// outcome, 30+ on a bracket market. It used to live only in React state, so a
+// reload (often forced when a submit failed against a spun-down free-tier backend)
+// wiped everything. We now mirror the form to localStorage on every change and
+// restore it on mount, clearing only after a market is successfully created.
+const DRAFT_KEY = "oro_admin_market_draft_v1"
+
+type MarketDraft = {
+  title: string
+  description: string
+  outcomes: { id?: string; label: string; imageUrl?: string | null }[]
+  opensAt: string
+  closesAt: string
+  houseEdgePct: number
+  mechanism: string
+  liquidityParam: number
+  category: string
+  subcategory: string
+  settlementSource: string
+  bracketSlot: string
+  matchLabel: string
+}
+
+function buildDefaultDraft(initialData?: MarketInitialData): MarketDraft {
+  return {
     title: initialData?.title || "",
     description: initialData?.description || "",
-    outcomes: (initialData?.outcomes?.map((o: Outcome) => ({
+    outcomes: initialData?.outcomes?.map((o: Outcome) => ({
       id: o.id,
       label: o.label,
       imageUrl: o.imageUrl ?? null,
     })) ?? [
       { label: "Yes", imageUrl: null },
       { label: "No", imageUrl: null },
-    ]) as {
-      id?: string
-      label: string
-      imageUrl?: string | null
-    }[],
+    ],
     opensAt: initialData?.opensAt
       ? toLocalDatetimeInput(new Date(initialData.opensAt))
       : "",
@@ -168,7 +178,77 @@ const MarketForm: React.FC<MarketFormProps> = ({
     bracketSlot:
       (initialData?.metadata?.bracketSlot as string | undefined) || "",
     matchLabel: (initialData?.metadata?.matchLabel as string | undefined) || "",
+  }
+}
+
+function loadDraft(): MarketDraft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray(parsed.outcomes)
+    ) {
+      return parsed as MarketDraft
+    }
+  } catch {
+    /* corrupt or blocked storage — ignore and start fresh */
+  }
+  return null
+}
+
+const MarketForm: React.FC<MarketFormProps> = ({
+  initialData,
+  onSubmit,
+  onCancel,
+  loading,
+  onAddOutcome,
+}) => {
+  const [newOutcomeLabel, setNewOutcomeLabel] = useState("")
+  const [newOutcomeImage, setNewOutcomeImage] = useState("")
+  const [addingOutcome, setAddingOutcome] = useState(false)
+  const [addOutcomeError, setAddOutcomeError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  // True when we rehydrated a previously-abandoned draft — drives the banner.
+  const [restoredDraft, setRestoredDraft] = useState(
+    () => !initialData && loadDraft() !== null
+  )
+  const [formData, setFormData] = useState<MarketDraft>(() => {
+    // Creating a new market: restore an autosaved draft if one exists.
+    if (!initialData) {
+      const saved = loadDraft()
+      if (saved) return saved
+    }
+    return buildDefaultDraft(initialData)
   })
+
+  // Mirror the form to localStorage on every change (create mode only) so a
+  // reload or a failed submit never costs the admin their typing.
+  useEffect(() => {
+    if (initialData) return // editing an existing market — don't autosave
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
+    } catch {
+      /* storage full/blocked — don't crash the form over a failed save */
+    }
+  }, [formData, initialData])
+
+  const clearDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY)
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Discard the restored draft and reset to a blank form.
+  const startFresh = () => {
+    clearDraft()
+    setRestoredDraft(false)
+    setFormData(buildDefaultDraft(initialData))
+  }
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -371,7 +451,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     // datetime-local inputs give "YYYY-MM-DDTHH:MM" with NO timezone — treat as
     // local browser time and convert to UTC ISO string so the backend stores the
@@ -379,25 +459,73 @@ const MarketForm: React.FC<MarketFormProps> = ({
     const toUTC = (local: string) =>
       local ? new Date(local).toISOString() : local
     const isPoliticalGroup = formData.category === "political" && !initialData
-    onSubmit({
-      ...formData,
-      opensAt: toUTC(formData.opensAt),
-      closesAt: toUTC(formData.closesAt),
-      houseEdgePct: Number(formData.houseEdgePct),
-      liquidityParam: Number(formData.liquidityParam),
-      candidates: isPoliticalGroup
-        ? formData.outcomes.map((o) => ({
-            name: o.label,
-            imageUrl: o.imageUrl ?? null,
-          }))
-        : undefined,
-    })
+    setSubmitting(true)
+    try {
+      await onSubmit({
+        ...formData,
+        opensAt: toUTC(formData.opensAt),
+        closesAt: toUTC(formData.closesAt),
+        houseEdgePct: Number(formData.houseEdgePct),
+        liquidityParam: Number(formData.liquidityParam),
+        candidates: isPoliticalGroup
+          ? formData.outcomes.map((o) => ({
+              name: o.label,
+              imageUrl: o.imageUrl ?? null,
+            }))
+          : undefined,
+      })
+      // Success — safe to discard the saved draft.
+      if (!initialData) {
+        clearDraft()
+        setRestoredDraft(false)
+      }
+    } catch {
+      // Submit failed (e.g. the backend was still cold-starting). Keep the form
+      // AND the saved draft intact so nothing the admin typed is lost.
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="glass-card" style={{ maxWidth: "600px", margin: "0 auto" }}>
       <form onSubmit={handleSubmit}>
         <h3>{initialData ? "Edit Market" : "Create New Market"}</h3>
+
+        {!initialData && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.75rem",
+              flexWrap: "wrap",
+              marginBottom: "1rem",
+              padding: "0.5rem 0.75rem",
+              borderRadius: 8,
+              fontSize: "0.75rem",
+              background: restoredDraft
+                ? "hsl(var(--primary) / 0.12)"
+                : "hsl(var(--muted) / 0.4)",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            <span>
+              {restoredDraft
+                ? "↩︎ Restored your unsaved draft — your typing is autosaved on this device."
+                : "✓ Autosave on — your typing is kept on this device even if the page reloads."}
+            </span>
+            {restoredDraft && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={startFresh}
+                style={{ fontSize: "0.7rem", padding: "0.2rem 0.6rem" }}
+              >
+                Start fresh
+              </button>
+            )}
+          </div>
+        )}
 
         <div style={{ marginBottom: "1rem" }}>
           <label
@@ -1233,9 +1361,11 @@ const MarketForm: React.FC<MarketFormProps> = ({
           <button type="button" className="secondary" onClick={onCancel}>
             Cancel
           </button>
-          <button type="submit" disabled={loading}>
-            {loading
-              ? "Saving..."
+          <button type="submit" disabled={loading || submitting}>
+            {loading || submitting
+              ? initialData
+                ? "Saving..."
+                : "Creating — waking the server if asleep…"
               : initialData
                 ? "Update Market"
                 : "Create Market"}

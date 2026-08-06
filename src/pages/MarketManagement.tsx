@@ -60,6 +60,19 @@ interface Dispute {
 
 const PAGE_SIZE = 20
 
+// A timeout or network-level failure — the signature of hitting a backend that
+// spun down and is cold-starting. (A 4xx/5xx from the app carries a real message
+// and is NOT retried.)
+function isColdStartError(e: unknown): boolean {
+  const m = (e instanceof Error ? e.message : String(e)).toLowerCase()
+  return (
+    m.includes("timed out") ||
+    m.includes("failed to fetch") ||
+    m.includes("networkerror") ||
+    m.includes("load failed")
+  )
+}
+
 const MarketManagement: React.FC = () => {
   const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
@@ -94,6 +107,19 @@ const MarketManagement: React.FC = () => {
     const t = setTimeout(() => setDebouncedSearch(search), 300)
     return () => clearTimeout(t)
   }, [search])
+
+  // Keep the (possibly spun-down) free-tier backend awake and the connection
+  // warm while the create/edit form is open. Without this, a long form-fill
+  // sends zero requests, the server sleeps, and the eventual submit lands on a
+  // cold start and times out. Pings /admin/health every 60s; bypasses the shared
+  // loading flag so it never flickers the form buttons.
+  useEffect(() => {
+    if (view !== "create" && view !== "edit") return
+    const id = setInterval(() => {
+      void api.keepAlive()
+    }, 60_000)
+    return () => clearInterval(id)
+  }, [view, api])
 
   const fetchMarkets = useRef(
     (
@@ -211,7 +237,7 @@ const MarketManagement: React.FC = () => {
     !!search.trim() || filterCategory !== "All" || filterSubcategory !== "All"
 
   const handleCreate = async (data: MarketFormData) => {
-    try {
+    const submit = async () => {
       if (data.candidates?.length) {
         await api.createMarketGroup({
           title: data.title,
@@ -239,6 +265,17 @@ const MarketManagement: React.FC = () => {
           })),
         })
       }
+    }
+    try {
+      try {
+        await submit()
+      } catch (e: unknown) {
+        // A spun-down free-tier backend fails the first request while it cold
+        // starts. That first hit wakes it — retry once before giving up.
+        if (!isColdStartError(e)) throw e
+        await new Promise((r) => setTimeout(r, 1500))
+        await submit()
+      }
       setPage(1)
       refresh()
       setView("list")
@@ -253,6 +290,9 @@ const MarketManagement: React.FC = () => {
         "error",
         `Error creating market: ${e instanceof Error ? e.message : String(e)}`
       )
+      // Rethrow so MarketForm keeps the form filled and its autosaved draft —
+      // nothing the admin typed is lost on a failed submit.
+      throw e
     }
   }
 
@@ -424,7 +464,6 @@ const MarketManagement: React.FC = () => {
       return
     }
     try {
-      // eslint-disable-next-line react-hooks/purity -- event handler, not render (false positive)
       const closesAt = new Date(Date.now() + minutes * 60_000).toISOString()
       await api.reopenMarket(m.id, closesAt)
       refresh()

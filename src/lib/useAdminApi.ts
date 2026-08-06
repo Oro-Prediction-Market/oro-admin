@@ -31,7 +31,7 @@ export function useAdminApi(token: string | null) {
   const [error, setError] = useState<string | null>(null)
 
   const apiFetch = useCallback(
-    async (path: string, options: RequestInit = {}) => {
+    async (path: string, options: RequestInit = {}, timeoutMs = 45_000) => {
       if (!token) throw new Error("No admin token provided")
       setLoading(true)
       setError(null)
@@ -40,7 +40,7 @@ export function useAdminApi(token: string | null) {
       // otherwise leave the promise unsettled — button stuck spinning, only a
       // full page refresh recovers. 45s is generous for market creation.
       const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 45_000)
+      const timeout = setTimeout(() => controller.abort(), timeoutMs)
       try {
         const response = await fetch(`${API_BASE}${path}`, {
           ...options,
@@ -112,10 +112,14 @@ export function useAdminApi(token: string | null) {
         return apiFetch(`/admin/markets${suffix}`)
       },
       createMarket: (data: Record<string, unknown>) =>
-        apiFetch("/admin/markets", {
-          method: "POST",
-          body: JSON.stringify(data),
-        }),
+        // 90s (not the default 45s): a free-tier backend that spun down while
+        // the admin filled the form can take 30-60s to cold-start on this first
+        // request. handleCreate also retries once on a transport failure.
+        apiFetch(
+          "/admin/markets",
+          { method: "POST", body: JSON.stringify(data) },
+          90_000
+        ),
       // ── EPL stat markets (one-click from the live leaderboard) ──
       getEplStatMarketPreview: () => apiFetch("/admin/epl/stat-market/preview"),
       createEplStatMarket: (body: {
@@ -128,10 +132,12 @@ export function useAdminApi(token: string | null) {
           body: JSON.stringify(body),
         }),
       createMarketGroup: (data: Record<string, unknown>) =>
-        apiFetch("/admin/markets/group", {
-          method: "POST",
-          body: JSON.stringify(data),
-        }),
+        // Longer timeout — cold start + creates several child markets at once.
+        apiFetch(
+          "/admin/markets/group",
+          { method: "POST", body: JSON.stringify(data) },
+          90_000
+        ),
       announceMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}/announce`, { method: "POST" }),
       updateMarket: (id: string, data: Record<string, unknown>) =>
@@ -287,6 +293,14 @@ export function useAdminApi(token: string | null) {
       getAuditLogsByEntity: (entityId: string) =>
         apiFetch(`/admin/audit-logs/entity/${entityId}`),
       getHealthCheck: () => apiFetch("/admin/health"),
+      // Fire-and-forget warm-up ping. Deliberately bypasses apiFetch so it never
+      // flips the shared `loading` flag (which would flicker form buttons) and
+      // never throws — used to keep a spun-down free-tier backend awake while an
+      // admin fills a long form so their submit doesn't land on a cold start.
+      keepAlive: () =>
+        fetch(`${API_BASE}/admin/health`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }).catch(() => {}),
       toggleAdmin: (userId: string, isAdmin: boolean) =>
         apiFetch(`/admin/users/${userId}/admin`, {
           method: "PATCH",
@@ -475,7 +489,7 @@ export function useAdminApi(token: string | null) {
           body: JSON.stringify(params),
         }),
     }),
-    [apiFetch]
+    [apiFetch, token]
   )
 
   // Download helper — returns a blob, not JSON, so cannot use apiFetch
