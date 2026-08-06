@@ -1,4 +1,4 @@
-import React, { useState, lazy, Suspense } from "react"
+import React, { useState, useEffect, lazy, Suspense } from "react"
 import { Menu } from "lucide-react"
 import AdminSidebar from "../components/AdminSidebar"
 
@@ -23,7 +23,14 @@ const UclStatMarketsPage = lazy(() => import("./UclStatMarketsPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
-  const [page, setPage] = useState("dashboard")
+  // Remember the current page across reloads (per-tab, like the admin token) so
+  // refreshing keeps you where you were instead of bouncing back to Dashboard.
+  const [page, setPage] = useState(
+    () => sessionStorage.getItem("admin_page") || "dashboard"
+  )
+  useEffect(() => {
+    sessionStorage.setItem("admin_page", page)
+  }, [page])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => window.innerWidth <= 768
   )

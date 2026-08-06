@@ -304,6 +304,9 @@ export function useAdminApi(token: string | null) {
       getAuditLogsByEntity: (entityId: string) =>
         apiFetch(`/admin/audit-logs/entity/${entityId}`),
       getHealthCheck: () => apiFetch("/admin/health"),
+      // Dashboard KPIs computed server-side over ALL markets (the old client-side
+      // tally only saw the newest page of markets, so it under-reported badly).
+      getMarketStats: () => apiFetch("/admin/markets/stats"),
       // Fire-and-forget warm-up ping. Deliberately bypasses apiFetch so it never
       // flips the shared `loading` flag (which would flicker form buttons) and
       // never throws — used to keep a spun-down free-tier backend awake while an

@@ -1,5 +1,5 @@
-import React, { useMemo } from "react"
-import { useAdminMarkets } from "../lib/useAdminApi"
+import React, { useState, useEffect } from "react"
+import { useAdminApi } from "../lib/useAdminApi"
 import { TrendingUp, Activity, AlertCircle } from "lucide-react"
 import HealthCheck from "../components/HealthCheck"
 import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
@@ -7,24 +7,37 @@ import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 const AdminDashboard: React.FC = () => {
   const token =
     sessionStorage.getItem("admin_token") || localStorage.getItem("admin_token")
-  const { markets, loading, error } = useAdminMarkets(token, { limit: 500 })
+  const api = useAdminApi(token)
 
-  const stats = useMemo(() => {
-    const activeMarkets = markets.filter(
-      (m: Record<string, unknown>) => m.status === "open"
-    ).length
-    const totalPoolVolume = markets
-      .filter((m: Record<string, unknown>) => m.status === "open")
-      .reduce(
-        (sum: number, m: Record<string, unknown>) =>
-          sum + (parseFloat(String(m.totalPool)) || 0),
-        0
+  // KPIs come from a server-side aggregate over ALL markets. The old approach
+  // counted a single 500-row page in the browser, so with thousands of markets
+  // it silently under-reported every tile (open pool read 0, unsettled read ~5).
+  const [stats, setStats] = useState({
+    activeMarkets: 0,
+    totalPoolVolume: 0,
+    unsettledMarkets: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    api
+      .getMarketStats()
+      .then((r) =>
+        setStats(
+          r as {
+            activeMarkets: number
+            totalPoolVolume: number
+            unsettledMarkets: number
+          }
+        )
       )
-    const unsettledMarkets = markets.filter((m: Record<string, unknown>) =>
-      ["closed", "resolving", "resolved"].includes(String(m.status))
-    ).length
-    return { activeMarkets, totalPoolVolume, unsettledMarkets }
-  }, [markets])
+      .catch((e: unknown) =>
+        setError(e instanceof Error ? e.message : String(e))
+      )
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const formatVolume = (val: number) => {
     return `NU. ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(val)}`
