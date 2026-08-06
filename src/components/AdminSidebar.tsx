@@ -47,6 +47,8 @@ const AdminSidebar: React.FC<SidebarProps> = ({
       "settlements",
       "ter-markets",
       "btc-markets",
+      "epl-markets",
+      "ucl-markets",
     ].includes(current)
   )
   const [isLogsOpen, setIsLogsOpen] = useState(
@@ -119,6 +121,8 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 "settlements",
                 "ter-markets",
                 "btc-markets",
+                "epl-markets",
+                "ucl-markets",
               ].includes(current) && "active-parent"
             )}
             title={collapsed ? "Market Management" : undefined}
@@ -190,6 +194,22 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 BTC Markets
               </li>
               <li
+                className={current === "epl-markets" ? "active" : ""}
+                onClick={() => onNavigate("epl-markets")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Trophy size={18} />
+                EPL Markets
+              </li>
+              <li
+                className={current === "ucl-markets" ? "active" : ""}
+                onClick={() => onNavigate("ucl-markets")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Trophy size={18} />
+                UCL Markets
+              </li>
+              <li
                 className={current === "settlements" ? "active" : ""}
                 onClick={() => onNavigate("settlements")}
                 style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
@@ -256,15 +276,6 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             <ShieldAlert size={20} />
             {!collapsed && <span className="nav-label">AML Compliance</span>}
           </li>
-          <li
-            className={current === "epl-markets" ? "active" : ""}
-            onClick={() => onNavigate("epl-markets")}
-            title={collapsed ? "EPL Stat Markets" : undefined}
-          >
-            <Trophy size={20} />
-            {!collapsed && <span className="nav-label">EPL Markets</span>}
-          </li>
-
           <li
             onClick={handleLogsToggle}
             style={collapsed ? undefined : { justifyContent: "space-between" }}

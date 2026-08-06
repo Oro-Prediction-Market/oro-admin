@@ -131,6 +131,17 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
+      // ── UCL stat markets (one-click from the live leaderboard) ──
+      getUclStatMarketPreview: () => apiFetch("/admin/ucl/stat-market/preview"),
+      createUclStatMarket: (body: {
+        stat: string
+        closesAt?: string
+        topN?: number
+      }) =>
+        apiFetch("/admin/ucl/stat-market", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
       createMarketGroup: (data: Record<string, unknown>) =>
         // Longer timeout — cold start + creates several child markets at once.
         apiFetch(

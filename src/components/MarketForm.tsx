@@ -224,15 +224,21 @@ const MarketForm: React.FC<MarketFormProps> = ({
     return buildDefaultDraft(initialData)
   })
 
-  // Mirror the form to localStorage on every change (create mode only) so a
-  // reload or a failed submit never costs the admin their typing.
+  // Mirror the form to localStorage (create mode only) so a reload or a failed
+  // submit never costs the admin their typing. Debounced 2s: localStorage writes
+  // are synchronous and JSON.stringify of a 30+ outcome form on every keystroke
+  // made typing janky. Saving only after the admin pauses for 2s keeps the draft
+  // safe while keeping the input hot path completely clear.
   useEffect(() => {
     if (initialData) return // editing an existing market — don't autosave
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
-    } catch {
-      /* storage full/blocked — don't crash the form over a failed save */
-    }
+    const t = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
+      } catch {
+        /* storage full/blocked — don't crash the form over a failed save */
+      }
+    }, 2000)
+    return () => clearTimeout(t)
   }, [formData, initialData])
 
   const clearDraft = () => {
