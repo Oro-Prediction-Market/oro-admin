@@ -26,8 +26,12 @@ export function useRealTimeUpdates<T extends MarketBase>(markets: T[]) {
     "connecting" | "connected" | "disconnected"
   >("disconnected")
 
-  // WebSocket URL - should be configurable via environment
-  const wsUrl = import.meta.env.VITE_WS_URL || "ws://localhost:3001"
+  // WebSocket URL — opt-in via env. There is no raw-WS server to talk to by
+  // default (the backend's real-time layer is socket.io on the main port, which
+  // a plain WebSocket can't speak), so we DON'T hardcode ws://localhost:3001 —
+  // that just fails and reconnect-loops every 3s, spamming the console. Set
+  // VITE_WS_URL to a real WS endpoint to enable live updates.
+  const wsUrl = import.meta.env.VITE_WS_URL || ""
   const { isConnected, lastMessage } = useWebSocket(wsUrl)
 
   useEffect(() => {

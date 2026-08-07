@@ -595,14 +595,7 @@ const MarketManagement: React.FC = () => {
   return (
     <div className="market-management">
       {ToastContainer}
-      <div
-        style={{
-          marginBottom: "2rem",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
+      <div className="page-header">
         <div>
           <h2>Market Management</h2>
           <div
@@ -659,7 +652,7 @@ const MarketManagement: React.FC = () => {
             )}
           </div>
         </div>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+        <div className="page-header-actions">
           <button onClick={refresh} className="secondary" title="Refresh">
             ↻ Refresh
           </button>
@@ -687,6 +680,7 @@ const MarketManagement: React.FC = () => {
 
       <div className="glass-card" style={{ padding: "0" }}>
         <div
+          className="status-tabs"
           style={{
             padding: "1.5rem",
             borderBottom: "1px solid hsl(var(--border))",
@@ -716,6 +710,7 @@ const MarketManagement: React.FC = () => {
 
         {/* Search + category / subcategory filters */}
         <div
+          className="filter-bar"
           style={{
             padding: "0.75rem 1rem",
             borderBottom: "1px solid hsl(var(--border))",

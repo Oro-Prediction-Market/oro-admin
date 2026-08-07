@@ -6,12 +6,18 @@ interface WebSocketMessage {
 }
 
 export function useWebSocket(url: string) {
-  const [isConnected, setIsConnected] = useState(false)
+  const [connected, setIsConnected] = useState(false)
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null)
   const ws = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
+    // No URL configured → real-time is disabled. Don't attempt a connection
+    // (and don't start the 3s reconnect loop), so nothing spams the console.
+    if (!url) {
+      return
+    }
+
     let destroyed = false
 
     const clearReconnect = () => {
@@ -104,5 +110,5 @@ export function useWebSocket(url: string) {
     }
   }
 
-  return { isConnected, lastMessage, sendMessage }
+  return { isConnected: Boolean(url) && connected, lastMessage, sendMessage }
 }

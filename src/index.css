@@ -324,6 +324,50 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+  /* Always allow a wide table to scroll horizontally INSIDE its card instead of
+     pushing the whole page wider. Previously this only kicked in at ≤768px, so
+     data-heavy tables overflowed at tablet/laptop widths (the 280px sidebar eats
+     the space). display:block turns the table into its own scroll container. */
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Header cells shouldn't wrap mid-label — let the table scroll instead. */
+th {
+  white-space: nowrap;
+}
+
+/* Reusable responsive helpers — pages opt in via these classes so headers and
+   filter rows wrap consistently instead of each page hand-rolling flex inline. */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 2rem;
+}
+
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/* Explicit scroll wrapper for any table/wide block that needs it. */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 th {
@@ -587,13 +631,67 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
     grid-template-columns: 1fr;
   }
 
-  table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
   .glass-card {
     padding: 1rem;
+  }
+
+  /* Reclaim horizontal space on phones. The extra top padding clears the fixed
+     floating hamburger button (top:1rem, 40px tall) so it never sits on top of
+     the page title. */
+  .admin-main {
+    padding: 16px;
+    padding-top: 4.25rem;
+  }
+
+  th,
+  td {
+    padding: 0.75rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  /* Smaller headings on phones — the Orbitron titles are oversized otherwise. */
+  h1 {
+    font-size: 1.5rem;
+  }
+  h2 {
+    font-size: 1.3rem;
+  }
+  h3 {
+    font-size: 1.05rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .stat-card p {
+    font-size: 2rem;
+  }
+
+  button {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  /* Filters: stack every control full-width and aligned instead of leaving
+     half-width selects floating. Overrides the inline flex-basis on each child. */
+  .filter-bar > * {
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  /* Trim the oversized status-tab strip padding on phones. */
+  .status-tabs {
+    padding: 1rem !important;
+  }
+}
+
+/* Tablet / small-laptop: trim the oversized cell padding so tables need less
+   horizontal room before they have to scroll. */
+@media (max-width: 1024px) {
+  th,
+  td {
+    padding: 0.875rem 0.75rem;
   }
 }
