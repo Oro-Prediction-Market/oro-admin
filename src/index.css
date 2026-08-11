@@ -324,18 +324,25 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
-  /* Always allow a wide table to scroll horizontally INSIDE its card instead of
-     pushing the whole page wider. Previously this only kicked in at ≤768px, so
-     data-heavy tables overflowed at tablet/laptop widths (the 280px sidebar eats
-     the space). display:block turns the table into its own scroll container. */
-  display: block;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  /* Keep the table a real table box so the browser stretches columns to fill
+     100% of the card. (It used to be display:block for horizontal scroll, but a
+     block table shrinks to its content width and left-aligns, leaving dead space
+     on the right.) Horizontal scroll for genuinely-wide tables is handled by the
+     card wrapper below instead. */
 }
 
 /* Header cells shouldn't wrap mid-label — let the table scroll instead. */
 th {
   white-space: nowrap;
+}
+
+/* A table fills its card. If it's genuinely wider than the card (many columns
+   with nowrap headers), the CARD scrolls horizontally — instead of the table
+   shrinking to content width and hugging the left with empty space on the
+   right. Covers every table page since they all wrap tables in .glass-card. */
+.glass-card:has(table) {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Reusable responsive helpers — pages opt in via these classes so headers and
