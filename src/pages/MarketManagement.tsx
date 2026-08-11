@@ -11,6 +11,7 @@ import {
 import ResolveMarketModal from "../components/ResolveMarketModal"
 import ProposeMarketModal from "../components/ProposeMarketModal"
 import CancelMarketModal from "../components/CancelMarketModal"
+import ConfirmDialog from "../components/ConfirmDialog"
 import { OddsDisplay } from "../components/OddsDisplay"
 import { LateMoneyMonitor } from "../components/LateMoneyMonitor"
 import { useToast } from "../components/Toast"
@@ -90,6 +91,14 @@ const MarketManagement: React.FC = () => {
   const [resolvingMarket, setResolvingMarket] = useState<Market | null>(null)
   const [resolvingDisputes, setResolvingDisputes] = useState<Dispute[]>([])
   const [cancellingMarket, setCancellingMarket] = useState<Market | null>(null)
+  const [confirmDialog, setConfirmDialog] = useState<{
+    title: string
+    message: string
+    confirmLabel: string
+    variant: "danger" | "default"
+    onConfirm: () => void | Promise<void>
+  } | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>("All")
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("All")
@@ -399,22 +408,24 @@ const MarketManagement: React.FC = () => {
     }
   }
 
-  const handleAnnounce = async (m: Market) => {
-    if (
-      !window.confirm(
-        `Announce "${m.title}" to the Telegram channel? This will notify all channel members.`
-      )
-    )
-      return
-    try {
-      await api.announceMarket(m.id)
-      notify("success", "Market announced to the Telegram channel.")
-    } catch (e: unknown) {
-      notify(
-        "error",
-        `Error announcing market: ${e instanceof Error ? e.message : String(e)}`
-      )
-    }
+  const handleAnnounce = (m: Market) => {
+    setConfirmDialog({
+      title: "Announce to Telegram",
+      message: `Announce "${m.title}" to the Telegram channel?\n\nThis will notify all channel members.`,
+      confirmLabel: "Announce",
+      variant: "default",
+      onConfirm: async () => {
+        try {
+          await api.announceMarket(m.id)
+          notify("success", "Market announced to the Telegram channel.")
+        } catch (e: unknown) {
+          notify(
+            "error",
+            `Error announcing market: ${e instanceof Error ? e.message : String(e)}`
+          )
+        }
+      },
+    })
   }
 
   const handleToggleFeatured = async (m: Market) => {
@@ -436,7 +447,7 @@ const MarketManagement: React.FC = () => {
     }
   }
 
-  const handleTransition = async (id: string, status: string) => {
+  const doTransition = async (id: string, status: string) => {
     try {
       await api.transitionMarket(id, status)
       refresh()
@@ -447,6 +458,25 @@ const MarketManagement: React.FC = () => {
         `Error transitioning market: ${e instanceof Error ? e.message : String(e)}`
       )
     }
+  }
+
+  const handleTransition = (id: string, status: string, title?: string) => {
+    // Closing a live market immediately stops all betting — confirm first
+    // (the button is a small icon that's easy to hit by mistake).
+    if (status === "closed") {
+      setConfirmDialog({
+        title: "Close market",
+        message:
+          `Close market${title ? ` "${title}"` : ""}?\n\n` +
+          `This immediately stops all betting. You can reopen it afterward, but ` +
+          `only do this deliberately — an accidental close interrupts a live market.`,
+        confirmLabel: "Close market",
+        variant: "danger",
+        onConfirm: () => doTransition(id, status),
+      })
+      return
+    }
+    void doTransition(id, status)
   }
 
   // World Cup hub markets only — backend rejects any non-"wc-*" subcategory.
@@ -1047,7 +1077,9 @@ const MarketManagement: React.FC = () => {
                           )}
                           {m.status === "open" && (
                             <button
-                              onClick={() => handleTransition(m.id, "closed")}
+                              onClick={() =>
+                                handleTransition(m.id, "closed", m.title)
+                              }
                               className="secondary"
                               title="Close Market"
                             >
@@ -1296,6 +1328,25 @@ const MarketManagement: React.FC = () => {
           onConfirm={handleCancel}
           onClose={() => setCancellingMarket(null)}
           loading={api.loading}
+        />
+      )}
+      {confirmDialog && (
+        <ConfirmDialog
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmLabel={confirmDialog.confirmLabel}
+          variant={confirmDialog.variant}
+          loading={confirmLoading}
+          onClose={() => setConfirmDialog(null)}
+          onConfirm={async () => {
+            setConfirmLoading(true)
+            try {
+              await confirmDialog.onConfirm()
+            } finally {
+              setConfirmLoading(false)
+              setConfirmDialog(null)
+            }
+          }}
         />
       )}
     </div>
