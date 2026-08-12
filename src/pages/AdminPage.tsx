@@ -58,6 +58,20 @@ const AdminPage: React.FC = () => {
     setToken(null)
   }
 
+  // Any authed request can 401 once the admin token expires. useAdminApi clears
+  // the dead token and fires `admin:unauthorized`; catch it here to drop back to
+  // the login screen with a clear message, instead of a raw "Unauthorized" error
+  // stuck on whatever page the admin was viewing.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setToken(null)
+      setLoginError("Your session expired. Please sign in again.")
+    }
+    window.addEventListener("admin:unauthorized", onUnauthorized)
+    return () =>
+      window.removeEventListener("admin:unauthorized", onUnauthorized)
+  }, [])
+
   if (!token) {
     return (
       <div

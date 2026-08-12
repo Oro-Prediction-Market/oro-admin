@@ -52,6 +52,14 @@ export function useAdminApi(token: string | null) {
           },
         })
         if (!response.ok) {
+          // Expired / invalid admin token: don't surface a bare "Unauthorized"
+          // on every page. Clear the dead token and signal the app to drop back
+          // to the login screen (AdminPage listens for this event).
+          if (response.status === 401) {
+            sessionStorage.removeItem("admin_token")
+            window.dispatchEvent(new CustomEvent("admin:unauthorized"))
+            throw new Error("Your session expired. Please sign in again.")
+          }
           const errorData = await response.json().catch(() => ({}))
           throw new Error(
             errorData.message || `API Request Failed: ${response.status}`
