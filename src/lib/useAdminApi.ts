@@ -100,6 +100,7 @@ export function useAdminApi(token: string | null) {
         limit?: number
         status?: string
         externalSource?: string
+        excludeSources?: string
         category?: string
         subcategory?: string
         search?: string
@@ -111,6 +112,8 @@ export function useAdminApi(token: string | null) {
           qs.set("status", params.status)
         if (params?.externalSource)
           qs.set("externalSource", params.externalSource)
+        if (params?.excludeSources)
+          qs.set("excludeSources", params.excludeSources)
         if (params?.category && params.category !== "All")
           qs.set("category", params.category)
         if (params?.subcategory && params.subcategory !== "All")

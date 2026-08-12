@@ -145,7 +145,9 @@ const MarketManagement: React.FC = () => {
           page: p,
           limit: PAGE_SIZE,
           status,
-          externalSource: "none",
+          // Show manual + imported markets, but hide the thousands of
+          // auto-generated btc/ter markets that would otherwise bury the tab.
+          excludeSources: "btc,ter",
           category,
           subcategory,
           search: searchQ,
