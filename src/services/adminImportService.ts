@@ -10,12 +10,8 @@ export interface ImportRequest {
   mechanism?: "parimutuel" | "scpm"
   liquidityParam?: number
   imageUrl?: string
-  externalData?: {
-    source: string
-    matchId: number
-    venue: string
-    competition: string
-  }
+  externalSource?: string
+  externalMatchId?: number
 }
 
 interface ImportResult {
@@ -46,12 +42,11 @@ class AdminImportService {
       houseEdgePct: 5, // Default 5% house edge
       mechanism: "parimutuel", // Default mechanism
       liquidityParam: 1000, // Default liquidity parameter
-      externalData: {
-        source: fifaMarket.source,
-        matchId: fifaMarket.matchData.id,
-        venue: fifaMarket.matchData.venue,
-        competition: fifaMarket.matchData.competition,
-      },
+      // Flat fields the backend CreateMarketDto accepts (a nested externalData
+      // object is rejected by whitelist validation). Venue/competition are only
+      // descriptive and are already captured in the description above.
+      externalSource: fifaMarket.source,
+      externalMatchId: fifaMarket.matchData.id,
     }
 
     try {

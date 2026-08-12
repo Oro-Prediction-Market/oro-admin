@@ -72,12 +72,11 @@ const MarketDiscovery: React.FC = () => {
         mechanism: data.mechanism,
         liquidityParam: data.liquidityParam,
         category: data.category,
-        externalData: {
-          source: market.source,
-          matchId: market.matchData.id,
-          venue: market.matchData.venue,
-          competition: market.matchData.competition,
-        },
+        // Flat fields the backend CreateMarketDto accepts — a nested
+        // `externalData` object is rejected by whitelist validation. Venue and
+        // competition aren't market fields (they live in the description).
+        externalSource: market.source,
+        externalMatchId: market.matchData.id,
       }
 
       const token = sessionStorage.getItem("admin_token")
