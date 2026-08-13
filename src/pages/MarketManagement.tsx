@@ -52,6 +52,7 @@ interface Market {
   poolVolume?: string | number
   totalPool?: string | number
   houseEdgePct?: number
+  imageUrl?: string | null
   category?: string | null
   subcategory?: string | null
   outcomes: Outcome[]
@@ -254,10 +255,12 @@ const MarketManagement: React.FC = () => {
 
   const handleCreate = async (data: MarketFormData) => {
     const submit = async () => {
+      const marketImageUrl = data.imageUrl.trim()
       if (data.candidates?.length) {
         await api.createMarketGroup({
           title: data.title,
           ...(data.description ? { description: data.description } : {}),
+          ...(marketImageUrl ? { imageUrl: marketImageUrl } : {}),
           ...(data.opensAt ? { opensAt: data.opensAt } : {}),
           ...(data.closesAt ? { closesAt: data.closesAt } : {}),
           houseEdgePct: data.houseEdgePct,
