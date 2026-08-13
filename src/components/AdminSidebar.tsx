@@ -23,6 +23,7 @@ import {
   PanelLeftOpen,
   ShieldAlert,
   Trophy,
+  Lightbulb,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
   const [isMarketOpen, setIsMarketOpen] = useState(
     [
       "markets",
+      "suggestions",
       "discovery",
       "settlements",
       "ter-markets",
@@ -170,6 +172,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               >
                 <BarChart3 size={18} />
                 Markets
+              </li>
+              <li
+                className={current === "suggestions" ? "active" : ""}
+                onClick={() => onNavigate("suggestions")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Lightbulb size={18} />
+                Market Suggestions
               </li>
               <li
                 className={current === "ter-markets" ? "active" : ""}

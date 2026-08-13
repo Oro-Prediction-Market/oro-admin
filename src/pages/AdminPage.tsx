@@ -4,6 +4,7 @@ import AdminSidebar from "../components/AdminSidebar"
 
 const AdminDashboard = lazy(() => import("./AdminDashboard"))
 const MarketManagement = lazy(() => import("./MarketManagement"))
+const MarketSuggestions = lazy(() => import("./MarketSuggestions"))
 const UserManagement = lazy(() => import("./UserManagement"))
 const MarketDiscovery = lazy(() => import("./MarketDiscovery"))
 const KeeperDashboard = lazy(() => import("./KeeperDashboard"))
@@ -221,6 +222,7 @@ const AdminPage: React.FC = () => {
   let content
   if (page === "dashboard") content = <AdminDashboard />
   else if (page === "markets") content = <MarketManagement />
+  else if (page === "suggestions") content = <MarketSuggestions />
   else if (page === "users") content = <UserManagement />
   else if (page === "discovery") content = <MarketDiscovery />
   else if (page === "keeper") content = <KeeperDashboard />

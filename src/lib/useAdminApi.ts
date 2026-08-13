@@ -160,6 +160,25 @@ export function useAdminApi(token: string | null) {
           { method: "POST", body: JSON.stringify(data) },
           90_000
         ),
+      // ── Market suggestions (Oracle Orbit) ──
+      getSuggestions: (status?: string, sort?: string) => {
+        const qs = new URLSearchParams()
+        if (status) qs.set("status", status)
+        if (sort) qs.set("sort", sort)
+        const q = qs.toString()
+        return apiFetch(`/admin/suggestions${q ? `?${q}` : ""}`)
+      },
+      reviewSuggestion: (id: string, approve: boolean) =>
+        apiFetch(`/admin/suggestions/${id}/review`, {
+          method: "PATCH",
+          body: JSON.stringify({ approve }),
+        }),
+      publishSuggestion: (id: string, data: Record<string, unknown>) =>
+        apiFetch(
+          `/admin/suggestions/${id}/publish`,
+          { method: "POST", body: JSON.stringify(data) },
+          90_000
+        ),
       getMarketGroup: (groupId: string) =>
         apiFetch(`/admin/markets/group/${groupId}`),
       updateMarketGroup: (groupId: string, data: Record<string, unknown>) =>

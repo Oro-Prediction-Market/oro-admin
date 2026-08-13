@@ -94,6 +94,12 @@ export interface MarketFormData {
 
 interface MarketFormProps {
   initialData?: MarketInitialData
+  /**
+   * Create mode only: prefill the fresh form (e.g. publishing a market
+   * suggestion). Unlike `initialData` it does NOT switch the form to edit mode,
+   * so all create features (add outcome, political candidates) stay available.
+   */
+  seed?: MarketInitialData
   onSubmit: (data: MarketFormData) => void | Promise<void>
   onCancel: () => void
   loading?: boolean
@@ -212,6 +218,7 @@ function loadDraft(): MarketDraft | null {
 
 const MarketForm: React.FC<MarketFormProps> = ({
   initialData,
+  seed,
   onSubmit,
   onCancel,
   loading,
@@ -224,9 +231,11 @@ const MarketForm: React.FC<MarketFormProps> = ({
   const [submitting, setSubmitting] = useState(false)
   // True when we rehydrated a previously-abandoned draft — drives the banner.
   const [restoredDraft, setRestoredDraft] = useState(
-    () => !initialData && loadDraft() !== null
+    () => !initialData && !seed && loadDraft() !== null
   )
   const [formData, setFormData] = useState<MarketDraft>(() => {
+    // Publishing a suggestion: the seed wins over any leftover draft.
+    if (!initialData && seed) return buildDefaultDraft(seed)
     // Creating a new market: restore an autosaved draft if one exists.
     if (!initialData) {
       const saved = loadDraft()
@@ -241,7 +250,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
   // made typing janky. Saving only after the admin pauses for 2s keeps the draft
   // safe while keeping the input hot path completely clear.
   useEffect(() => {
-    if (initialData) return // editing an existing market — don't autosave
+    if (initialData || seed) return // editing, or publishing a seeded suggestion — don't autosave
     const t = setTimeout(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
@@ -250,7 +259,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
       }
     }, 2000)
     return () => clearTimeout(t)
-  }, [formData, initialData])
+  }, [formData, initialData, seed])
 
   const clearDraft = () => {
     try {
