@@ -17,7 +17,7 @@ interface AdminUser {
   id: string
   telegramId: string | null
   telegramChatId: string | null
-  telegramStreak: number | null
+  betStreakCount: number | null
   telegramLinkedAt: string | null
   firstName: string | null
   lastName: string | null
@@ -662,7 +662,7 @@ const UserManagement: React.FC = () => {
                         >
                           {user.telegramId ?? "—"}
                         </span>
-                        {user.telegramStreak ? (
+                        {user.betStreakCount ? (
                           <span
                             style={{
                               display: "flex",
@@ -673,7 +673,7 @@ const UserManagement: React.FC = () => {
                               color: "hsl(var(--primary))",
                             }}
                           >
-                            <Flame size={13} /> {user.telegramStreak}
+                            <Flame size={13} /> {user.betStreakCount}
                           </span>
                         ) : (
                           <span
