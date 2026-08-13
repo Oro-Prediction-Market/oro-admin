@@ -160,6 +160,15 @@ export function useAdminApi(token: string | null) {
           { method: "POST", body: JSON.stringify(data) },
           90_000
         ),
+      getMarketGroup: (groupId: string) =>
+        apiFetch(`/admin/markets/group/${groupId}`),
+      updateMarketGroup: (groupId: string, data: Record<string, unknown>) =>
+        // Longer timeout — cold start + edits several child markets at once.
+        apiFetch(
+          `/admin/markets/group/${groupId}`,
+          { method: "PATCH", body: JSON.stringify(data) },
+          90_000
+        ),
       announceMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}/announce`, { method: "POST" }),
       updateMarket: (id: string, data: Record<string, unknown>) =>

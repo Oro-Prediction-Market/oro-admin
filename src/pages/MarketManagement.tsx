@@ -3,6 +3,10 @@ import { useAdminApi } from "../lib/useAdminApi"
 import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 import { useRealTimeUpdates } from "../hooks/useRealTimeUpdates"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
+import GroupEditForm, {
+  type GroupMarket,
+  type GroupEditPayload,
+} from "../components/GroupEditForm"
 import {
   CATEGORIES,
   SPORT_SUBCATEGORIES,
@@ -87,6 +91,7 @@ const MarketManagement: React.FC = () => {
 
   const [view, setView] = useState<"list" | "create" | "edit">("list")
   const [editingMarket, setEditingMarket] = useState<Market | null>(null)
+  const [editingGroup, setEditingGroup] = useState<GroupMarket[] | null>(null)
   const [proposingMarket, setProposingMarket] = useState<Market | null>(null)
   const [resolvingMarket, setResolvingMarket] = useState<Market | null>(null)
   const [resolvingDisputes, setResolvingDisputes] = useState<Dispute[]>([])
@@ -327,6 +332,41 @@ const MarketManagement: React.FC = () => {
         "error",
         `Error updating market: ${e instanceof Error ? e.message : String(e)}`
       )
+    }
+  }
+
+  const handleEditGroup = async (m: Market) => {
+    const groupId = m.groupId as string | undefined
+    if (!groupId) return
+    try {
+      const siblings = (await api.getMarketGroup(groupId)) as GroupMarket[]
+      setEditingGroup(siblings)
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error loading group: ${e instanceof Error ? e.message : String(e)}`
+      )
+    }
+  }
+
+  const handleUpdateGroup = async (payload: GroupEditPayload) => {
+    const groupId = editingGroup?.[0]?.groupId
+    if (!groupId) return
+    try {
+      await api.updateMarketGroup(groupId, {
+        ...payload,
+        opensAt: payload.opensAt,
+        closesAt: payload.closesAt,
+      })
+      await refresh()
+      setEditingGroup(null)
+      notify("success", "Market group updated successfully.")
+    } catch (e: unknown) {
+      notify(
+        "error",
+        `Error updating group: ${e instanceof Error ? e.message : String(e)}`
+      )
+      throw e
     }
   }
 
@@ -1118,18 +1158,36 @@ const MarketManagement: React.FC = () => {
                               <CheckSquare size={14} />
                             </button>
                           )}
-                          {(m.status === "upcoming" || m.status === "open") && (
-                            <button
-                              onClick={() => {
-                                setEditingMarket(m)
-                                setView("edit")
-                              }}
-                              className="secondary"
-                              title="Edit"
-                            >
-                              <Edit size={14} />
-                            </button>
-                          )}
+                          {(m.status === "upcoming" || m.status === "open") &&
+                            (m.groupId ? (
+                              <button
+                                onClick={() => handleEditGroup(m)}
+                                className="secondary"
+                                title="Edit whole group (title, timing, candidate names & images)"
+                                style={{ color: "hsl(217 91% 65%)" }}
+                              >
+                                <Edit size={14} />
+                                <span
+                                  style={{
+                                    fontSize: "0.7rem",
+                                    marginLeft: 4,
+                                  }}
+                                >
+                                  Group
+                                </span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => {
+                                  setEditingMarket(m)
+                                  setView("edit")
+                                }}
+                                className="secondary"
+                                title="Edit"
+                              >
+                                <Edit size={14} />
+                              </button>
+                            ))}
                           {(m.status === "upcoming" ||
                             m.status === "cancelled" ||
                             parseFloat(String(m.totalPool ?? 0)) === 0) && (
@@ -1330,6 +1388,13 @@ const MarketManagement: React.FC = () => {
           onConfirm={handleCancel}
           onClose={() => setCancellingMarket(null)}
           loading={api.loading}
+        />
+      )}
+      {editingGroup && (
+        <GroupEditForm
+          markets={editingGroup}
+          onSubmit={handleUpdateGroup}
+          onCancel={() => setEditingGroup(null)}
         />
       )}
       {confirmDialog && (
