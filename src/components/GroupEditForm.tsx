@@ -29,7 +29,8 @@ export interface GroupEditPayload {
   opensAt?: string
   closesAt?: string
   houseEdgePct: number
-  candidates: { id: string; name: string; imageUrl: string | null }[]
+  // id present = edit existing candidate; id omitted = add a new candidate
+  candidates: { id?: string; name: string; imageUrl: string | null }[]
 }
 
 interface Props {
@@ -70,7 +71,8 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
   const [houseEdgePct, setHouseEdgePct] = useState(first?.houseEdgePct ?? 5)
   const [candidates, setCandidates] = useState(
     markets.map((m) => ({
-      id: m.id,
+      key: m.id,
+      id: m.id as string | undefined,
       name: candidateName(m),
       imageUrl: m.imageUrl ?? "",
     }))
@@ -83,13 +85,24 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
   )
 
   const setCandidate = (
-    id: string,
+    key: string,
     field: "name" | "imageUrl",
     value: string
   ) => {
     setCandidates((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c))
+      prev.map((c) => (c.key === key ? { ...c, [field]: value } : c))
     )
+  }
+
+  const addCandidate = () => {
+    setCandidates((prev) => [
+      ...prev,
+      { key: `new-${Date.now()}`, id: undefined, name: "", imageUrl: "" },
+    ])
+  }
+
+  const removeCandidate = (key: string) => {
+    setCandidates((prev) => prev.filter((c) => c.key !== key))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -104,11 +117,14 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
         opensAt: opensAt ? new Date(opensAt).toISOString() : undefined,
         closesAt: closesAt ? new Date(closesAt).toISOString() : undefined,
         houseEdgePct,
-        candidates: candidates.map((c) => ({
-          id: c.id,
-          name: c.name.trim(),
-          imageUrl: c.imageUrl.trim() || null,
-        })),
+        candidates: candidates
+          // drop blank rows a user added but never filled in
+          .filter((c) => c.id || c.name.trim())
+          .map((c) => ({
+            ...(c.id ? { id: c.id } : {}),
+            name: c.name.trim(),
+            imageUrl: c.imageUrl.trim() || null,
+          })),
       })
     } finally {
       setSubmitting(false)
@@ -226,30 +242,40 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
           />
         </div>
 
-        <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem" }}>
-          <div style={{ flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            marginBottom: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ flex: "1 1 180px", minWidth: 0 }}>
             <label style={labelStyle}>Opens at</label>
             <input
               type="datetime-local"
               className="input-field"
+              style={{ width: "100%" }}
               value={opensAt}
               onChange={(e) => setOpensAt(e.target.value)}
             />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: "1 1 180px", minWidth: 0 }}>
             <label style={labelStyle}>Closes at</label>
             <input
               type="datetime-local"
               className="input-field"
+              style={{ width: "100%" }}
               value={closesAt}
               onChange={(e) => setClosesAt(e.target.value)}
             />
           </div>
-          <div style={{ width: 120 }}>
+          <div style={{ flex: "0 0 100%", maxWidth: 200 }}>
             <label style={labelStyle}>House edge %</label>
             <input
               type="number"
               className="input-field"
+              style={{ width: "100%" }}
               value={houseEdgePct}
               min={0}
               max={50}
@@ -277,7 +303,7 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
 
         {candidates.map((c, i) => (
           <div
-            key={c.id}
+            key={c.key}
             style={{
               display: "flex",
               gap: "0.5rem",
@@ -323,19 +349,41 @@ const GroupEditForm: FC<Props> = ({ markets, onSubmit, onCancel }) => {
               className="input-field"
               style={{ marginBottom: 0, flex: "0 0 30%" }}
               value={c.name}
-              onChange={(e) => setCandidate(c.id, "name", e.target.value)}
-              placeholder={`Candidate ${i + 1} name`}
+              onChange={(e) => setCandidate(c.key, "name", e.target.value)}
+              placeholder={
+                c.id ? `Candidate ${i + 1} name` : "New candidate name"
+              }
               required
             />
             <input
               className="input-field"
               style={{ marginBottom: 0, flex: 1, fontSize: "0.8rem" }}
               value={c.imageUrl}
-              onChange={(e) => setCandidate(c.id, "imageUrl", e.target.value)}
+              onChange={(e) => setCandidate(c.key, "imageUrl", e.target.value)}
               placeholder="Candidate image URL (optional)"
             />
+            {!c.id && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => removeCandidate(c.key)}
+                title="Remove this new candidate"
+                style={{ padding: "0 0.6rem", flexShrink: 0 }}
+              >
+                ×
+              </button>
+            )}
           </div>
         ))}
+
+        <button
+          type="button"
+          className="secondary"
+          onClick={addCandidate}
+          style={{ width: "100%", fontSize: "0.8rem", marginTop: "0.25rem" }}
+        >
+          + Add Candidate
+        </button>
 
         <div
           style={{

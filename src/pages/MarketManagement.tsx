@@ -1170,14 +1170,6 @@ const MarketManagement: React.FC = () => {
                                 style={{ color: "hsl(217 91% 65%)" }}
                               >
                                 <Edit size={14} />
-                                <span
-                                  style={{
-                                    fontSize: "0.7rem",
-                                    marginLeft: 4,
-                                  }}
-                                >
-                                  Group
-                                </span>
                               </button>
                             ) : (
                               <button
