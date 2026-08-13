@@ -56,6 +56,7 @@ const EPL_SETTLEMENT_SOURCE =
 interface MarketInitialData {
   title?: string
   description?: string
+  imageUrl?: string | null
   outcomes?: Outcome[]
   opensAt?: string
   closesAt?: string
@@ -71,6 +72,7 @@ interface MarketInitialData {
 export interface MarketFormData {
   title: string
   description: string
+  imageUrl: string
   outcomes: { id?: string; label: string; imageUrl?: string | null }[]
   /**
    * Political grouped event only: each candidate becomes its own Yes/No child
@@ -138,6 +140,7 @@ const DRAFT_KEY = "oro_admin_market_draft_v1"
 type MarketDraft = {
   title: string
   description: string
+  imageUrl: string
   outcomes: { id?: string; label: string; imageUrl?: string | null }[]
   opensAt: string
   closesAt: string
@@ -155,6 +158,7 @@ function buildDefaultDraft(initialData?: MarketInitialData): MarketDraft {
   return {
     title: initialData?.title || "",
     description: initialData?.description || "",
+    imageUrl: initialData?.imageUrl || "",
     outcomes: initialData?.outcomes?.map((o: Outcome) => ({
       id: o.id,
       label: o.label,
@@ -191,7 +195,14 @@ function loadDraft(): MarketDraft | null {
       typeof parsed === "object" &&
       Array.isArray(parsed.outcomes)
     ) {
-      return parsed as MarketDraft
+      return {
+        ...buildDefaultDraft(),
+        ...(parsed as Partial<MarketDraft>),
+        imageUrl:
+          typeof (parsed as Partial<MarketDraft>).imageUrl === "string"
+            ? (parsed as Partial<MarketDraft>).imageUrl!
+            : "",
+      }
     }
   } catch {
     /* corrupt or blocked storage — ignore and start fresh */
@@ -469,6 +480,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
     try {
       await onSubmit({
         ...formData,
+        imageUrl: formData.imageUrl.trim(),
         opensAt: toUTC(formData.opensAt),
         closesAt: toUTC(formData.closesAt),
         houseEdgePct: Number(formData.houseEdgePct),
@@ -577,6 +589,91 @@ const MarketForm: React.FC<MarketFormProps> = ({
             style={{ minHeight: "80px", resize: "vertical" }}
             placeholder="Market details..."
           />
+        </div>
+
+        <div style={{ marginBottom: "1rem" }}>
+          <label
+            style={{
+              display: "block",
+              marginBottom: "0.5rem",
+              fontSize: "0.75rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            MARKET IMAGE URL
+            <span
+              style={{
+                marginLeft: 6,
+                fontWeight: 400,
+                opacity: 0.6,
+                textTransform: "none",
+                fontSize: "0.7rem",
+              }}
+            >
+              {formData.category === "political" && !initialData
+                ? "(fallback for candidates without their own image)"
+                : "(optional)"}
+            </span>
+          </label>
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              alignItems: "center",
+            }}
+          >
+            {formData.imageUrl && (
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <img
+                  src={formData.imageUrl}
+                  alt=""
+                  style={{
+                    width: 42,
+                    height: 42,
+                    objectFit: "cover",
+                    borderRadius: 6,
+                    border: "1px solid hsl(var(--border))",
+                    display: "block",
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none"
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, imageUrl: "" }))
+                  }
+                  style={{
+                    position: "absolute",
+                    top: -5,
+                    right: -5,
+                    background: "hsl(var(--destructive))",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 16,
+                    height: 16,
+                    fontSize: 10,
+                    cursor: "pointer",
+                    lineHeight: "16px",
+                    textAlign: "center",
+                    padding: 0,
+                  }}
+                >
+                  x
+                </button>
+              </div>
+            )}
+            <input
+              name="imageUrl"
+              value={formData.imageUrl}
+              onChange={handleChange}
+              className="input-field"
+              style={{ marginBottom: 0 }}
+              placeholder="https://... (optional)"
+            />
+          </div>
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
