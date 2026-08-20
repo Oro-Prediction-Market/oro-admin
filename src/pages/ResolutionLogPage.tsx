@@ -9,6 +9,23 @@ import {
 } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
 
+/**
+ * A money figure in the currency it was recorded in.
+ *
+ * Settlements and revenue rows are per book now, so a USDT settlement printed
+ * as "Nu 1" is a wrong number on a reconciliation screen. Rows written before
+ * per-currency books carry no currency and were all ngultrum.
+ */
+function money(value: number, currency?: string): string {
+  if ((currency ?? "BTN") === "USDT") {
+    return `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    })}`
+  }
+  return `Nu ${value.toLocaleString()}`
+}
+
 interface ResolutionEntry {
   id: string
   title: string
@@ -16,6 +33,8 @@ interface ResolutionEntry {
   category?: string
   status: string
   totalPool: number
+  /** The book this row belongs to. Absent on pre-USDT rows, all ngultrum. */
+  currency?: string
   participantCount: number
   opensAt?: string
   closesAt?: string
@@ -551,7 +570,7 @@ const ResolutionLogPage: React.FC = () => {
                         color: "hsl(var(--muted-foreground))",
                       }}
                     >
-                      Nu {Number(entry.totalPool).toLocaleString()} pool ·{" "}
+                      {money(Number(entry.totalPool), entry.currency)} pool ·{" "}
                       {entry.participantCount} players
                     </span>
                     {entry.objectionCount > 0 && (

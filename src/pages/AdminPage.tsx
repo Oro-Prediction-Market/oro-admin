@@ -18,6 +18,8 @@ const AutoMarketManagement = lazy(() => import("./AutoMarketManagement"))
 const ReportingPage = lazy(() => import("./ReportingPage"))
 const RevenuePage = lazy(() => import("./RevenuePage"))
 const AMLPage = lazy(() => import("./AMLPage"))
+const KycReviewPage = lazy(() => import("./KycReviewPage"))
+const UsdtWithdrawalsPage = lazy(() => import("./UsdtWithdrawalsPage"))
 const PlatformAccuracyPage = lazy(() => import("./PlatformAccuracyPage"))
 const EplStatMarketsPage = lazy(() => import("./EplStatMarketsPage"))
 const UclStatMarketsPage = lazy(() => import("./UclStatMarketsPage"))
@@ -239,6 +241,8 @@ const AdminPage: React.FC = () => {
   else if (page === "reporting") content = <ReportingPage />
   else if (page === "revenue") content = <RevenuePage />
   else if (page === "aml") content = <AMLPage />
+  else if (page === "kyc") content = <KycReviewPage />
+  else if (page === "usdt-withdrawals") content = <UsdtWithdrawalsPage />
   else if (page === "platform-accuracy") content = <PlatformAccuracyPage />
   else if (page === "epl-markets") content = <EplStatMarketsPage />
   else if (page === "ucl-markets") content = <UclStatMarketsPage />

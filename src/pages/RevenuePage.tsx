@@ -1,6 +1,23 @@
 import React, { useEffect, useState } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 
+/**
+ * A money figure in the currency it was recorded in.
+ *
+ * Settlements and revenue rows are per book now, so a USDT settlement printed
+ * as "Nu 1" is a wrong number on a reconciliation screen. Rows written before
+ * per-currency books carry no currency and were all ngultrum.
+ */
+function money(value: number, currency?: string): string {
+  if ((currency ?? "BTN") === "USDT") {
+    return `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    })}`
+  }
+  return `Nu ${value.toLocaleString()}`
+}
+
 interface RevenueDistribution {
   id: string
   marketId: string
@@ -8,6 +25,8 @@ interface RevenueDistribution {
   amount: number
   houseEdgePct: number
   totalPool: number
+  /** The book this row belongs to. Absent on pre-USDT rows, all ngultrum. */
+  currency?: string
   publicAccountNo: string
   status: "pending" | "completed" | "failed"
   paymentReference: string | null
@@ -418,10 +437,10 @@ const RevenuePage: React.FC = () => {
                 >
                   {d.marketId?.slice(0, 8) ?? "—"}…
                 </td>
-                <td>Nu {Number(d.totalPool).toFixed(0)}</td>
+                <td>{money(Number(d.totalPool), d.currency)}</td>
                 <td>{Number(d.houseEdgePct)}%</td>
                 <td style={{ fontWeight: 600 }}>
-                  Nu {Number(d.amount).toFixed(2)}
+                  {money(Number(d.amount), d.currency)}
                 </td>
                 <td
                   style={{ fontFamily: "monospace", fontSize: "0.75rem" }}

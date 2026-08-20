@@ -3,7 +3,30 @@ import React, { useState } from "react"
 interface MarketOutcome {
   id: string
   label: string
+  /** The BTN book's pool. Not a total across currencies. */
   totalBetAmount?: string | number
+  /** Pool per currency, e.g. `{ BTN: 200, USDT: 1 }`. */
+  poolsByCurrency?: Record<string, number>
+}
+
+/**
+ * "Nu 200 | $1", or just the side that has money in it.
+ *
+ * Never a sum — there is no exchange rate anywhere in this product, so a
+ * combined figure would be meaningless.
+ */
+function formatPools(outcome: MarketOutcome): string {
+  const btn =
+    outcome.poolsByCurrency?.BTN ??
+    parseFloat(String(outcome.totalBetAmount ?? 0))
+  const usdt = outcome.poolsByCurrency?.USDT ?? 0
+  const parts: string[] = []
+  if (btn > 0) parts.push(`Nu ${btn.toLocaleString()}`)
+  if (usdt > 0)
+    parts.push(
+      `$${usdt.toLocaleString(undefined, { maximumFractionDigits: 2 })}`
+    )
+  return parts.length ? parts.join(" | ") : "Nu 0"
 }
 
 interface ProposeMarketModalProps {
@@ -200,11 +223,10 @@ const ProposeMarketModal: React.FC<ProposeMarketModalProps> = ({
                     color: "hsl(var(--muted-foreground))",
                   }}
                 >
-                  Pool:{" "}
-                  {parseFloat(
-                    String(outcome.totalBetAmount ?? 0)
-                  ).toLocaleString()}{" "}
-                  credits
+                  {/* Both books. Resolving this market settles them both, and
+                      an admin choosing an outcome while seeing only the
+                      ngultrum side has no idea how much USDT rides on it. */}
+                  Pool: {formatPools(outcome)}
                 </div>
               </div>
               {selectedOutcomeId === outcome.id && (

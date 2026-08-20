@@ -1,29 +1,31 @@
 import React, { useState } from "react"
 import { clsx } from "clsx"
 import {
-  LayoutDashboard,
+  ArrowUpRight,
+  BadgeCheck,
   BarChart3,
-  Users,
-  Search,
+  Bitcoin,
   Bot,
+  Briefcase,
   CheckCircle,
   ChevronDown,
   ChevronRight,
-  Briefcase,
-  CreditCard,
-  ScrollText,
-  ShieldCheck,
-  Scale,
-  Wallet,
   Coins,
-  Bitcoin,
-  TrendingUp,
-  Target,
+  CreditCard,
+  LayoutDashboard,
+  Lightbulb,
   PanelLeftClose,
   PanelLeftOpen,
+  Scale,
+  ScrollText,
+  Search,
   ShieldAlert,
+  ShieldCheck,
+  Target,
+  TrendingUp,
   Trophy,
-  Lightbulb,
+  Users,
+  Wallet,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -285,6 +287,24 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <ShieldAlert size={20} />
             {!collapsed && <span className="nav-label">AML Compliance</span>}
+          </li>
+          <li
+            className={current === "usdt-withdrawals" ? "active" : ""}
+            onClick={() => onNavigate("usdt-withdrawals")}
+            title={collapsed ? "USDT Withdrawals" : undefined}
+          >
+            <ArrowUpRight size={20} />
+            {!collapsed && <span className="nav-label">USDT Withdrawals</span>}
+          </li>
+          <li
+            className={current === "kyc" ? "active" : ""}
+            onClick={() => onNavigate("kyc")}
+            title={collapsed ? "Identity Verification" : undefined}
+          >
+            <BadgeCheck size={20} />
+            {!collapsed && (
+              <span className="nav-label">Identity Verification</span>
+            )}
           </li>
           <li
             onClick={handleLogsToggle}

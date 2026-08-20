@@ -18,6 +18,30 @@ interface Tx {
   note?: string
   isBonus: boolean
   createdAt: string
+  /**
+   * The ledger row's own currency.
+   *
+   * Absent on rows written before per-currency books, which were all
+   * ngultrum. Never assume it — a USDT withdrawal printed as "-1.00 Nu" is a
+   * wrong number about money on a screen used to reconcile.
+   */
+  currency?: string
+}
+
+/**
+ * A ledger amount in the currency it was actually written in.
+ *
+ * USDT carries more precision than ngultrum, so a $0.50 movement must not be
+ * flattened to "0.50 Nu" or rounded away entirely.
+ */
+function money(value: number, currency?: string): string {
+  if ((currency ?? "BTN") === "USDT") {
+    return `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 6,
+    })}`
+  }
+  return `${value.toFixed(2)} Nu`
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -429,7 +453,7 @@ const PaymentLogPage: React.FC = () => {
                         }}
                       >
                         {isCredit ? "+" : ""}
-                        {amt.toFixed(2)} Nu
+                        {money(amt, t.currency)}
                       </td>
                       <td
                         style={{
@@ -439,7 +463,7 @@ const PaymentLogPage: React.FC = () => {
                           fontSize: "0.8rem",
                         }}
                       >
-                        {Number(t.balanceAfter).toFixed(2)} Nu
+                        {money(Number(t.balanceAfter), t.currency)}
                       </td>
                       <td
                         style={{

@@ -496,6 +496,52 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(params ?? {}),
         }),
+      /**
+       * Absolute URL for a signed KYC image link.
+       *
+       * The server returns a root-relative path (`/api/admin/kyc/image?...`),
+       * which is correct for the PWA but not here: the admin app is served
+       * from a different origin than the API, so a relative `<img src>` would
+       * hit the admin's own host and 404. The signature travels in the query
+       * string and is the authorisation, so no header is needed — which is
+       * exactly why an `<img>` tag can load it at all.
+       */
+      kycImageUrl: (path: string) => `${API_BASE}${path.replace(/^\/api/, "")}`,
+
+      // ── USDT withdrawals ──────────────────────────────────────────────
+      //
+      // A withdrawal debits the user the moment it is requested and is only
+      // *sent* once approved here, so this queue is money already taken from
+      // someone and not yet delivered.
+      getPendingWithdrawals: (limit = 50) =>
+        apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),
+      approveWithdrawal: (id: string) =>
+        apiFetch(`/payments/usdt/admin/withdrawals/${id}/approve`, {
+          method: "POST",
+        }),
+      rejectWithdrawal: (id: string, reason: string) =>
+        apiFetch(`/payments/usdt/admin/withdrawals/${id}/reject`, {
+          method: "POST",
+          body: JSON.stringify({ reason }),
+        }),
+
+      // ── KYC review ────────────────────────────────────────────────────
+      //
+      // Behind `isKycReviewer`, which `isAdmin` deliberately does not imply:
+      // admin means moving money and resolving markets, this is permission to
+      // read strangers' passports.
+      getKycQueue: (limit = 50) => apiFetch(`/admin/kyc/queue?limit=${limit}`),
+      getKycQueueHealth: () => apiFetch("/admin/kyc/queue/health"),
+      /** Logged as a PII access on the server — never called speculatively. */
+      openKycDocument: (id: string) => apiFetch(`/admin/kyc/documents/${id}`),
+      approveKycDocument: (id: string) =>
+        apiFetch(`/admin/kyc/documents/${id}/approve`, { method: "POST" }),
+      rejectKycDocument: (id: string, reason: string) =>
+        apiFetch(`/admin/kyc/documents/${id}/reject`, {
+          method: "POST",
+          body: JSON.stringify({ reason }),
+        }),
+
       getAmlAlerts: (params?: {
         userId?: string
         alertType?: string
