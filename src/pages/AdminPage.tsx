@@ -245,6 +245,8 @@ const AdminPage: React.FC = () => {
   else if (page === "kyc") content = <KycReviewPage />
   else if (page === "usdt-withdrawals") content = <UsdtWithdrawalsPage />
   else if (page === "usdt-users") content = <UsdtUsersPage />
+  else if (page === "usdt-payments")
+    content = <PaymentLogPage currency="USDT" />
   else if (page === "platform-accuracy") content = <PlatformAccuracyPage />
   else if (page === "epl-markets") content = <EplStatMarketsPage />
   else if (page === "ucl-markets") content = <UclStatMarketsPage />

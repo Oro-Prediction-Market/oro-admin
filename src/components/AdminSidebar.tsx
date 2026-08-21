@@ -17,6 +17,7 @@ import {
   Lightbulb,
   PanelLeftClose,
   PanelLeftOpen,
+  Receipt,
   Scale,
   ScrollText,
   Search,
@@ -298,6 +299,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             {!collapsed && (
               <span className="nav-label">International Accounts</span>
             )}
+          </li>
+          <li
+            className={current === "usdt-payments" ? "active" : ""}
+            onClick={() => onNavigate("usdt-payments")}
+            title={collapsed ? "USDT Ledger" : undefined}
+          >
+            <Receipt size={20} />
+            {!collapsed && <span className="nav-label">USDT Ledger</span>}
           </li>
           <li
             className={current === "usdt-withdrawals" ? "active" : ""}

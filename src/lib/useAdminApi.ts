@@ -281,12 +281,15 @@ export function useAdminApi(token: string | null) {
       getTransactions: (params?: {
         type?: string
         search?: string
+        /** One book only. The two never mix and must never be summed. */
+        currency?: "BTN" | "USDT"
         page?: number
         limit?: number
       }) => {
         const qs = new URLSearchParams()
         if (params?.type && params.type !== "all") qs.set("type", params.type)
         if (params?.search) qs.set("search", params.search)
+        if (params?.currency) qs.set("currency", params.currency)
         if (params?.page) qs.set("page", String(params.page))
         if (params?.limit) qs.set("limit", String(params.limit))
         const suffix = qs.toString() ? `?${qs.toString()}` : ""

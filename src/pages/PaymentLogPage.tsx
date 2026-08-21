@@ -75,7 +75,18 @@ const ALL = "all"
 
 const PAGE_SIZE = 50
 
-const PaymentLogPage: React.FC = () => {
+/**
+ * One component, two ledgers.
+ *
+ * `currency` scopes every query, count and total to a single book. A separate
+ * copy of this page per currency would drift — that has already happened
+ * repeatedly with the market cards — and a page showing both would be worse
+ * still: there is no exchange rate between BTN and USDT, so any figure summing
+ * them is meaningless.
+ */
+const PaymentLogPage: React.FC<{ currency?: "BTN" | "USDT" }> = ({
+  currency,
+}) => {
   const token = sessionStorage.getItem("admin_token")
   const { getTransactions, downloadTransactionsCsv, loading, error } =
     useAdminApi(token)
@@ -105,6 +116,7 @@ const PaymentLogPage: React.FC = () => {
     getTransactions({
       type: filterType,
       search: committedSearch || undefined,
+      currency,
       page,
       limit: PAGE_SIZE,
     })
@@ -127,7 +139,7 @@ const PaymentLogPage: React.FC = () => {
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, page, filterType, committedSearch])
+  }, [token, page, filterType, committedSearch, currency])
 
   // Debounce the search box → commit after 400 ms and reset to page 1.
   useEffect(() => {
@@ -176,7 +188,13 @@ const PaymentLogPage: React.FC = () => {
         }}
       >
         <div>
-          <h1 style={{ margin: 0, fontSize: "1.5rem" }}>Transaction Ledger</h1>
+          <h1 style={{ margin: 0, fontSize: "1.5rem" }}>
+            {currency === "USDT"
+              ? "USDT Ledger"
+              : currency === "BTN"
+                ? "Ngultrum Ledger"
+                : "Transaction Ledger"}
+          </h1>
           <p
             style={{
               margin: "4px 0 0",
@@ -184,8 +202,11 @@ const PaymentLogPage: React.FC = () => {
               fontSize: "0.875rem",
             }}
           >
-            All balance movements — bets, payouts, deposits, withdrawals,
-            bonuses
+            {currency === "USDT"
+              ? "USDT only — deposits, stakes, payouts and withdrawals on the international rail. Never mixed with ngultrum: there is no rate between them."
+              : currency === "BTN"
+                ? "Ngultrum only — the DK Bank rail. USDT movements are on their own page."
+                : "All balance movements — bets, payouts, deposits, withdrawals, bonuses"}
           </p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
