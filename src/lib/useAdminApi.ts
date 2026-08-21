@@ -508,6 +508,10 @@ export function useAdminApi(token: string | null) {
        */
       kycImageUrl: (path: string) => `${API_BASE}${path.replace(/^\/api/, "")}`,
 
+      /** Accounts holding or moving USDT, with per-account money figures. */
+      getUsdtUsers: (limit = 100) =>
+        apiFetch(`/admin/usdt/users?limit=${limit}`),
+
       // ── USDT withdrawals ──────────────────────────────────────────────
       //
       // A withdrawal debits the user the moment it is requested and is only

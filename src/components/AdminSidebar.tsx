@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Coins,
   CreditCard,
+  Globe2,
   LayoutDashboard,
   Lightbulb,
   PanelLeftClose,
@@ -287,6 +288,16 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <ShieldAlert size={20} />
             {!collapsed && <span className="nav-label">AML Compliance</span>}
+          </li>
+          <li
+            className={current === "usdt-users" ? "active" : ""}
+            onClick={() => onNavigate("usdt-users")}
+            title={collapsed ? "International Accounts" : undefined}
+          >
+            <Globe2 size={20} />
+            {!collapsed && (
+              <span className="nav-label">International Accounts</span>
+            )}
           </li>
           <li
             className={current === "usdt-withdrawals" ? "active" : ""}
