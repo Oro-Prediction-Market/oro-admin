@@ -1,8 +1,6 @@
 import React, { useState } from "react"
 import { clsx } from "clsx"
 import {
-  ArrowUpRight,
-  BadgeCheck,
   BarChart3,
   Bitcoin,
   Bot,
@@ -17,7 +15,6 @@ import {
   Lightbulb,
   PanelLeftClose,
   PanelLeftOpen,
-  Receipt,
   Scale,
   ScrollText,
   Search,
@@ -57,6 +54,16 @@ const AdminSidebar: React.FC<SidebarProps> = ({
       "ucl-markets",
     ].includes(current)
   )
+  // The USDT rail, kept together.
+  //
+  // These four were scattered among the ngultrum screens, which made the one
+  // question an operator actually asks — "what is happening on the
+  // international side?" — a tour of four unrelated places. Grouped, the rail
+  // has a single home, and the BTN screens stop being interleaved with pages
+  // that do not apply to them.
+  const [isUsdtOpen, setIsUsdtOpen] = useState(
+    ["usdt-users", "usdt-payments", "usdt-withdrawals", "kyc"].includes(current)
+  )
   const [isLogsOpen, setIsLogsOpen] = useState(
     ["payments", "audit", "resolution-log", "reconciliation"].includes(current)
   )
@@ -67,6 +74,15 @@ const AdminSidebar: React.FC<SidebarProps> = ({
       setIsMarketOpen(true)
     } else {
       setIsMarketOpen(!isMarketOpen)
+    }
+  }
+
+  const handleUsdtToggle = () => {
+    if (collapsed) {
+      onToggleCollapse()
+      setIsUsdtOpen(true)
+    } else {
+      setIsUsdtOpen(!isUsdtOpen)
     }
   }
 
@@ -290,42 +306,77 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             <ShieldAlert size={20} />
             {!collapsed && <span className="nav-label">AML Compliance</span>}
           </li>
+          {/* ── USDT rail ─────────────────────────────────────────────── */}
           <li
-            className={current === "usdt-users" ? "active" : ""}
-            onClick={() => onNavigate("usdt-users")}
-            title={collapsed ? "International Accounts" : undefined}
-          >
-            <Globe2 size={20} />
-            {!collapsed && (
-              <span className="nav-label">International Accounts</span>
+            onClick={handleUsdtToggle}
+            style={collapsed ? undefined : { justifyContent: "space-between" }}
+            className={clsx(
+              [
+                "usdt-users",
+                "usdt-payments",
+                "usdt-withdrawals",
+                "kyc",
+              ].includes(current) && "active-parent"
             )}
-          </li>
-          <li
-            className={current === "usdt-payments" ? "active" : ""}
-            onClick={() => onNavigate("usdt-payments")}
-            title={collapsed ? "USDT Ledger" : undefined}
+            title={collapsed ? "USDT / International" : undefined}
           >
-            <Receipt size={20} />
-            {!collapsed && <span className="nav-label">USDT Ledger</span>}
+            <div
+              style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+            >
+              <Globe2 size={20} />
+              {!collapsed && (
+                <span className="nav-label">USDT / International</span>
+              )}
+            </div>
+            {!collapsed &&
+              (isUsdtOpen ? (
+                <ChevronDown size={16} />
+              ) : (
+                <ChevronRight size={16} />
+              ))}
           </li>
-          <li
-            className={current === "usdt-withdrawals" ? "active" : ""}
-            onClick={() => onNavigate("usdt-withdrawals")}
-            title={collapsed ? "USDT Withdrawals" : undefined}
-          >
-            <ArrowUpRight size={20} />
-            {!collapsed && <span className="nav-label">USDT Withdrawals</span>}
-          </li>
-          <li
-            className={current === "kyc" ? "active" : ""}
-            onClick={() => onNavigate("kyc")}
-            title={collapsed ? "Identity Verification" : undefined}
-          >
-            <BadgeCheck size={20} />
-            {!collapsed && (
-              <span className="nav-label">Identity Verification</span>
-            )}
-          </li>
+
+          {!collapsed && isUsdtOpen && (
+            <div
+              className="submenu"
+              style={{
+                marginLeft: "1.5rem",
+                marginTop: "0.25rem",
+                marginBottom: "0.5rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.25rem",
+              }}
+            >
+              <li
+                className={current === "usdt-users" ? "active" : ""}
+                onClick={() => onNavigate("usdt-users")}
+              >
+                <span className="nav-label">Accounts</span>
+              </li>
+              <li
+                className={current === "usdt-payments" ? "active" : ""}
+                onClick={() => onNavigate("usdt-payments")}
+              >
+                <span className="nav-label">Ledger</span>
+              </li>
+              <li
+                className={current === "usdt-withdrawals" ? "active" : ""}
+                onClick={() => onNavigate("usdt-withdrawals")}
+              >
+                <span className="nav-label">Withdrawals</span>
+              </li>
+              {/* Identity verification belongs here: it exists to gate the
+                  USDT rail, and a Bhutanese account never reaches it. */}
+              <li
+                className={current === "kyc" ? "active" : ""}
+                onClick={() => onNavigate("kyc")}
+              >
+                <span className="nav-label">Identity Verification</span>
+              </li>
+            </div>
+          )}
+
           <li
             onClick={handleLogsToggle}
             style={collapsed ? undefined : { justifyContent: "space-between" }}

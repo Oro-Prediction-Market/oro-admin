@@ -82,6 +82,11 @@ const UserManagement: React.FC = () => {
         search,
         role: roleFilter,
         dkStatus: dkFilter,
+        // Ngultrum accounts only. Every column on this page comes from the DK
+        // Bank rail — CID, account name, account number — and a USDT account
+        // has none of them, so it appeared here as a row of dashes. Those
+        // accounts have their own page, with the figures that do apply.
+        currency: "BTN",
         sortField,
         sortDir,
         page,

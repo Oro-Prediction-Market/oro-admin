@@ -296,6 +296,8 @@ export function useAdminApi(token: string | null) {
         return apiFetch(`/admin/transactions${suffix}`)
       },
       getUsers: (params?: {
+        /** Native currency. The DK Bank columns are empty for a USDT account. */
+        currency?: "all" | "BTN" | "USDT"
         search?: string
         role?: "all" | "admin" | "user"
         dkStatus?: "all" | "linked" | "unlinked"
@@ -305,6 +307,8 @@ export function useAdminApi(token: string | null) {
         limit?: number
       }) => {
         const qs = new URLSearchParams()
+        if (params?.currency && params.currency !== "all")
+          qs.set("currency", params.currency)
         if (params?.search) qs.set("search", params.search)
         if (params?.role && params.role !== "all") qs.set("role", params.role)
         if (params?.dkStatus && params.dkStatus !== "all")

@@ -230,7 +230,9 @@ const AdminPage: React.FC = () => {
   else if (page === "discovery") content = <MarketDiscovery />
   else if (page === "keeper") content = <KeeperDashboard />
   else if (page === "settlements") content = <SettlementPage />
-  else if (page === "payments") content = <PaymentLogPage />
+  // Ngultrum only. USDT has its own ledger — the two never mix, and a total
+  // spanning both would be a number with no meaning.
+  else if (page === "payments") content = <PaymentLogPage currency="BTN" />
   else if (page === "audit") content = <AuditLogPage />
   else if (page === "resolution-log") content = <ResolutionLogPage />
   else if (page === "reconciliation") content = <ReconciliationPage />

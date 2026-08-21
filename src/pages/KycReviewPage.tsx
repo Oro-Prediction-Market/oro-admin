@@ -15,7 +15,7 @@ import { useAdminApi } from "../lib/useAdminApi"
 interface QueueItem {
   id: string
   userId: string
-  documentType: "passport" | "national_id" | "drivers_licence"
+  documentType: "passport" | "national_id" | "residence_permit"
   documentCountry: string
   submittedAt: string
 }
@@ -36,7 +36,10 @@ interface OpenedDocument {
 const DOC_LABEL: Record<string, string> = {
   passport: "Passport",
   national_id: "National ID",
-  drivers_licence: "Driver's licence",
+  residence_permit: "Residence permit",
+  // Kept so historical rows still render a name rather than a raw enum value,
+  // even though the type is no longer offered.
+  drivers_licence: "Driver's licence (no longer accepted)",
 }
 
 /**
