@@ -34,6 +34,15 @@ interface FinanceStats {
     season: number
     count: number
   }
+  usdt?: {
+    houseIncome: number
+    settledPool: number
+    settledCount: number
+    activePool: number
+    activeCount: number
+    allTimeVolume: number
+    totalMarkets: number
+  }
 }
 
 interface Reconciliation {
@@ -161,6 +170,10 @@ const FinancePage: React.FC = () => {
 
   const fmt = (val: number) =>
     `Nu. ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(val || 0)}`
+
+  // USDT is a decimal currency — keep 2 dp so small revenue figures don't read as 0.
+  const fmtUsdt = (val: number) =>
+    `$${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val || 0)}`
 
   if (loading && !finance)
     return (
@@ -347,6 +360,85 @@ const FinancePage: React.FC = () => {
             </div>
           )}
         </div>
+      )}
+
+      {/* USDT book — same figures as the ngultrum cards above, for the
+          segregated USDT pool (its own pools + settlements). */}
+      {finance?.usdt && (
+        <>
+          <h3 style={{ margin: "0.5rem 0 1rem" }}>USDT Book</h3>
+          <div className="stat-grid" style={{ marginBottom: "2rem" }}>
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>House Income (USDT)</h3>
+                <DollarSign size={20} color="hsl(142 71% 45%)" />
+              </div>
+              <p style={{ color: "hsl(142 71% 45%)" }}>
+                {fmtUsdt(finance.usdt.houseIncome)}
+              </p>
+              <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                From {finance.usdt.settledCount} settled markets
+              </small>
+            </div>
+
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>Settled Pool Total (USDT)</h3>
+                <PiggyBank size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{fmtUsdt(finance.usdt.settledPool)}</p>
+              <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                Total volume through settled markets
+              </small>
+            </div>
+
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>Active Pool (USDT)</h3>
+                <BarChart3 size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{fmtUsdt(finance.usdt.activePool)}</p>
+              <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                {finance.usdt.activeCount} unsettled markets
+              </small>
+            </div>
+
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>All-Time Volume (USDT)</h3>
+                <TrendingUp size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{fmtUsdt(finance.usdt.allTimeVolume)}</p>
+              <small style={{ color: "hsl(var(--muted-foreground))" }}>
+                {finance.usdt.totalMarkets} total markets
+              </small>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Reconciliation details */}
