@@ -13,8 +13,6 @@ interface EplStats {
   updatedAt: string
   goals: StatEntry[]
   assists: StatEntry[]
-  yellow: StatEntry[]
-  red: StatEntry[]
 }
 interface ExistingMarket {
   id: string
@@ -46,18 +44,6 @@ const STATS: {
     subcategory: "epl-assists",
     label: "Most Assists",
     unit: "assists",
-  },
-  {
-    key: "yellow",
-    subcategory: "epl-yellowcards",
-    label: "Most Yellow Cards",
-    unit: "YC",
-  },
-  {
-    key: "red",
-    subcategory: "epl-redcards",
-    label: "Most Red Cards",
-    unit: "RC",
   },
 ]
 

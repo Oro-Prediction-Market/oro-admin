@@ -13,8 +13,6 @@ interface UclStats {
   updatedAt: string
   goals: StatEntry[]
   assists: StatEntry[]
-  yellow: StatEntry[]
-  red: StatEntry[]
 }
 interface ExistingMarket {
   id: string
@@ -29,8 +27,6 @@ interface SeasonInfo {
 }
 
 // Mirrors the backend UCL_STAT_MARKET_META + the Stats-tab subcategory routing.
-// Only goals & assists have a free-tier Champions League data source, so the
-// yellow/red boards come back empty and their buttons stay disabled.
 const STATS: {
   key: keyof Omit<UclStats, "updatedAt">
   subcategory: string
@@ -48,18 +44,6 @@ const STATS: {
     subcategory: "ucl-assists",
     label: "Most Assists",
     unit: "assists",
-  },
-  {
-    key: "yellow",
-    subcategory: "ucl-yellowcards",
-    label: "Most Yellow Cards",
-    unit: "YC",
-  },
-  {
-    key: "red",
-    subcategory: "ucl-redcards",
-    label: "Most Red Cards",
-    unit: "RC",
   },
 ]
 
@@ -185,8 +169,7 @@ export default function UclStatMarketsPage() {
         from the <strong>live leaderboard</strong> (correct names + player
         photos where available). Betting then appears automatically on the app's
         Stats tab. Stat markets are resolved <strong>manually</strong> at
-        season's end. Note: only <strong>goals &amp; assists</strong> have a
-        Champions League data source — the cards boards stay empty.
+        season's end.
       </p>
 
       {err && (
