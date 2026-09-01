@@ -20,6 +20,8 @@ export const SPORT_SUBCATEGORIES = [
   "UEFA Europa League",
   "epl-match",
   "epl-season",
+  "ucl-match",
+  "ucl-season",
   "bpl-match",
   "bpl-winner",
   "bpl-topscorer",

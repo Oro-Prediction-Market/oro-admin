@@ -52,6 +52,8 @@ const BPL_CLUBS = [
 const BPL_SETTLEMENT_SOURCE = "https://bhutanfootball.org"
 const EPL_SETTLEMENT_SOURCE =
   "Premier League official results (premierleague.com)"
+const UCL_SETTLEMENT_SOURCE =
+  "UEFA Champions League official results (uefa.com)"
 
 interface MarketInitialData {
   title?: string
@@ -384,6 +386,34 @@ const MarketForm: React.FC<MarketFormProps> = ({
         ...prev,
         [name]: value,
         settlementSource: prev.settlementSource || EPL_SETTLEMENT_SOURCE,
+      }))
+      return
+    }
+    // UCL match preset — Home / Draw / Away, mirrors epl-match so the Champions
+    // League hub Matches tab maps outcome[0]=home, outcome[2]=away correctly.
+    // Stat markets (top scorer/assists) are auto-created and via the "UCL
+    // Markets" admin page, not here.
+    if (name === "subcategory" && value === "ucl-match" && !initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        settlementSource: prev.settlementSource || UCL_SETTLEMENT_SOURCE,
+        outcomes: [
+          { label: "", imageUrl: null },
+          { label: "Draw", imageUrl: null },
+          { label: "", imageUrl: null },
+        ],
+      }))
+      return
+    }
+    // UCL season/outright preset — winner, top scorer question, etc. Seed the
+    // settlement source; outcomes left to the admin. Lands in the Season tab as
+    // long as the title has no "vs".
+    if (name === "subcategory" && value === "ucl-season" && !initialData) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+        settlementSource: prev.settlementSource || UCL_SETTLEMENT_SOURCE,
       }))
       return
     }
@@ -1199,6 +1229,38 @@ const MarketForm: React.FC<MarketFormProps> = ({
                   tab. Keep "vs" OUT of the title (that's for matches).
                   Examples: "Who will win the Premier League 2026/27?" (one
                   outcome per club) or "Will Leeds be relegated?" (Yes / No).
+                </p>
+              )}
+              {formData.subcategory === "ucl-match" && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  Title must contain "vs" (e.g. "Real Madrid vs Man City — Who
+                  wins?") so it lands in the Champions League hub Matches tab.
+                  Fill the two club names in the Home/Away slots; keep "Draw" in
+                  the middle. Use the image URL fields for club crests. (Stat
+                  markets — top scorer, assists — aren't created here; use the
+                  "UCL Markets" page or let them auto-create each season.)
+                </p>
+              )}
+              {formData.subcategory === "ucl-season" && (
+                <p
+                  style={{
+                    fontSize: "0.72rem",
+                    color: "hsl(var(--muted-foreground))",
+                    marginBottom: "0.5rem",
+                    opacity: 0.7,
+                  }}
+                >
+                  Season-long / outright market — lands in the Champions League
+                  hub's Season tab. Keep "vs" OUT of the title (that's for
+                  matches). Example: "Who will win the Champions League
+                  2026/27?" (one outcome per club).
                 </p>
               )}
               {formData.outcomes.map((outcome, index) => (
