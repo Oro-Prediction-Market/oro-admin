@@ -1087,9 +1087,12 @@ const MarketManagement: React.FC = () => {
                             </button>
                           )}
                           {(m.status === "upcoming" || m.status === "open") &&
-                            (m.subcategory || "")
+                            ((m.subcategory || "")
                               .toLowerCase()
-                              .includes("epl") &&
+                              .includes("epl") ||
+                              (m.subcategory || "")
+                                .toLowerCase()
+                                .includes("ucl")) &&
                             m.title.toLowerCase().includes(" vs ") && (
                               <button
                                 onClick={() => handleToggleFeatured(m)}
@@ -1097,7 +1100,13 @@ const MarketManagement: React.FC = () => {
                                 title={
                                   m.isFeatured
                                     ? "Featured match — click to unpin"
-                                    : "Pin as the featured match in the EPL hub"
+                                    : `Pin as the featured match in the ${
+                                        (m.subcategory || "")
+                                          .toLowerCase()
+                                          .includes("ucl")
+                                          ? "Champions League"
+                                          : "EPL"
+                                      } hub`
                                 }
                                 style={{
                                   color: m.isFeatured
