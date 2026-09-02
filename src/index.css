@@ -191,6 +191,9 @@ h4 {
   height: 100vh;
   overflow-y: auto;
   overflow-x: hidden;
+  /* Still scrolls, but the scrollbar is hidden (Firefox + old Edge). */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   position: sticky;
   top: 0;
   flex-shrink: 0;
@@ -198,6 +201,11 @@ h4 {
   transition:
     width 0.25s ease,
     transform 0.25s ease;
+}
+
+/* WebKit (Chrome/Safari): hide the scrollbar without disabling scroll. */
+.admin-sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .dark .admin-sidebar {
