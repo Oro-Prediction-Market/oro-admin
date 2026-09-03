@@ -7,6 +7,7 @@ import {
   RefreshCw,
   Trash2,
 } from "lucide-react"
+import { handleAdminAuth } from "../lib/useAdminApi"
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/admin").replace(
@@ -106,13 +107,19 @@ const FinancePage: React.FC = () => {
     Promise.all([
       fetch(`${API_BASE}/admin/finance-stats`, {
         headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
+      })
+        .then(handleAdminAuth)
+        .then((r) => r.json()),
       fetch(`${API_BASE}/admin/reconciliation`, {
         headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
+      })
+        .then(handleAdminAuth)
+        .then((r) => r.json()),
       fetch(`${API_BASE}/admin/markets/settled/zero-pool`, {
         headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
+      })
+        .then(handleAdminAuth)
+        .then((r) => r.json()),
     ])
       .then(([f, r, z]) => {
         if (cancelled) return
@@ -135,10 +142,11 @@ const FinancePage: React.FC = () => {
     if (!confirm(`Delete "${title}"? This cannot be undone.`)) return
     setDeletingId(id)
     try {
-      await fetch(`${API_BASE}/admin/markets/${id}`, {
+      const delRes = await fetch(`${API_BASE}/admin/markets/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })
+      handleAdminAuth(delRes) // expired session → login screen, not a fetch error
       setZeroPoolMarkets((prev) => prev.filter((m) => m.id !== id))
       fetchData()
     } catch {
@@ -160,6 +168,7 @@ const FinancePage: React.FC = () => {
         `${API_BASE}/admin/markets/cleanup/zero-pool-settled`,
         { method: "DELETE", headers: { Authorization: `Bearer ${token}` } }
       )
+      handleAdminAuth(res) // expired session → login screen, not a fetch error
       const data = await res.json()
       alert(`Deleted ${data.deleted} market(s).`)
       fetchData()

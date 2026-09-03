@@ -12,6 +12,7 @@ import {
   BarChart2,
 } from "lucide-react"
 import { useToast } from "../components/Toast"
+import { handleAdminAuth } from "../lib/useAdminApi"
 
 // ── API base (mirrors useAdminApi.ts logic) ────────────────────────────────
 const API_BASE =
@@ -67,6 +68,7 @@ const KeeperDashboard: React.FC = () => {
           ...(options.headers ?? {}),
         },
       })
+      handleAdminAuth(res) // expired session → login screen, not a fetch error
       if (!res.ok) {
         const text = await res.text().catch(() => res.statusText)
         throw new Error(`${res.status}: ${text}`)

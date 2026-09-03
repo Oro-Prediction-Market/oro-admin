@@ -26,6 +26,22 @@ export async function loginWithDevSecret(
   return response.json()
 }
 
+// Session-expiry gate for the handful of pages that call fetch() directly
+// instead of going through the useAdminApi hook. On a 401 it clears the dead
+// token and fires the same `admin:unauthorized` event apiFetch uses, so
+// AdminPage drops back to the login screen — instead of the page surfacing a
+// raw "failed to fetch". Pass it the Response (works inline or as a .then()
+// step: `fetch(...).then(handleAdminAuth).then(r => r.json())`).
+export function handleAdminAuth(response: Response): Response {
+  if (response.status === 401) {
+    sessionStorage.removeItem("admin_token")
+    localStorage.removeItem("admin_token")
+    window.dispatchEvent(new CustomEvent("admin:unauthorized"))
+    throw new Error("Your session expired. Please sign in again.")
+  }
+  return response
+}
+
 export function useAdminApi(token: string | null) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

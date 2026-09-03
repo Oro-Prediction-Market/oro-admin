@@ -4,6 +4,7 @@ import { fifaService, type FifaMarket } from "../services/fifaService"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
 import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 import { useToast } from "../components/Toast"
+import { handleAdminAuth } from "../lib/useAdminApi"
 
 interface ImportResult {
   success: boolean
@@ -94,6 +95,7 @@ const MarketDiscovery: React.FC = () => {
         body: JSON.stringify(importData),
       })
 
+      handleAdminAuth(response) // expired session → login screen, not a fetch error
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(

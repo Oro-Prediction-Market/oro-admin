@@ -6,6 +6,7 @@ import {
   TrendingUp,
   BarChart2,
 } from "lucide-react"
+import { handleAdminAuth } from "../lib/useAdminApi"
 
 const CATEGORY_COLORS: Record<string, string> = {
   sports: "#3b82f6",
@@ -133,6 +134,7 @@ export const BehavioralAnalytics: React.FC<{ token: string | null }> = ({
     fetch(`${API_BASE}/admin/behavioral-analytics`, {
       headers: { Authorization: `Bearer ${token}` },
     })
+      .then(handleAdminAuth) // expired session → login screen, not a fetch error
       .then((r) => {
         if (!r.ok) throw new Error(`${r.status}`)
         return r.json()
