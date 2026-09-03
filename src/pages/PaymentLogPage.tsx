@@ -491,10 +491,23 @@ const PaymentLogPage: React.FC<{ currency?: "BTN" | "USDT" }> = ({
                           padding: "10px 14px",
                           color: "hsl(var(--muted-foreground))",
                           fontSize: "0.8rem",
-                          wordBreak: "break-word",
                         }}
                       >
-                        {t.note || "—"}
+                        {/* Cap + single-line ellipsis so a long note can't
+                            wrap into many lines and blow up the row height
+                            (the visible cells then float in a tall gap). Full
+                            note shows on hover. */}
+                        <div
+                          title={t.note || undefined}
+                          style={{
+                            maxWidth: 340,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {t.note || "—"}
+                        </div>
                       </td>
                     </tr>
                   )

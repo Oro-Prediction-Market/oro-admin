@@ -214,14 +214,24 @@ const AMLPage: React.FC = () => {
 
   // ── Fetch summary ─────────────────────────────────────────────────────────
 
+  // `api` is a fresh object every render, so depending on it directly made
+  // fetchSummary change each render and the mount effect below re-run forever —
+  // hammering /aml/summary into 429s. Read the latest fetcher through a ref so
+  // fetchSummary stays stable (empty deps) and the effect fires once on mount,
+  // while manual refreshes (post-scan/resolve) still call the current endpoint.
+  const getSummaryRef = useRef(api.getAmlSummary)
+  useEffect(() => {
+    getSummaryRef.current = api.getAmlSummary
+  })
+
   const fetchSummary = useCallback(async () => {
     try {
-      const res = await api.getAmlSummary()
+      const res = await getSummaryRef.current()
       setSummary(res)
     } catch {
       // non-fatal
     }
-  }, [api])
+  }, [])
 
   useEffect(() => {
     void fetchSummary()
