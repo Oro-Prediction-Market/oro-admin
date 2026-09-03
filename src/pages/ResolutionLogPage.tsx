@@ -644,6 +644,7 @@ const ResolutionLogPage: React.FC = () => {
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div
+                    className="stack-sm"
                     style={{
                       display: "grid",
                       gridTemplateColumns: "1fr 1fr",

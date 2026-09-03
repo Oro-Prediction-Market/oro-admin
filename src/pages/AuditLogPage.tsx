@@ -907,6 +907,7 @@ export function AuditLogPage() {
 
       {/* Stats strip */}
       <div
+        className="stack-sm-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",

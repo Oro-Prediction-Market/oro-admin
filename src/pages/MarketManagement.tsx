@@ -910,366 +910,376 @@ const MarketManagement: React.FC = () => {
             Analyzing market data...
           </div>
         ) : (
-          <table style={{ margin: 0 }}>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Pool Vol.</th>
-                <th>Closes At</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayMarkets.length === 0 ? (
+          // Scroll ONLY the table sideways — keep it in its own overflow
+          // container so the status tabs and filter bar above stay put instead
+          // of scrolling off-screen with the wide table on narrow viewports.
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ margin: 0 }}>
+              <thead>
                 <tr>
-                  <td
-                    colSpan={5}
-                    style={{
-                      textAlign: "center",
-                      color: "hsl(var(--muted-foreground))",
-                      padding: "3rem",
-                    }}
-                  >
-                    No markets found.
-                  </td>
+                  <th>Title</th>
+                  <th>Status</th>
+                  <th>Pool Vol.</th>
+                  <th>Closes At</th>
+                  <th>Actions</th>
                 </tr>
-              ) : (
-                displayMarkets.map((m: Market) => (
-                  <React.Fragment key={m.id}>
-                    <tr>
-                      <td>
-                        <div style={{ fontWeight: 600 }}>{m.title}</div>
-                        {(m.category || m.subcategory) && (
+              </thead>
+              <tbody>
+                {displayMarkets.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      style={{
+                        textAlign: "center",
+                        color: "hsl(var(--muted-foreground))",
+                        padding: "3rem",
+                      }}
+                    >
+                      No markets found.
+                    </td>
+                  </tr>
+                ) : (
+                  displayMarkets.map((m: Market) => (
+                    <React.Fragment key={m.id}>
+                      <tr>
+                        <td>
+                          <div style={{ fontWeight: 600 }}>{m.title}</div>
+                          {(m.category || m.subcategory) && (
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: 4,
+                                marginTop: 3,
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {m.category && (
+                                <span
+                                  style={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    background: "hsl(var(--primary) / 0.1)",
+                                    color: "hsl(var(--primary))",
+                                    textTransform: "capitalize",
+                                  }}
+                                >
+                                  {m.category}
+                                </span>
+                              )}
+                              {m.subcategory && (
+                                <span
+                                  style={{
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    padding: "1px 6px",
+                                    borderRadius: 4,
+                                    background: "hsl(var(--muted) / 0.4)",
+                                    color: "hsl(var(--muted-foreground))",
+                                  }}
+                                >
+                                  {m.subcategory}
+                                </span>
+                              )}
+                            </div>
+                          )}
                           <div
                             style={{
                               display: "flex",
-                              gap: 4,
-                              marginTop: 3,
                               flexWrap: "wrap",
+                              gap: "0.3rem",
+                              marginTop: "0.4rem",
+                              fontSize: "0.72rem",
                             }}
                           >
-                            {m.category && (
-                              <span
-                                style={{
-                                  fontSize: "0.65rem",
-                                  fontWeight: 700,
-                                  padding: "1px 6px",
-                                  borderRadius: 4,
-                                  background: "hsl(var(--primary) / 0.1)",
-                                  color: "hsl(var(--primary))",
-                                  textTransform: "capitalize",
-                                }}
-                              >
-                                {m.category}
-                              </span>
-                            )}
-                            {m.subcategory && (
-                              <span
-                                style={{
-                                  fontSize: "0.65rem",
-                                  fontWeight: 700,
-                                  padding: "1px 6px",
-                                  borderRadius: 4,
-                                  background: "hsl(var(--muted) / 0.4)",
-                                  color: "hsl(var(--muted-foreground))",
-                                }}
-                              >
-                                {m.subcategory}
-                              </span>
-                            )}
+                            {m.outcomes.map((o: Outcome) => {
+                              // Eliminating an outcome only makes sense while the
+                              // market is still taking bets and the outcome isn't
+                              // already the declared winner.
+                              const canToggle =
+                                !o.isWinner &&
+                                (m.status === "open" || m.status === "upcoming")
+                              return (
+                                <button
+                                  key={o.id}
+                                  type="button"
+                                  disabled={!canToggle}
+                                  onClick={
+                                    canToggle
+                                      ? () => handleToggleEliminated(m.id, o)
+                                      : undefined
+                                  }
+                                  title={
+                                    canToggle
+                                      ? o.isEliminated
+                                        ? "Click to restore (allow bets again)"
+                                        : "Click to eliminate (stop new bets)"
+                                      : o.isWinner
+                                        ? "Declared winner"
+                                        : "Only editable while the market is open or upcoming"
+                                  }
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "0.25rem",
+                                    padding: "0.2rem 0.5rem",
+                                    borderRadius: "999px",
+                                    fontSize: "0.72rem",
+                                    fontWeight: 600,
+                                    lineHeight: 1.2,
+                                    cursor: canToggle ? "pointer" : "default",
+                                    textDecoration: o.isEliminated
+                                      ? "line-through"
+                                      : "none",
+                                    border: o.isWinner
+                                      ? "1px solid hsl(var(--primary) / 0.5)"
+                                      : o.isEliminated
+                                        ? "1px solid hsl(0 84% 60% / 0.6)"
+                                        : canToggle
+                                          ? "1px dashed hsl(var(--muted-foreground) / 0.5)"
+                                          : "1px solid hsl(var(--muted) / 0.4)",
+                                    background: o.isWinner
+                                      ? "hsl(var(--primary) / 0.2)"
+                                      : o.isEliminated
+                                        ? "hsl(0 84% 60% / 0.18)"
+                                        : "hsl(var(--muted) / 0.3)",
+                                    color: o.isWinner
+                                      ? "hsl(var(--primary))"
+                                      : o.isEliminated
+                                        ? "hsl(0 84% 60%)"
+                                        : "hsl(var(--foreground))",
+                                  }}
+                                >
+                                  {o.label}
+                                  {o.isWinner && " ✓"}
+                                  {o.isEliminated
+                                    ? " ✕"
+                                    : canToggle && (
+                                        <span style={{ opacity: 0.6 }}>✕</span>
+                                      )}
+                                </button>
+                              )
+                            })}
                           </div>
-                        )}
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: "0.3rem",
-                            marginTop: "0.4rem",
-                            fontSize: "0.72rem",
-                          }}
-                        >
-                          {m.outcomes.map((o: Outcome) => {
-                            // Eliminating an outcome only makes sense while the
-                            // market is still taking bets and the outcome isn't
-                            // already the declared winner.
-                            const canToggle =
-                              !o.isWinner &&
-                              (m.status === "open" || m.status === "upcoming")
-                            return (
+                        </td>
+                        <td>
+                          <span
+                            className={`badge badge-${m.status.toLowerCase()}`}
+                          >
+                            {m.status}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: "monospace" }}>
+                          NU.{" "}
+                          {parseFloat(
+                            String(m.totalPool ?? 0)
+                          ).toLocaleString()}
+                        </td>
+                        <td style={{ fontSize: "0.75rem" }}>
+                          {m.closesAt
+                            ? new Date(m.closesAt).toLocaleString()
+                            : "Not set"}
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "0.5rem" }}>
+                            {(m.status === "upcoming" ||
+                              m.status === "open") && (
                               <button
-                                key={o.id}
-                                type="button"
-                                disabled={!canToggle}
-                                onClick={
-                                  canToggle
-                                    ? () => handleToggleEliminated(m.id, o)
-                                    : undefined
-                                }
-                                title={
-                                  canToggle
-                                    ? o.isEliminated
-                                      ? "Click to restore (allow bets again)"
-                                      : "Click to eliminate (stop new bets)"
-                                    : o.isWinner
-                                      ? "Declared winner"
-                                      : "Only editable while the market is open or upcoming"
-                                }
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  gap: "0.25rem",
-                                  padding: "0.2rem 0.5rem",
-                                  borderRadius: "999px",
-                                  fontSize: "0.72rem",
-                                  fontWeight: 600,
-                                  lineHeight: 1.2,
-                                  cursor: canToggle ? "pointer" : "default",
-                                  textDecoration: o.isEliminated
-                                    ? "line-through"
-                                    : "none",
-                                  border: o.isWinner
-                                    ? "1px solid hsl(var(--primary) / 0.5)"
-                                    : o.isEliminated
-                                      ? "1px solid hsl(0 84% 60% / 0.6)"
-                                      : canToggle
-                                        ? "1px dashed hsl(var(--muted-foreground) / 0.5)"
-                                        : "1px solid hsl(var(--muted) / 0.4)",
-                                  background: o.isWinner
-                                    ? "hsl(var(--primary) / 0.2)"
-                                    : o.isEliminated
-                                      ? "hsl(0 84% 60% / 0.18)"
-                                      : "hsl(var(--muted) / 0.3)",
-                                  color: o.isWinner
-                                    ? "hsl(var(--primary))"
-                                    : o.isEliminated
-                                      ? "hsl(0 84% 60%)"
-                                      : "hsl(var(--foreground))",
-                                }}
-                              >
-                                {o.label}
-                                {o.isWinner && " ✓"}
-                                {o.isEliminated
-                                  ? " ✕"
-                                  : canToggle && (
-                                      <span style={{ opacity: 0.6 }}>✕</span>
-                                    )}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </td>
-                      <td>
-                        <span
-                          className={`badge badge-${m.status.toLowerCase()}`}
-                        >
-                          {m.status}
-                        </span>
-                      </td>
-                      <td style={{ fontFamily: "monospace" }}>
-                        NU.{" "}
-                        {parseFloat(String(m.totalPool ?? 0)).toLocaleString()}
-                      </td>
-                      <td style={{ fontSize: "0.75rem" }}>
-                        {m.closesAt
-                          ? new Date(m.closesAt).toLocaleString()
-                          : "Not set"}
-                      </td>
-                      <td>
-                        <div style={{ display: "flex", gap: "0.5rem" }}>
-                          {(m.status === "upcoming" || m.status === "open") && (
-                            <button
-                              onClick={() => handleAnnounce(m)}
-                              className="secondary"
-                              title="Announce to Telegram channel"
-                            >
-                              <Megaphone size={14} />
-                            </button>
-                          )}
-                          {(m.status === "upcoming" || m.status === "open") &&
-                            ((m.subcategory || "")
-                              .toLowerCase()
-                              .includes("epl") ||
-                              (m.subcategory || "")
-                                .toLowerCase()
-                                .includes("ucl")) &&
-                            m.title.toLowerCase().includes(" vs ") && (
-                              <button
-                                onClick={() => handleToggleFeatured(m)}
+                                onClick={() => handleAnnounce(m)}
                                 className="secondary"
-                                title={
-                                  m.isFeatured
-                                    ? "Featured match — click to unpin"
-                                    : `Pin as the featured match in the ${
-                                        (m.subcategory || "")
-                                          .toLowerCase()
-                                          .includes("ucl")
-                                          ? "Champions League"
-                                          : "EPL"
-                                      } hub`
-                                }
-                                style={{
-                                  color: m.isFeatured
-                                    ? "hsl(45, 90%, 55%)"
-                                    : undefined,
-                                }}
+                                title="Announce to Telegram channel"
                               >
-                                <Star
-                                  size={14}
-                                  fill={m.isFeatured ? "currentColor" : "none"}
-                                />
+                                <Megaphone size={14} />
                               </button>
                             )}
-                          {m.status === "upcoming" && (
-                            <button
-                              onClick={() => handleTransition(m.id, "open")}
-                              className="secondary"
-                              title="Start Market"
-                            >
-                              <Play size={14} />
-                            </button>
-                          )}
-                          {m.status === "open" && (
+                            {(m.status === "upcoming" || m.status === "open") &&
+                              ((m.subcategory || "")
+                                .toLowerCase()
+                                .includes("epl") ||
+                                (m.subcategory || "")
+                                  .toLowerCase()
+                                  .includes("ucl")) &&
+                              m.title.toLowerCase().includes(" vs ") && (
+                                <button
+                                  onClick={() => handleToggleFeatured(m)}
+                                  className="secondary"
+                                  title={
+                                    m.isFeatured
+                                      ? "Featured match — click to unpin"
+                                      : `Pin as the featured match in the ${
+                                          (m.subcategory || "")
+                                            .toLowerCase()
+                                            .includes("ucl")
+                                            ? "Champions League"
+                                            : "EPL"
+                                        } hub`
+                                  }
+                                  style={{
+                                    color: m.isFeatured
+                                      ? "hsl(45, 90%, 55%)"
+                                      : undefined,
+                                  }}
+                                >
+                                  <Star
+                                    size={14}
+                                    fill={
+                                      m.isFeatured ? "currentColor" : "none"
+                                    }
+                                  />
+                                </button>
+                              )}
+                            {m.status === "upcoming" && (
+                              <button
+                                onClick={() => handleTransition(m.id, "open")}
+                                className="secondary"
+                                title="Start Market"
+                              >
+                                <Play size={14} />
+                              </button>
+                            )}
+                            {m.status === "open" && (
+                              <button
+                                onClick={() =>
+                                  handleTransition(m.id, "closed", m.title)
+                                }
+                                className="secondary"
+                                title="Close Market"
+                              >
+                                <Square size={14} />
+                              </button>
+                            )}
+                            {m.status === "closed" && (
+                              <button
+                                onClick={() => setProposingMarket(m)}
+                                className="secondary"
+                                title="Propose Outcome & Open Dispute Window"
+                                style={{ color: "hsl(45, 80%, 60%)" }}
+                              >
+                                ⚖️
+                              </button>
+                            )}
+                            {m.status === "closed" &&
+                              m.subcategory?.startsWith("wc-") && (
+                                <button
+                                  onClick={() => handleReopen(m)}
+                                  className="secondary"
+                                  title="Reopen Market (World Cup only)"
+                                  style={{ color: "hsl(140, 60%, 55%)" }}
+                                >
+                                  <RotateCcw size={14} />
+                                </button>
+                              )}
+                            {m.status === "resolving" && (
+                              <button
+                                onClick={() => handleOpenResolve(m)}
+                                className="secondary"
+                                title="Final Resolution"
+                              >
+                                <CheckSquare size={14} />
+                              </button>
+                            )}
+                            {(m.status === "upcoming" || m.status === "open") &&
+                              (m.groupId ? (
+                                <button
+                                  onClick={() => handleEditGroup(m)}
+                                  className="secondary"
+                                  title="Edit whole group (title, timing, candidate names & images)"
+                                  style={{ color: "hsl(217 91% 65%)" }}
+                                >
+                                  <Edit size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditingMarket(m)
+                                    setView("edit")
+                                  }}
+                                  className="secondary"
+                                  title="Edit"
+                                >
+                                  <Edit size={14} />
+                                </button>
+                              ))}
+                            {(m.status === "upcoming" ||
+                              m.status === "cancelled" ||
+                              parseFloat(String(m.totalPool ?? 0)) === 0) && (
+                              <button
+                                onClick={() => handleDelete(m.id)}
+                                className="secondary"
+                                title="Delete"
+                                style={{ color: "hsl(var(--destructive))" }}
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            )}
+                            {(m.status === "upcoming" ||
+                              m.status === "open" ||
+                              m.status === "closed" ||
+                              m.status === "resolving") && (
+                              <button
+                                onClick={() => setCancellingMarket(m)}
+                                className="secondary"
+                                title="Cancel & Refund all bets"
+                                style={{ color: "hsl(var(--destructive))" }}
+                              >
+                                <XCircle size={14} />
+                              </button>
+                            )}
                             <button
                               onClick={() =>
-                                handleTransition(m.id, "closed", m.title)
+                                setExpandedMarket(
+                                  expandedMarket === m.id ? null : m.id
+                                )
                               }
                               className="secondary"
-                              title="Close Market"
+                              title="View Details"
+                              style={{ fontSize: "0.75rem" }}
                             >
-                              <Square size={14} />
+                              {expandedMarket === m.id ? "▼" : "▶"}
                             </button>
-                          )}
-                          {m.status === "closed" && (
-                            <button
-                              onClick={() => setProposingMarket(m)}
-                              className="secondary"
-                              title="Propose Outcome & Open Dispute Window"
-                              style={{ color: "hsl(45, 80%, 60%)" }}
-                            >
-                              ⚖️
-                            </button>
-                          )}
-                          {m.status === "closed" &&
-                            m.subcategory?.startsWith("wc-") && (
-                              <button
-                                onClick={() => handleReopen(m)}
-                                className="secondary"
-                                title="Reopen Market (World Cup only)"
-                                style={{ color: "hsl(140, 60%, 55%)" }}
-                              >
-                                <RotateCcw size={14} />
-                              </button>
-                            )}
-                          {m.status === "resolving" && (
-                            <button
-                              onClick={() => handleOpenResolve(m)}
-                              className="secondary"
-                              title="Final Resolution"
-                            >
-                              <CheckSquare size={14} />
-                            </button>
-                          )}
-                          {(m.status === "upcoming" || m.status === "open") &&
-                            (m.groupId ? (
-                              <button
-                                onClick={() => handleEditGroup(m)}
-                                className="secondary"
-                                title="Edit whole group (title, timing, candidate names & images)"
-                                style={{ color: "hsl(217 91% 65%)" }}
-                              >
-                                <Edit size={14} />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  setEditingMarket(m)
-                                  setView("edit")
-                                }}
-                                className="secondary"
-                                title="Edit"
-                              >
-                                <Edit size={14} />
-                              </button>
-                            ))}
-                          {(m.status === "upcoming" ||
-                            m.status === "cancelled" ||
-                            parseFloat(String(m.totalPool ?? 0)) === 0) && (
-                            <button
-                              onClick={() => handleDelete(m.id)}
-                              className="secondary"
-                              title="Delete"
-                              style={{ color: "hsl(var(--destructive))" }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          )}
-                          {(m.status === "upcoming" ||
-                            m.status === "open" ||
-                            m.status === "closed" ||
-                            m.status === "resolving") && (
-                            <button
-                              onClick={() => setCancellingMarket(m)}
-                              className="secondary"
-                              title="Cancel & Refund all bets"
-                              style={{ color: "hsl(var(--destructive))" }}
-                            >
-                              <XCircle size={14} />
-                            </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              setExpandedMarket(
-                                expandedMarket === m.id ? null : m.id
-                              )
-                            }
-                            className="secondary"
-                            title="View Details"
-                            style={{ fontSize: "0.75rem" }}
-                          >
-                            {expandedMarket === m.id ? "▼" : "▶"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    {expandedMarket === m.id && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          style={{
-                            padding: "0",
-                            background: "hsl(var(--muted) / 0.1)",
-                          }}
-                        >
-                          <div style={{ padding: "1.5rem" }}>
-                            <OddsDisplay
-                              outcomes={m.outcomes}
-                              totalPool={Number(m.totalPool || 0)}
-                              houseEdgePct={Number(
-                                m.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT
-                              )}
-                              isEstimated={m.status === "open"}
-                              showWarnings={true}
-                            />
-                            {m.status === "open" && (
-                              <LateMoneyMonitor
-                                market={m}
-                                fetchLateMoney={api.getLateMoney}
-                                onLateMoneyDetected={(data) => {
-                                  console.log("Late money detected:", data)
-                                  // Could trigger notifications or automatic actions
-                                }}
-                              />
-                            )}
                           </div>
                         </td>
                       </tr>
-                    )}
-                  </React.Fragment>
-                ))
-              )}
-            </tbody>
-          </table>
+                      {expandedMarket === m.id && (
+                        <tr>
+                          <td
+                            colSpan={5}
+                            style={{
+                              padding: "0",
+                              background: "hsl(var(--muted) / 0.1)",
+                            }}
+                          >
+                            <div style={{ padding: "1.5rem" }}>
+                              <OddsDisplay
+                                outcomes={m.outcomes}
+                                totalPool={Number(m.totalPool || 0)}
+                                houseEdgePct={Number(
+                                  m.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT
+                                )}
+                                isEstimated={m.status === "open"}
+                                showWarnings={true}
+                              />
+                              {m.status === "open" && (
+                                <LateMoneyMonitor
+                                  market={m}
+                                  fetchLateMoney={api.getLateMoney}
+                                  onLateMoneyDetected={(data) => {
+                                    console.log("Late money detected:", data)
+                                    // Could trigger notifications or automatic actions
+                                  }}
+                                />
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 

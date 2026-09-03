@@ -219,7 +219,8 @@ const RevenuePage: React.FC = () => {
                   borderRadius: "0.375rem",
                   background: "hsl(var(--background))",
                   color: "hsl(var(--foreground))",
-                  width: "180px",
+                  width: "100%",
+                  maxWidth: "180px",
                 }}
               />
               <button
@@ -397,7 +398,7 @@ const RevenuePage: React.FC = () => {
       )}
 
       {/* Table */}
-      <div className="glass-card" style={{ padding: 0, overflow: "hidden" }}>
+      <div className="glass-card" style={{ padding: 0, overflowX: "auto" }}>
         <table>
           <thead>
             <tr>

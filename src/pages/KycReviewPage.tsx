@@ -173,6 +173,7 @@ export default function KycReviewPage() {
       {notice && <div style={noticeBox}>{notice}</div>}
 
       <div
+        className="stack-sm"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(280px, 1fr) 2fr",

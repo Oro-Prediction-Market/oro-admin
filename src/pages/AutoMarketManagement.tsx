@@ -534,6 +534,7 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
 
       {/* Info cards row */}
       <div
+        className="stack-sm"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",

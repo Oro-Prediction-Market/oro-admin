@@ -227,6 +227,7 @@ const KeeperDashboard: React.FC = () => {
 
       {/* ── Stat pills ───────────────────────────────────────────────────── */}
       <div
+        className="stack-sm-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -294,6 +295,7 @@ const KeeperDashboard: React.FC = () => {
 
       {/* ── Main two-column ──────────────────────────────────────────────── */}
       <div
+        className="stack-sm"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1.4fr",

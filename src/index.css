@@ -611,27 +611,33 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   .mobile-open-btn {
     display: flex;
     position: fixed;
-    top: 1rem;
-    left: 1rem;
+    top: 0.85rem;
+    left: 0.85rem;
     z-index: 101;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     padding: 0;
-    background: rgba(10, 10, 15, 0.85);
-    backdrop-filter: blur(10px);
+    /* Solid (not translucent) so content never bleeds through when the button
+       floats over the page on scroll, plus a real shadow so it reads as a
+       deliberate floating control rather than a glitchy overlay. */
+    background: hsl(var(--card));
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
+    border-radius: 12px;
     color: hsl(var(--primary));
     cursor: pointer;
     text-transform: none;
     letter-spacing: normal;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   }
 
   .mobile-open-btn:hover {
     transform: none;
-    box-shadow: 0 0 12px hsla(var(--primary), 0.3);
+    border-color: hsla(var(--primary), 0.5);
+    box-shadow:
+      0 6px 20px rgba(0, 0, 0, 0.5),
+      0 0 12px hsla(var(--primary), 0.25);
   }
 
   .sidebar-mobile-backdrop {
@@ -699,6 +705,18 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
   /* Trim the oversized status-tab strip padding on phones. */
   .status-tabs {
     padding: 1rem !important;
+  }
+
+  /* Inline multi-column grids that must collapse on phones. Add class
+     "stack-sm" to keep a page's desktop gridTemplateColumns (asymmetric ratios
+     like "minmax(280px,1fr) 2fr") but drop to a single column at ≤768px — the
+     !important overrides the element's inline grid definition. "stack-sm-2"
+     drops to two columns instead, for stat strips that read fine 2-up. */
+  .stack-sm {
+    grid-template-columns: 1fr !important;
+  }
+  .stack-sm-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
 

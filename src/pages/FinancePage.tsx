@@ -622,10 +622,7 @@ const FinancePage: React.FC = () => {
             No zero-volume settled markets.
           </div>
         ) : (
-          <div
-            className="glass-card"
-            style={{ padding: 0, overflow: "hidden" }}
-          >
+          <div className="glass-card" style={{ padding: 0, overflowX: "auto" }}>
             <table
               style={{
                 width: "100%",

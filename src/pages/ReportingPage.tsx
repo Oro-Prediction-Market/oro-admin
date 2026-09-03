@@ -258,6 +258,7 @@ function TransactionAuditsTab() {
     <div>
       {/* Stats */}
       <div
+        className="stack-sm-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -501,7 +502,7 @@ function TransactionAuditsTab() {
         </div>
       ) : (
         <>
-          <div className="glass-card" style={{ overflow: "hidden" }}>
+          <div className="glass-card" style={{ overflowX: "auto" }}>
             <table
               style={{
                 width: "100%",
@@ -755,6 +756,7 @@ function DisputesTab() {
     <div>
       {/* Stats */}
       <div
+        className="stack-sm-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(4, 1fr)",
@@ -931,7 +933,7 @@ function DisputesTab() {
         </div>
       ) : (
         <>
-          <div className="glass-card" style={{ overflow: "hidden" }}>
+          <div className="glass-card" style={{ overflowX: "auto" }}>
             <table
               style={{
                 width: "100%",
