@@ -14,6 +14,9 @@ interface OddsDisplayProps {
   houseEdgePct: number
   isEstimated?: boolean
   showWarnings?: boolean
+  /** Currency the pool is denominated in. Served as `poolCurrency` on the
+   *  admin market list; defaults to BTN, the platform default. */
+  currency?: string
 }
 
 export const OddsDisplay: React.FC<OddsDisplayProps> = ({
@@ -22,7 +25,15 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
   houseEdgePct,
   isEstimated = false,
   showWarnings = true,
+  currency = "BTN",
 }) => {
+  // Currencies never mix within a pool, so one unit for the whole panel.
+  const unit = currency === "USDT" ? "$" : "Nu "
+  const money = (n: number) =>
+    `${unit}${Number(n || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`
   const calculateOdds = (outcomePool: number) => {
     if (outcomePool === 0 || totalPool === 0) return 0
     const payoutPool = totalPool * (1 - houseEdgePct / 100)
@@ -85,6 +96,24 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
         <span style={{ fontSize: "0.875rem", fontWeight: 500 }}>
           {isEstimated ? "Estimated" : "Current"} Odds & Payouts
         </span>
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: "0.8rem",
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
+          Total pool{" "}
+          <span
+            style={{
+              fontFamily: "monospace",
+              fontWeight: 600,
+              color: "hsl(var(--foreground))",
+            }}
+          >
+            {money(totalPool)}
+          </span>
+        </span>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -124,9 +153,26 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
                   style={{
                     fontSize: "0.75rem",
                     color: "hsl(var(--muted-foreground))",
+                    display: "flex",
+                    alignItems: "baseline",
+                    gap: 6,
+                    flexWrap: "wrap",
                   }}
                 >
-                  {probability.toFixed(2)}% of pool
+                  {/* The staked amount, not just the share — a 50% slice of a
+                      Nu 350 pool and of a Nu 350,000 pool read identically
+                      otherwise. */}
+                  <span
+                    style={{
+                      fontFamily: "monospace",
+                      fontWeight: 600,
+                      color: "hsl(var(--foreground))",
+                    }}
+                  >
+                    {money(Number(outcome.totalBetAmount || 0))}
+                  </span>
+                  <span>·</span>
+                  <span>{probability.toFixed(2)}% of pool</span>
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -145,8 +191,7 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
                     color: "hsl(var(--muted-foreground))",
                   }}
                 >
-                  NU.{" "}
-                  {(Number(outcome.totalBetAmount || 0) * finalOdds).toFixed(2)}{" "}
+                  {money(Number(outcome.totalBetAmount || 0) * finalOdds)}{" "}
                   payout
                 </div>
               </div>

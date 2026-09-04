@@ -38,6 +38,7 @@ interface AutoMarket {
   bettingClosesAt?: string
   opensAt?: string
   totalPool?: string | number
+  poolCurrency?: string
   houseEdgePct?: number
   externalSource?: string | null
   outcomes: Outcome[]
@@ -1107,6 +1108,7 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                                 houseEdgePct={Number(m.houseEdgePct || 5)}
                                 isEstimated={m.status === "open"}
                                 showWarnings={true}
+                                currency={m.poolCurrency}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor

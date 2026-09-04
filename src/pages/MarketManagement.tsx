@@ -51,6 +51,7 @@ interface Market {
   closesAt?: string
   poolVolume?: string | number
   totalPool?: string | number
+  poolCurrency?: string
   houseEdgePct?: number
   imageUrl?: string | null
   category?: string | null
@@ -1259,6 +1260,7 @@ const MarketManagement: React.FC = () => {
                                 )}
                                 isEstimated={m.status === "open"}
                                 showWarnings={true}
+                                currency={m.poolCurrency}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor
