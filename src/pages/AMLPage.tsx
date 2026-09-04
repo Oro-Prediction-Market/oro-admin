@@ -12,6 +12,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { UserDossier } from "../components/UserDossier"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,16 @@ interface AmlAlert {
   isResolved: boolean
   resolution: string | null
   createdAt: string
-  user?: { dkCid?: string; phoneNumber?: string }
+  // getAlerts leftJoinAndSelects the whole User, so these arrive already —
+  // the type just never declared them.
+  user?: {
+    dkCid?: string
+    phoneNumber?: string
+    firstName?: string
+    lastName?: string
+    username?: string
+    dkAccountName?: string
+  }
 }
 
 interface AmlReport {
@@ -171,6 +181,8 @@ const AMLPage: React.FC = () => {
 
   const [tab, setTab] = useState<"alerts" | "reports">("alerts")
   const [summary, setSummary] = useState<Summary | null>(null)
+  // Which user's dossier drawer is open, if any.
+  const [dossierUserId, setDossierUserId] = useState<string | null>(null)
 
   // ── Scan state
   const [scanFrom, setScanFrom] = useState("")
@@ -705,6 +717,7 @@ const AMLPage: React.FC = () => {
                     style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}
                   >
                     {[
+                      "User",
                       "CID",
                       "Type",
                       "Risk",
@@ -737,7 +750,12 @@ const AMLPage: React.FC = () => {
                       key={alert.id}
                       style={{
                         borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        cursor: "pointer",
                       }}
+                      // Row opens the dossier. The Resolve button stops
+                      // propagation so it doesn't also open the drawer.
+                      onClick={() => setDossierUserId(alert.userId)}
+                      title="View this user's dossier"
                       onMouseEnter={(e) =>
                         (e.currentTarget.style.background =
                           "rgba(255,255,255,0.03)")
@@ -746,6 +764,21 @@ const AMLPage: React.FC = () => {
                         (e.currentTarget.style.background = "")
                       }
                     >
+                      <td
+                        style={{
+                          padding: "10px 12px",
+                          whiteSpace: "nowrap",
+                          fontSize: "0.82rem",
+                        }}
+                      >
+                        {[alert.user?.firstName, alert.user?.lastName]
+                          .filter(Boolean)
+                          .join(" ") ||
+                          alert.user?.dkAccountName ||
+                          (alert.user?.username
+                            ? `@${alert.user.username}`
+                            : "—")}
+                      </td>
                       <td
                         style={{
                           padding: "10px 12px",
@@ -825,7 +858,8 @@ const AMLPage: React.FC = () => {
                           <button
                             className="secondary"
                             style={{ padding: "4px 12px", fontSize: "0.75rem" }}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation() // don't also open the dossier
                               setResolveTarget(alert)
                               setResolveText("")
                             }}
@@ -1342,6 +1376,12 @@ const AMLPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      <UserDossier
+        key={dossierUserId}
+        userId={dossierUserId}
+        onClose={() => setDossierUserId(null)}
+      />
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 import { useToast } from "../components/Toast"
+import { UserDossier } from "../components/UserDossier"
 import {
   User,
   Shield,
@@ -64,6 +65,9 @@ const UserManagement: React.FC = () => {
   // ── Server totals ─────────────────────────────────────────────────────────
   const [total, setTotal] = useState(0)
   const [pages, setPages] = useState(1)
+
+  // Which user's dossier drawer is open, if any.
+  const [dossierUserId, setDossierUserId] = useState<string | null>(null)
 
   // Keep a stable ref to `api.getUsers` so the fetch effect doesn't need it
   // in its dependency array (avoids re-firing when the hook object re-creates).
@@ -543,7 +547,12 @@ const UserManagement: React.FC = () => {
                     style={{
                       borderBottom: "1px solid hsla(var(--foreground), 0.05)",
                       transition: "background-color 0.2s ease",
+                      cursor: "pointer",
                     }}
+                    // Row opens the dossier. The Promote/Demote button stops
+                    // propagation so it doesn't also open the drawer.
+                    onClick={() => setDossierUserId(user.id)}
+                    title="View this user's dossier"
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.backgroundColor =
                         "hsla(var(--primary), 0.05)")
@@ -841,7 +850,10 @@ const UserManagement: React.FC = () => {
                     {/* Actions */}
                     <td style={{ padding: "1rem", textAlign: "right" }}>
                       <button
-                        onClick={() => handleToggleAdmin(user.id, user.isAdmin)}
+                        onClick={(e) => {
+                          e.stopPropagation() // don't also open the dossier
+                          handleToggleAdmin(user.id, user.isAdmin)
+                        }}
                         className="secondary"
                         style={{
                           display: "inline-flex",
@@ -969,6 +981,12 @@ const UserManagement: React.FC = () => {
           </span>
         </div>
       )}
+
+      <UserDossier
+        key={dossierUserId}
+        userId={dossierUserId}
+        onClose={() => setDossierUserId(null)}
+      />
     </div>
   )
 }

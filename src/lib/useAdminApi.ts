@@ -382,6 +382,12 @@ export function useAdminApi(token: string | null) {
           method: "PATCH",
           body: JSON.stringify({ isAdmin }),
         }),
+      // reveal=true returns the unmasked CID/account number and writes an
+      // audit log server-side. Only pass it on an explicit admin action.
+      getUserDossier: (userId: string, reveal = false) =>
+        apiFetch(
+          `/admin/users/${userId}/dossier${reveal ? "?reveal=true" : ""}`
+        ),
       // ── Tournaments ──────────────────────────────────────────────────────
       getTournaments: () => apiFetch("/admin/tournaments"),
       createTournament: (data: Record<string, unknown>) =>

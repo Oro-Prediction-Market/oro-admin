@@ -208,6 +208,16 @@ h4 {
   display: none;
 }
 
+/* Reusable version of the above, for any scrolling box that should keep its
+   scroll but not show a bar — e.g. the User Dossier popup card. */
+.no-scrollbar {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge/IE */
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
+}
+
 .dark .admin-sidebar {
   background: rgba(10, 10, 15, 0.6);
   border-right: 1px solid var(--glass-border);
