@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 import { TrendingUp, Activity, AlertCircle } from "lucide-react"
 import HealthCheck from "../components/HealthCheck"
+import { UserGrowth } from "../components/UserGrowth"
 import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 
 const AdminDashboard: React.FC = () => {
@@ -105,6 +106,8 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <HealthCheck />
+
+      <UserGrowth token={token} />
 
       <BehavioralAnalytics token={token} />
     </div>
