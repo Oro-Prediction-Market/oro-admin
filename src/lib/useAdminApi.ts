@@ -174,12 +174,15 @@ export function useAdminApi(token: string | null) {
         apiFetch(`/admin/${league}/stat-overrides`),
       saveStatOverride: (
         league: "epl" | "ucl",
+        // Only the fields sent are written. `null` clears one, handing it
+        // back to the provider; omitting one leaves it as it was.
         body: {
           board: "goals" | "assists"
           player: string
-          club?: string
-          face?: string
-          value: number
+          club?: string | null
+          face?: string | null
+          value?: number | null
+          isManual?: boolean
         }
       ) =>
         apiFetch(`/admin/${league}/stat-overrides`, {

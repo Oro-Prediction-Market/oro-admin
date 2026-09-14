@@ -3,19 +3,19 @@ import { useAdminApi } from "../lib/useAdminApi"
 
 type Board = "goals" | "assists"
 
-interface Override {
-  id: string
-  board: Board
+interface BoardRow {
   player: string
   club: string
   face: string
+  /** What the board is showing — the edited value where one exists. */
   value: number
-  /**
-   * The number the live feed is reporting for this player, when it reports one
-   * at all. Non-null means this row is being overruled — the feed is
-   * authoritative and the admin's value is not what the board shows.
-   */
-  shadowedByFeed: number | null
+  /** What the provider reports. Null when it doesn't carry this player. */
+  feedValue: number | null
+  feedFace: string | null
+  overrideId: string | null
+  valueEdited: boolean
+  faceEdited: boolean
+  isManual: boolean
 }
 
 const BOARDS: { key: Board; label: string; word: string }[] = [
@@ -24,7 +24,7 @@ const BOARDS: { key: Board; label: string; word: string }[] = [
 ]
 
 const inputStyle: React.CSSProperties = {
-  padding: "0.45rem 0.6rem",
+  padding: "0.4rem 0.55rem",
   borderRadius: 8,
   border: "1px solid hsl(var(--border))",
   background: "hsl(var(--background))",
@@ -32,22 +32,39 @@ const inputStyle: React.CSSProperties = {
   fontSize: "0.85rem",
 }
 
+const btn = (kind: "ghost" | "danger" = "ghost"): React.CSSProperties => ({
+  padding: "0.35rem 0.7rem",
+  borderRadius: 8,
+  border:
+    kind === "danger"
+      ? "1px solid hsl(var(--destructive) / 0.4)"
+      : "1px solid hsl(var(--border))",
+  background: "transparent",
+  color:
+    kind === "danger" ? "hsl(var(--destructive))" : "hsl(var(--foreground))",
+  cursor: "pointer",
+  fontSize: "0.78rem",
+  whiteSpace: "nowrap",
+})
+
 /**
- * Add and edit the players on a league's goals/assists leaderboards.
+ * The league's goals/assists leaderboards, as an editable table.
  *
- * These boards come live from football-data.org, and on the free tier they are
- * thin — /scorers is goal-ranked, so a player with assists but few goals never
- * appears. Since the app's Stats tab renders rows from the board and attaches
- * betting only where a market outcome matches one, a missing player is both
- * invisible and unbettable. This is how an admin fills that gap.
+ * The provider fills these boards and stays the default for every row. An
+ * admin edit pins that one field — the number, or the photo — until it is
+ * reset, at which point the field follows the provider again. Editing is per
+ * field on purpose: correcting a wrong player photo must not also freeze the
+ * goal count, which would go stale the moment the player scored.
  *
- * Two things this deliberately does NOT do:
+ * Players the provider doesn't carry at all can be added by hand. The free
+ * tier drops plenty — /scorers is goal-ranked, so a player with assists but
+ * few goals never appears — and since the app's Stats tab renders rows from
+ * the board and attaches betting only where a market outcome matches one,
+ * those players are invisible AND unbettable.
  *
- *  • Override a player the feed already reports. The provider stays
- *    authoritative, so those rows are kept but marked as overruled rather than
- *    silently having no effect.
- *  • Make a player bettable on save. Writing an outcome into a market people
- *    already hold positions in is a second, explicit click.
+ * Adding or editing never touches a market. "Open betting" is a separate
+ * button, because it writes an outcome into a parimutuel market people
+ * already hold positions in.
  */
 export default function StatBoardEditor({
   league,
@@ -59,27 +76,33 @@ export default function StatBoardEditor({
   const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
 
-  const [rows, setRows] = useState<Override[]>([])
-  const [season, setSeason] = useState<string>("")
+  const [boards, setBoards] = useState<Record<Board, BoardRow[]>>({
+    goals: [],
+    assists: [],
+  })
+  const [season, setSeason] = useState("")
+  const [tab, setTab] = useState<Board>("goals")
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
   const [note, setNote] = useState<Record<string, string>>({})
 
-  const [board, setBoard] = useState<Board>("goals")
-  const [player, setPlayer] = useState("")
-  const [club, setClub] = useState("")
-  const [face, setFace] = useState("")
-  const [value, setValue] = useState("")
+  const [newPlayer, setNewPlayer] = useState("")
+  const [newClub, setNewClub] = useState("")
+  const [newFace, setNewFace] = useState("")
+  const [newValue, setNewValue] = useState("")
 
   const load = async () => {
     setErr(null)
     try {
       const res = (await api.getStatOverrides(league)) as {
         season?: string
-        overrides?: Override[]
+        boards?: Record<Board, BoardRow[]>
       }
-      setRows(Array.isArray(res?.overrides) ? res.overrides : [])
+      setBoards({
+        goals: res?.boards?.goals ?? [],
+        assists: res?.boards?.assists ?? [],
+      })
       setSeason(res?.season ?? "")
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Failed to load")
@@ -92,22 +115,24 @@ export default function StatBoardEditor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [league])
 
-  const save = async (
+  const patch = async (
+    key: string,
     body: {
       board: Board
       player: string
-      club?: string
-      face?: string
-      value: number
+      value?: number | null
+      face?: string | null
+      club?: string | null
+      isManual?: boolean
     },
-    key: string
+    okMsg = "✓ Saved"
   ) => {
     setBusy(key)
     setNote((n) => ({ ...n, [key]: "" }))
     try {
       await api.saveStatOverride(league, body)
       await load()
-      setNote((n) => ({ ...n, [key]: "✓ Saved" }))
+      setNote((n) => ({ ...n, [key]: okMsg }))
     } catch (e: unknown) {
       setNote((n) => ({
         ...n,
@@ -118,82 +143,97 @@ export default function StatBoardEditor({
     }
   }
 
-  const addPlayer = async () => {
-    const v = Number(value)
-    if (player.trim().length < 2) {
-      setNote((n) => ({ ...n, new: "Enter the player's name" }))
-      return
-    }
-    if (!Number.isFinite(v) || v < 0) {
-      setNote((n) => ({ ...n, new: "Enter a number" }))
-      return
-    }
-    await save({ board, player: player.trim(), club, face, value: v }, "new")
-    setPlayer("")
-    setClub("")
-    setFace("")
-    setValue("")
-  }
-
-  const remove = async (row: Override) => {
-    setBusy(row.id)
+  const reset = async (row: BoardRow) => {
+    if (!row.overrideId) return
+    setBusy(row.player)
     try {
-      await api.deleteStatOverride(league, row.id)
+      await api.deleteStatOverride(league, row.overrideId)
       await load()
     } catch (e: unknown) {
       setNote((n) => ({
         ...n,
-        [row.id]: e instanceof Error ? e.message : "Failed to remove",
+        [row.player]: e instanceof Error ? e.message : "Failed to reset",
       }))
     } finally {
       setBusy(null)
     }
   }
 
-  const openBetting = async (row: Override) => {
-    setBusy(row.id)
-    setNote((n) => ({ ...n, [row.id]: "" }))
+  const openBetting = async (row: BoardRow) => {
+    if (!row.overrideId) return
+    setBusy(row.player)
+    setNote((n) => ({ ...n, [row.player]: "" }))
     try {
-      await api.openBettingOnStatOverride(league, row.id)
+      await api.openBettingOnStatOverride(league, row.overrideId)
       setNote((n) => ({
         ...n,
-        [row.id]: "✓ Added to the market — bettable on the Stats tab now.",
+        [row.player]: "✓ Added to the market — bettable on the Stats tab now.",
       }))
     } catch (e: unknown) {
       setNote((n) => ({
         ...n,
-        [row.id]: e instanceof Error ? e.message : "Failed",
+        [row.player]: e instanceof Error ? e.message : "Failed",
       }))
     } finally {
       setBusy(null)
     }
   }
 
+  const addPlayer = async () => {
+    const v = Number(newValue)
+    if (newPlayer.trim().length < 2) {
+      setNote((n) => ({ ...n, new: "Enter the player's name" }))
+      return
+    }
+    if (!Number.isFinite(v) || v <= 0) {
+      setNote((n) => ({
+        ...n,
+        new: "Enter a number — a player the provider doesn't carry has nothing to rank them by otherwise",
+      }))
+      return
+    }
+    await patch("new", {
+      board: tab,
+      player: newPlayer.trim(),
+      club: newClub || null,
+      face: newFace || null,
+      value: v,
+      isManual: true,
+    })
+    setNewPlayer("")
+    setNewClub("")
+    setNewFace("")
+    setNewValue("")
+  }
+
+  const rows = boards[tab]
+  const word = BOARDS.find((b) => b.key === tab)?.word ?? "value"
+  const editedCount = rows.filter((r) => r.valueEdited || r.faceEdited).length
+
   return (
     <div style={{ marginTop: "2rem" }}>
       <h2 style={{ fontSize: "1.15rem", marginBottom: "0.25rem" }}>
-        Board editor — add a player
+        Leaderboard editor
       </h2>
       <p
         style={{
           color: "hsl(var(--muted-foreground))",
           marginBottom: "1rem",
           fontSize: "0.9rem",
-          maxWidth: 760,
+          maxWidth: 780,
         }}
       >
-        The {leagueLabel} goals and assists boards come from the live provider,
-        and its free tier is goal-ranked — a player with assists but few goals
-        never shows up at all. Players added here fill those gaps and appear on
-        the app's Stats tab immediately.{" "}
-        <strong>The provider stays authoritative:</strong> if it already reports
-        a player, its number is the one on the board and a manual entry for them
-        is kept but not applied. Adding a player here does not open betting on
-        them — that is the separate button on each row.
+        These are the {leagueLabel} boards the app's Stats tab shows, fetched
+        live from the provider.{" "}
+        <strong>Edit any row and your value sticks</strong> — that field stops
+        following the provider until you reset it. The number and the photo are
+        pinned separately, so fixing a wrong photo won't freeze the goal count.
+        Players the provider doesn't carry can be added at the bottom. Nothing
+        here opens betting; that's the per-row button.
         {season && (
           <>
             {" "}
-            Entries are scoped to the{" "}
+            Edits apply to the{" "}
             <strong>
               {season}/{String(Number(season) + 1).slice(2)}
             </strong>{" "}
@@ -216,157 +256,41 @@ export default function StatBoardEditor({
         </div>
       )}
 
-      {/* Add form */}
-      <div
-        style={{
-          display: "flex",
-          gap: "0.75rem",
-          alignItems: "flex-end",
-          flexWrap: "wrap",
-          padding: "1rem",
-          border: "1px solid hsl(var(--border))",
-          borderRadius: 10,
-          marginBottom: "1.25rem",
-        }}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ display: "flex", gap: 8, marginBottom: "1rem" }}>
+        {BOARDS.map((b) => (
+          <button
+            key={b.key}
+            onClick={() => setTab(b.key)}
+            style={{
+              padding: "0.45rem 1rem",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: tab === b.key ? "hsl(var(--primary))" : "transparent",
+              color:
+                tab === b.key
+                  ? "hsl(var(--primary-foreground))"
+                  : "hsl(var(--foreground))",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: "0.85rem",
+            }}
+          >
+            {b.label}
+          </button>
+        ))}
+        {editedCount > 0 && (
           <span
             style={{
-              fontSize: "0.78rem",
+              alignSelf: "center",
+              fontSize: "0.8rem",
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            Board
-          </span>
-          <select
-            value={board}
-            onChange={(e) => setBoard(e.target.value as Board)}
-            style={inputStyle}
-          >
-            {BOARDS.map((b) => (
-              <option key={b.key} value={b.key}>
-                {b.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            flex: "1 1 200px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.78rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            Player
-          </span>
-          <input
-            value={player}
-            onChange={(e) => setPlayer(e.target.value)}
-            placeholder="e.g. Bukayo Saka"
-            style={inputStyle}
-          />
-        </label>
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            flex: "0 1 160px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.78rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            Club
-          </span>
-          <input
-            value={club}
-            onChange={(e) => setClub(e.target.value)}
-            placeholder="optional"
-            style={inputStyle}
-          />
-        </label>
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            flex: "1 1 200px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.78rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            Photo URL
-          </span>
-          <input
-            value={face}
-            onChange={(e) => setFace(e.target.value)}
-            placeholder="optional"
-            style={inputStyle}
-          />
-        </label>
-        <label
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            flex: "0 1 90px",
-          }}
-        >
-          <span
-            style={{
-              fontSize: "0.78rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            {BOARDS.find((b) => b.key === board)?.word ?? "value"}
-          </span>
-          <input
-            type="number"
-            min={0}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            style={inputStyle}
-          />
-        </label>
-        <button
-          onClick={() => void addPlayer()}
-          disabled={busy === "new"}
-          style={{
-            padding: "0.55rem 1.1rem",
-            borderRadius: 8,
-            border: "none",
-            background: "hsl(var(--primary))",
-            color: "hsl(var(--primary-foreground))",
-            fontWeight: 600,
-            cursor: busy === "new" ? "not-allowed" : "pointer",
-            opacity: busy === "new" ? 0.6 : 1,
-          }}
-        >
-          {busy === "new" ? "Saving…" : "Add / update"}
-        </button>
-        {note.new && (
-          <span style={{ fontSize: "0.82rem", alignSelf: "center" }}>
-            {note.new}
+            {editedCount} edited row{editedCount === 1 ? "" : "s"} on this board
           </span>
         )}
       </div>
 
-      {/* Existing */}
       {loading ? (
         <div style={{ color: "hsl(var(--muted-foreground))" }}>Loading…</div>
       ) : rows.length === 0 ? (
@@ -379,145 +303,267 @@ export default function StatBoardEditor({
             fontSize: "0.9rem",
           }}
         >
-          No manually added players. The boards are showing exactly what the
-          provider reports.
+          The provider is returning nothing for this board yet. You can still
+          add players by hand below.
         </div>
       ) : (
-        BOARDS.map((b) => {
-          const forBoard = rows.filter((r) => r.board === b.key)
-          if (forBoard.length === 0) return null
-          return (
-            <div key={b.key} style={{ marginBottom: "1.5rem" }}>
-              <h3 style={{ fontSize: "0.95rem", marginBottom: "0.5rem" }}>
-                {b.label}
-              </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {forBoard.map((r) => (
-                  <div
-                    key={r.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 12,
-                      padding: "0.6rem 0.9rem",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: 10,
-                      flexWrap: "wrap",
-                    }}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {rows.map((r) => (
+            <div
+              key={r.player}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "0.5rem 0.75rem",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: 10,
+                flexWrap: "wrap",
+              }}
+            >
+              {r.face ? (
+                <img
+                  src={r.face}
+                  alt=""
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    flexShrink: 0,
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
+                    background: "hsl(var(--muted))",
+                    flexShrink: 0,
+                  }}
+                />
+              )}
+
+              <span style={{ fontWeight: 600, minWidth: 150 }}>{r.player}</span>
+              <span
+                style={{
+                  fontSize: "0.78rem",
+                  color: "hsl(var(--muted-foreground))",
+                  minWidth: 90,
+                }}
+              >
+                {r.club}
+              </span>
+
+              <input
+                type="number"
+                min={0}
+                defaultValue={r.value}
+                key={`v-${r.player}-${r.value}`}
+                onBlur={(e) => {
+                  const v = Number(e.target.value)
+                  if (!Number.isFinite(v) || v === r.value) return
+                  void patch(r.player, {
+                    board: tab,
+                    player: r.player,
+                    value: v,
+                    isManual: r.isManual,
+                  })
+                }}
+                style={{ ...inputStyle, width: 72 }}
+                title={`${word} shown on the board`}
+              />
+              <span
+                style={{
+                  fontSize: "0.78rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                {word}
+              </span>
+
+              {r.valueEdited && r.feedValue !== null && (
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: 999,
+                    background: "#2563eb1a",
+                    color: "#2563eb",
+                    border: "1px solid #2563eb55",
+                  }}
+                  title="Pinned by an admin. The provider still reports the number shown here; reset to follow it again."
+                >
+                  edited · provider says {r.feedValue}
+                </span>
+              )}
+              {r.isManual && (
+                <span
+                  style={{
+                    fontSize: "0.72rem",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: 999,
+                    background: "#d977061a",
+                    color: "#d97706",
+                    border: "1px solid #d9770655",
+                  }}
+                  title="The provider does not carry this player — this row exists because an admin added it."
+                >
+                  added by hand
+                </span>
+              )}
+
+              <input
+                defaultValue={r.face}
+                key={`f-${r.player}-${r.face}`}
+                placeholder="photo URL"
+                onBlur={(e) => {
+                  const v = e.target.value.trim()
+                  if (v === (r.face ?? "")) return
+                  void patch(r.player, {
+                    board: tab,
+                    player: r.player,
+                    face: v || null,
+                    isManual: r.isManual,
+                  })
+                }}
+                style={{ ...inputStyle, flex: "1 1 200px", minWidth: 140 }}
+                title="Fix a wrong player photo. Clearing it goes back to the provider's."
+              />
+              {r.faceEdited && (
+                <span
+                  style={{ fontSize: "0.72rem", color: "#2563eb" }}
+                  title="Photo pinned by an admin"
+                >
+                  photo pinned
+                </span>
+              )}
+
+              <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                {r.isManual && (
+                  <button
+                    onClick={() => void openBetting(r)}
+                    disabled={busy === r.player}
+                    style={btn()}
+                    title="Adds this player to the open stat market as a bettable outcome"
                   >
-                    <span style={{ fontWeight: 600, minWidth: 160 }}>
-                      {r.player}
-                    </span>
-                    {r.club && (
-                      <span
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "hsl(var(--muted-foreground))",
-                        }}
-                      >
-                        {r.club}
-                      </span>
-                    )}
-                    <input
-                      type="number"
-                      min={0}
-                      defaultValue={r.value}
-                      onBlur={(e) => {
-                        const v = Number(e.target.value)
-                        if (!Number.isFinite(v) || v === r.value) return
-                        void save(
-                          {
-                            board: r.board,
-                            player: r.player,
-                            club: r.club,
-                            face: r.face,
-                            value: v,
-                          },
-                          r.id
-                        )
-                      }}
-                      style={{ ...inputStyle, width: 80 }}
-                    />
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        color: "hsl(var(--muted-foreground))",
-                      }}
-                    >
-                      {b.word}
-                    </span>
-
-                    {r.shadowedByFeed !== null && (
-                      <span
-                        style={{
-                          fontSize: "0.78rem",
-                          padding: "0.25rem 0.55rem",
-                          borderRadius: 999,
-                          background: "#d977061a",
-                          color: "#d97706",
-                          border: "1px solid #d9770655",
-                        }}
-                        title="The live provider reports this player, and the provider wins. Your value is stored but is not what the board shows."
-                      >
-                        Provider reports {r.shadowedByFeed} — not applied
-                      </span>
-                    )}
-
-                    <div
-                      style={{ marginLeft: "auto", display: "flex", gap: 8 }}
-                    >
-                      <button
-                        onClick={() => void openBetting(r)}
-                        disabled={busy === r.id}
-                        style={{
-                          padding: "0.4rem 0.8rem",
-                          borderRadius: 8,
-                          border: "1px solid hsl(var(--border))",
-                          background: "transparent",
-                          color: "hsl(var(--foreground))",
-                          cursor: busy === r.id ? "not-allowed" : "pointer",
-                          fontSize: "0.82rem",
-                        }}
-                        title="Adds this player to the open stat market as a bettable outcome"
-                      >
-                        Open betting
-                      </button>
-                      <button
-                        onClick={() => void remove(r)}
-                        disabled={busy === r.id}
-                        style={{
-                          padding: "0.4rem 0.8rem",
-                          borderRadius: 8,
-                          border: "1px solid hsl(var(--destructive) / 0.4)",
-                          background: "transparent",
-                          color: "hsl(var(--destructive))",
-                          cursor: busy === r.id ? "not-allowed" : "pointer",
-                          fontSize: "0.82rem",
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                    {note[r.id] && (
-                      <span
-                        style={{
-                          fontSize: "0.8rem",
-                          flexBasis: "100%",
-                          color: note[r.id].startsWith("✓")
-                            ? "#16a34a"
-                            : "hsl(var(--destructive))",
-                        }}
-                      >
-                        {note[r.id]}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                    Open betting
+                  </button>
+                )}
+                {r.overrideId && (
+                  <button
+                    onClick={() => void reset(r)}
+                    disabled={busy === r.player}
+                    style={btn("danger")}
+                    title={
+                      r.isManual
+                        ? "Removes this hand-added player from the board"
+                        : "Drops your edits — this row follows the provider again"
+                    }
+                  >
+                    {r.isManual ? "Remove" : "Reset to provider"}
+                  </button>
+                )}
               </div>
+
+              {note[r.player] && (
+                <span
+                  style={{
+                    fontSize: "0.78rem",
+                    flexBasis: "100%",
+                    color: note[r.player].startsWith("✓")
+                      ? "#16a34a"
+                      : "hsl(var(--destructive))",
+                  }}
+                >
+                  {note[r.player]}
+                </span>
+              )}
             </div>
-          )
-        })
+          ))}
+        </div>
       )}
+
+      {/* Add a player the provider doesn't carry */}
+      <div
+        style={{
+          display: "flex",
+          gap: "0.6rem",
+          alignItems: "flex-end",
+          flexWrap: "wrap",
+          padding: "0.9rem",
+          border: "1px dashed hsl(var(--border))",
+          borderRadius: 10,
+          marginTop: "1rem",
+        }}
+      >
+        <div
+          style={{
+            flexBasis: "100%",
+            fontSize: "0.8rem",
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
+          Add a player the provider doesn't carry — they'll appear on the{" "}
+          <strong>{BOARDS.find((b) => b.key === tab)?.label}</strong> board.
+        </div>
+        <input
+          value={newPlayer}
+          onChange={(e) => setNewPlayer(e.target.value)}
+          placeholder="Player name"
+          style={{ ...inputStyle, flex: "1 1 180px" }}
+        />
+        <input
+          value={newClub}
+          onChange={(e) => setNewClub(e.target.value)}
+          placeholder="Club (optional)"
+          style={{ ...inputStyle, flex: "0 1 150px" }}
+        />
+        <input
+          value={newFace}
+          onChange={(e) => setNewFace(e.target.value)}
+          placeholder="Photo URL (optional)"
+          style={{ ...inputStyle, flex: "1 1 180px" }}
+        />
+        <input
+          type="number"
+          min={1}
+          value={newValue}
+          onChange={(e) => setNewValue(e.target.value)}
+          placeholder={word}
+          style={{ ...inputStyle, flex: "0 1 90px" }}
+        />
+        <button
+          onClick={() => void addPlayer()}
+          disabled={busy === "new"}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: 8,
+            border: "none",
+            background: "hsl(var(--primary))",
+            color: "hsl(var(--primary-foreground))",
+            fontWeight: 600,
+            cursor: busy === "new" ? "not-allowed" : "pointer",
+            opacity: busy === "new" ? 0.6 : 1,
+          }}
+        >
+          {busy === "new" ? "Saving…" : "Add player"}
+        </button>
+        {note.new && (
+          <span
+            style={{
+              fontSize: "0.8rem",
+              flexBasis: "100%",
+              color: note.new.startsWith("✓")
+                ? "#16a34a"
+                : "hsl(var(--destructive))",
+            }}
+          >
+            {note.new}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
