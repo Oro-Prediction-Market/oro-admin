@@ -169,6 +169,29 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
+      // ── Stat board overrides (players the live feed doesn't carry) ──
+      getStatOverrides: (league: "epl" | "ucl") =>
+        apiFetch(`/admin/${league}/stat-overrides`),
+      saveStatOverride: (
+        league: "epl" | "ucl",
+        body: {
+          board: "goals" | "assists"
+          player: string
+          club?: string
+          face?: string
+          value: number
+        }
+      ) =>
+        apiFetch(`/admin/${league}/stat-overrides`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      deleteStatOverride: (league: "epl" | "ucl", id: string) =>
+        apiFetch(`/admin/${league}/stat-overrides/${id}`, { method: "DELETE" }),
+      openBettingOnStatOverride: (league: "epl" | "ucl", id: string) =>
+        apiFetch(`/admin/${league}/stat-overrides/${id}/open-betting`, {
+          method: "POST",
+        }),
       createMarketGroup: (data: Record<string, unknown>) =>
         // Longer timeout — cold start + creates several child markets at once.
         apiFetch(

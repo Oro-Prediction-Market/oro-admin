@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
+import StatBoardEditor from "../components/StatBoardEditor"
 
 interface StatEntry {
   player: string
@@ -423,6 +424,8 @@ export default function EplStatMarketsPage() {
           })}
         </div>
       )}
+
+      <StatBoardEditor league="epl" leagueLabel="Premier League" />
     </div>
   )
 }
