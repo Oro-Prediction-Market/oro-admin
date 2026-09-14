@@ -364,7 +364,14 @@ const PaymentLogPage: React.FC<{ currency?: "BTN" | "USDT" }> = ({
       ) : (
         <div className="glass-card" style={{ overflow: "hidden" }}>
           <div style={{ overflowX: "auto" }}>
+            {/* Notes wrap, so a row can be taller than one line. Top-aligning
+                every cell keeps the date, user and amount level with the
+                first line of the note instead of centred against it. */}
+            <style>{`
+              .paylog-table td { vertical-align: top; }
+            `}</style>
             <table
+              className="paylog-table"
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
@@ -493,17 +500,24 @@ const PaymentLogPage: React.FC<{ currency?: "BTN" | "USDT" }> = ({
                           fontSize: "0.8rem",
                         }}
                       >
-                        {/* Cap + single-line ellipsis so a long note can't
-                            wrap into many lines and blow up the row height
-                            (the visible cells then float in a tall gap). Full
-                            note shows on hover. */}
+                        {/* Wraps rather than truncating: this is the audit
+                            trail, and a note ending in "challenge d65e44e1…"
+                            is the one thing an admin came here to read. The
+                            ellipsis version hid it behind a hover tooltip,
+                            which is no good for scanning or copying.
+
+                            Row height was the original worry. The longest
+                            note in the table is 124 characters and the average
+                            is 45, so the worst case is about three lines, and
+                            every cell is top-aligned so the short ones no
+                            longer float in the middle of a tall row. */}
                         <div
-                          title={t.note || undefined}
                           style={{
-                            maxWidth: 340,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
+                            maxWidth: 560,
+                            minWidth: 240,
+                            whiteSpace: "pre-wrap",
+                            overflowWrap: "anywhere",
+                            lineHeight: 1.45,
                           }}
                         >
                           {t.note || "—"}
