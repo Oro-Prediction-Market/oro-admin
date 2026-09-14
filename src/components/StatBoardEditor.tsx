@@ -188,7 +188,7 @@ export default function StatBoardEditor({
     if (!Number.isFinite(v) || v <= 0) {
       setNote((n) => ({
         ...n,
-        new: "Enter a number — a player the provider doesn't carry has nothing to rank them by otherwise",
+        new: "Enter a number — there is nothing else to rank this player by",
       }))
       return
     }
@@ -208,6 +208,9 @@ export default function StatBoardEditor({
 
   const rows = boards[tab]
   const word = BOARDS.find((b) => b.key === tab)?.word ?? "value"
+  // Assists have no provider behind them — the board is whatever is entered
+  // here. Goals are provider-first with edits laid over.
+  const manualBoard = tab === "assists"
   const editedCount = rows.filter((r) => r.valueEdited || r.faceEdited).length
 
   return (
@@ -223,13 +226,27 @@ export default function StatBoardEditor({
           maxWidth: 780,
         }}
       >
-        These are the {leagueLabel} boards the app's Stats tab shows, fetched
-        live from the provider.{" "}
-        <strong>Edit any row and your value sticks</strong> — that field stops
-        following the provider until you reset it. The number and the photo are
-        pinned separately, so fixing a wrong photo won't freeze the goal count.
-        Players the provider doesn't carry can be added at the bottom. Nothing
-        here opens betting; that's the per-row button.
+        {manualBoard ? (
+          <>
+            The {leagueLabel} assists board is <strong>fully manual</strong> —
+            the data provider is not consulted at all. Its free tier ranks
+            scorers by goals and carries assists only incidentally, so the board
+            it produces is a near-arbitrary subset that nonetheless looks
+            authoritative. Everything the app's Stats tab shows for assists is
+            what you enter here. Nothing on this page opens betting; that's the
+            per-row button.
+          </>
+        ) : (
+          <>
+            This is the {leagueLabel} goals board the app's Stats tab shows,
+            fetched live from the provider.{" "}
+            <strong>Edit any row and your value sticks</strong> — that field
+            stops following the provider until you reset it. The number and the
+            photo are pinned separately, so fixing a wrong photo won't freeze
+            the goal count. Players the provider doesn't carry can be added at
+            the bottom. Nothing here opens betting; that's the per-row button.
+          </>
+        )}
         {season && (
           <>
             {" "}
@@ -303,8 +320,9 @@ export default function StatBoardEditor({
             fontSize: "0.9rem",
           }}
         >
-          The provider is returning nothing for this board yet. You can still
-          add players by hand below.
+          {manualBoard
+            ? "No assists entered yet. This board is entirely yours — add the players below and they appear on the app's Stats tab."
+            : "The provider is returning nothing for this board yet. You can still add players by hand below."}
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -398,7 +416,7 @@ export default function StatBoardEditor({
                   edited · provider says {r.feedValue}
                 </span>
               )}
-              {r.isManual && (
+              {r.isManual && !manualBoard && (
                 <span
                   style={{
                     fontSize: "0.72rem",
@@ -458,7 +476,7 @@ export default function StatBoardEditor({
                     style={btn("danger")}
                     title={
                       r.isManual
-                        ? "Removes this hand-added player from the board"
+                        ? "Removes this player from the board"
                         : "Drops your edits — this row follows the provider again"
                     }
                   >
@@ -505,8 +523,17 @@ export default function StatBoardEditor({
             color: "hsl(var(--muted-foreground))",
           }}
         >
-          Add a player the provider doesn't carry — they'll appear on the{" "}
-          <strong>{BOARDS.find((b) => b.key === tab)?.label}</strong> board.
+          {manualBoard ? (
+            <>
+              Add a player to the{" "}
+              <strong>{BOARDS.find((b) => b.key === tab)?.label}</strong> board.
+            </>
+          ) : (
+            <>
+              Add a player the provider doesn't carry — they'll appear on the{" "}
+              <strong>{BOARDS.find((b) => b.key === tab)?.label}</strong> board.
+            </>
+          )}
         </div>
         <input
           value={newPlayer}
