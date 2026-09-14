@@ -27,6 +27,8 @@ interface Outcome {
   id: string
   label: string
   totalBetAmount?: string | number
+  /** Distinct people backing this outcome. */
+  bettorCount?: number
   isWinner?: boolean
 }
 
@@ -39,6 +41,10 @@ interface AutoMarket {
   opensAt?: string
   totalPool?: string | number
   poolCurrency?: string
+  /** Distinct people in the market — not the sum of the outcomes' counts. */
+  bettorCount?: number
+  /** Positions placed; one person betting five times counts five. */
+  betCount?: number
   houseEdgePct?: number
   externalSource?: string | null
   outcomes: Outcome[]
@@ -988,6 +994,20 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                         </td>
                         <td style={{ fontFamily: "monospace" }}>
                           {pool > 0 ? `Nu ${pool.toLocaleString()}` : "—"}
+                          {/* Inline rather than its own column — this table is
+                              already seven wide and scrolls on a laptop. */}
+                          {!!m.bettorCount && (
+                            <div
+                              style={{
+                                fontSize: "0.7rem",
+                                color: "hsl(var(--muted-foreground))",
+                              }}
+                              title="Distinct people with a position on this market."
+                            >
+                              {m.bettorCount.toLocaleString()}{" "}
+                              {m.bettorCount === 1 ? "bettor" : "bettors"}
+                            </div>
+                          )}
                         </td>
                         <td style={{ fontSize: "0.75rem" }}>
                           {m.closesAt
@@ -1109,6 +1129,8 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                                 isEstimated={m.status === "open"}
                                 showWarnings={true}
                                 currency={m.poolCurrency}
+                                bettorCount={m.bettorCount}
+                                betCount={m.betCount}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor

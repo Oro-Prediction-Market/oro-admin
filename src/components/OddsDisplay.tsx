@@ -5,6 +5,8 @@ interface Outcome {
   id: string
   label: string
   totalBetAmount?: number | string
+  /** Distinct people holding a position on this outcome. */
+  bettorCount?: number
   isWinner?: boolean
 }
 
@@ -17,6 +19,12 @@ interface OddsDisplayProps {
   /** Currency the pool is denominated in. Served as `poolCurrency` on the
    *  admin market list; defaults to BTN, the platform default. */
   currency?: string
+  /** Distinct people in the market. NOT the sum of the per-outcome counts —
+   *  someone hedging across three outcomes is one person here and appears
+   *  under all three there. */
+  bettorCount?: number
+  /** Positions placed. One person betting five times counts five. */
+  betCount?: number
 }
 
 export const OddsDisplay: React.FC<OddsDisplayProps> = ({
@@ -26,6 +34,8 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
   isEstimated = false,
   showWarnings = true,
   currency = "BTN",
+  bettorCount,
+  betCount,
 }) => {
   // Currencies never mix within a pool, so one unit for the whole panel.
   const unit = currency === "USDT" ? "$" : "Nu "
@@ -82,6 +92,22 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
 
   const minusPoolWarning = getMinusPoolWarning()
 
+  const people = (n: number) =>
+    `${n.toLocaleString()} ${n === 1 ? "person" : "people"}`
+
+  // Per-outcome counts overlap: a hedger appears under every outcome they
+  // backed. On the live 2026 World Cup market the outcome counts sum to 982
+  // against 441 real people, so without saying this out loud an admin reading
+  // the column would conclude one of the numbers is broken.
+  const outcomeBettorSum = outcomes.reduce(
+    (sum, o) => sum + (o.bettorCount ?? 0),
+    0
+  )
+  const hasBettorCounts =
+    typeof bettorCount === "number" || outcomeBettorSum > 0
+  const hedgers =
+    typeof bettorCount === "number" ? outcomeBettorSum - bettorCount : 0
+
   return (
     <div style={{ marginTop: "1rem" }}>
       <div
@@ -113,6 +139,26 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
           >
             {money(totalPool)}
           </span>
+          {typeof bettorCount === "number" && (
+            <>
+              {" from "}
+              <span
+                style={{
+                  fontWeight: 600,
+                  color: "hsl(var(--foreground))",
+                }}
+                title="Distinct people with a position on this market, counted once each however many bets they placed."
+              >
+                {people(bettorCount)}
+              </span>
+              {typeof betCount === "number" && betCount !== bettorCount && (
+                <span title="Positions placed. More predictions than people means some are betting repeatedly.">
+                  {" "}
+                  ({betCount.toLocaleString()} predictions)
+                </span>
+              )}
+            </>
+          )}
         </span>
       </div>
 
@@ -173,6 +219,25 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
                   </span>
                   <span>·</span>
                   <span>{probability.toFixed(2)}% of pool</span>
+                  {typeof outcome.bettorCount === "number" && (
+                    <>
+                      <span>·</span>
+                      <span
+                        style={{
+                          color:
+                            outcome.bettorCount === 0
+                              ? "hsl(var(--muted-foreground))"
+                              : "hsl(var(--foreground))",
+                          fontWeight: outcome.bettorCount === 0 ? 400 : 600,
+                        }}
+                        title="Distinct people backing this outcome."
+                      >
+                        {outcome.bettorCount === 0
+                          ? "nobody"
+                          : people(outcome.bettorCount)}
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
               <div style={{ textAlign: "right" }}>
@@ -199,6 +264,23 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
           )
         })}
       </div>
+
+      {hasBettorCounts && hedgers > 0 && (
+        <div
+          style={{
+            marginTop: "0.5rem",
+            fontSize: "0.72rem",
+            color: "hsl(var(--muted-foreground))",
+          }}
+        >
+          The per-outcome counts add up to {outcomeBettorSum.toLocaleString()},
+          above the {bettorCount!.toLocaleString()} people actually in this
+          market. {hedgers.toLocaleString()}{" "}
+          {hedgers === 1 ? "is a repeat" : "are repeats"} — people who backed
+          more than one outcome and are counted under each. Don't add the column
+          up.
+        </div>
+      )}
 
       {showWarnings && isThinLiquidity && (
         <div

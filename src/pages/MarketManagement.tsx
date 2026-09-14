@@ -41,6 +41,8 @@ interface Outcome {
   isWinner?: boolean
   isEliminated?: boolean
   totalBetAmount?: string | number
+  /** Distinct people backing this outcome. */
+  bettorCount?: number
   [key: string]: unknown
 }
 
@@ -52,6 +54,10 @@ interface Market {
   poolVolume?: string | number
   totalPool?: string | number
   poolCurrency?: string
+  /** Distinct people in the market — not the sum of the outcomes' counts. */
+  bettorCount?: number
+  /** Positions placed; one person betting five times counts five. */
+  betCount?: number
   houseEdgePct?: number
   imageUrl?: string | null
   category?: string | null
@@ -922,6 +928,9 @@ const MarketManagement: React.FC = () => {
                   <th>Title</th>
                   <th>Status</th>
                   <th>Pool Vol.</th>
+                  <th title="Distinct people with a position on this market, counted once each however many bets they placed.">
+                    Bettors
+                  </th>
                   <th>Closes At</th>
                   <th>Actions</th>
                 </tr>
@@ -930,7 +939,7 @@ const MarketManagement: React.FC = () => {
                 {displayMarkets.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       style={{
                         textAlign: "center",
                         color: "hsl(var(--muted-foreground))",
@@ -1077,6 +1086,37 @@ const MarketManagement: React.FC = () => {
                           {parseFloat(
                             String(m.totalPool ?? 0)
                           ).toLocaleString()}
+                        </td>
+                        <td style={{ fontFamily: "monospace" }}>
+                          {m.bettorCount === undefined ? (
+                            "—"
+                          ) : m.bettorCount === 0 ? (
+                            <span
+                              style={{ color: "hsl(var(--muted-foreground))" }}
+                            >
+                              0
+                            </span>
+                          ) : (
+                            <>
+                              {m.bettorCount.toLocaleString()}
+                              {/* The bet tally alongside: the gap between them
+                                  is the signal. 3 people / 40 bets is a very
+                                  different market from 40 people / 40 bets. */}
+                              {typeof m.betCount === "number" &&
+                                m.betCount !== m.bettorCount && (
+                                  <span
+                                    style={{
+                                      color: "hsl(var(--muted-foreground))",
+                                      fontSize: "0.75rem",
+                                    }}
+                                    title={`${m.betCount.toLocaleString()} predictions placed by ${m.bettorCount.toLocaleString()} people`}
+                                  >
+                                    {" "}
+                                    / {m.betCount.toLocaleString()}
+                                  </span>
+                                )}
+                            </>
+                          )}
                         </td>
                         <td style={{ fontSize: "0.75rem" }}>
                           {m.closesAt
@@ -1246,7 +1286,7 @@ const MarketManagement: React.FC = () => {
                       {expandedMarket === m.id && (
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={6}
                             style={{
                               padding: "0",
                               background: "hsl(var(--muted) / 0.1)",
@@ -1262,6 +1302,8 @@ const MarketManagement: React.FC = () => {
                                 isEstimated={m.status === "open"}
                                 showWarnings={true}
                                 currency={m.poolCurrency}
+                                bettorCount={m.bettorCount}
+                                betCount={m.betCount}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor
