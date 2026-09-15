@@ -74,7 +74,8 @@ interface MarketInitialData {
 export interface MarketFormData {
   title: string
   description: string
-  imageUrl: string
+  /** `null`, never `""`, when the field was left blank — see `handleSubmit`. */
+  imageUrl: string | null
   outcomes: { id?: string; label: string; imageUrl?: string | null }[]
   /**
    * Political grouped event only: each candidate becomes its own Yes/No child
@@ -519,7 +520,10 @@ const MarketForm: React.FC<MarketFormProps> = ({
     try {
       await onSubmit({
         ...formData,
-        imageUrl: formData.imageUrl.trim(),
+        // `|| null` rather than the bare trim: a blank field used to store an
+        // empty string, so "has an image" could not be answered with a null
+        // check and six markets counted as having artwork they did not have.
+        imageUrl: formData.imageUrl.trim() || null,
         opensAt: toUTC(formData.opensAt),
         closesAt: toUTC(formData.closesAt),
         houseEdgePct: Number(formData.houseEdgePct),

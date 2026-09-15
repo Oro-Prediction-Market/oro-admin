@@ -263,7 +263,7 @@ const MarketManagement: React.FC = () => {
 
   const handleCreate = async (data: MarketFormData) => {
     const submit = async () => {
-      const marketImageUrl = data.imageUrl.trim()
+      const marketImageUrl = data.imageUrl?.trim() ?? ""
       if (data.candidates?.length) {
         await api.createMarketGroup({
           title: data.title,
