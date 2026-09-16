@@ -47,11 +47,18 @@ export const SettlementDetails: React.FC<SettlementDetailsProps> = ({
   }
 
   const calculateBreakage = () => {
-    const payoutPool = Number(settlement.payoutPool || 0)
+    const totalPool = Number(settlement.totalPool || 0)
     const totalPaidOut = Number(settlement.totalPaidOut || 0)
+    const houseAmount = Number(settlement.houseAmount || 0)
 
-    // Breakage = payoutPool - totalPaidOut (rounded remainders)
-    return payoutPool - totalPaidOut
+    // Unaccounted pool money: in, minus paid to winners, minus booked by the
+    // house. Zero by construction, so anything else is a real leak.
+    //
+    // This used to be `payoutPool - totalPaidOut`, which only agrees when the
+    // 1.05x winner floor does not bind. `payoutPool` is the theoretical
+    // post-rake figure, written before any edge is waived to fund that floor,
+    // so a waived settlement showed a large negative breakage.
+    return totalPool - totalPaidOut - houseAmount
   }
 
   const totalBets = settlement.totalBets ?? 0
@@ -253,7 +260,7 @@ export const SettlementDetails: React.FC<SettlementDetailsProps> = ({
               Total Paid:{" "}
               <strong>{formatCurrency(settlement.totalPaidOut)}</strong>
             </div>
-            {breakage > 0 && (
+            {Math.abs(breakage) > 0.005 && (
               <div
                 style={{
                   fontSize: "0.75rem",
