@@ -232,6 +232,33 @@ export function useAdminApi(token: string | null) {
         ),
       announceMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}/announce`, { method: "POST" }),
+
+      // ── Announcements: a notice sent to every user ──────────────────────
+      // sendAnnouncement runs the whole fan-out inline (the insert plus
+      // enqueuing ~2,200 DM jobs), so it gets a long timeout. Retrying it is
+      // safe: clientRequestId is generated when the compose form opens, so a
+      // timed-out request and its retry are one announcement, not two.
+      listAnnouncements: (params?: { page?: number; limit?: number }) => {
+        const q = new URLSearchParams()
+        if (params?.page) q.set("page", String(params.page))
+        if (params?.limit) q.set("limit", String(params.limit))
+        const qs = q.toString()
+        return apiFetch(`/admin/announcements${qs ? `?${qs}` : ""}`)
+      },
+      getAnnouncement: (id: string) => apiFetch(`/admin/announcements/${id}`),
+      sendAnnouncement: (data: {
+        title: string
+        body: string
+        clientRequestId: string
+        force?: boolean
+      }) =>
+        apiFetch(
+          "/admin/announcements",
+          { method: "POST", body: JSON.stringify(data) },
+          120_000
+        ),
+      retractAnnouncement: (id: string) =>
+        apiFetch(`/admin/announcements/${id}/retract`, { method: "POST" }),
       updateMarket: (id: string, data: Record<string, unknown>) =>
         apiFetch(`/admin/markets/${id}`, {
           method: "PATCH",

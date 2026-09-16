@@ -7,6 +7,7 @@ const MarketManagement = lazy(() => import("./MarketManagement"))
 const MarketSuggestions = lazy(() => import("./MarketSuggestions"))
 const UserManagement = lazy(() => import("./UserManagement"))
 const CommentsModerationPage = lazy(() => import("./CommentsModerationPage"))
+const AnnouncementsPage = lazy(() => import("./AnnouncementsPage"))
 const DuelsPage = lazy(() => import("./DuelsPage"))
 const MarketDiscovery = lazy(() => import("./MarketDiscovery"))
 const KeeperDashboard = lazy(() => import("./KeeperDashboard"))
@@ -230,6 +231,7 @@ const AdminPage: React.FC = () => {
   else if (page === "suggestions") content = <MarketSuggestions />
   else if (page === "users") content = <UserManagement />
   else if (page === "comments") content = <CommentsModerationPage />
+  else if (page === "announcements") content = <AnnouncementsPage />
   else if (page === "duels") content = <DuelsPage />
   else if (page === "discovery") content = <MarketDiscovery />
   else if (page === "keeper") content = <KeeperDashboard />

@@ -13,6 +13,7 @@ import {
   Globe2,
   LayoutDashboard,
   Lightbulb,
+  Megaphone,
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
@@ -277,6 +278,15 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Swords size={20} />
             {!collapsed && <span className="nav-label">Duels</span>}
+          </li>
+          {/* The other direction: us to them, rather than them to each other. */}
+          <li
+            className={current === "announcements" ? "active" : ""}
+            onClick={() => onNavigate("announcements")}
+            title={collapsed ? "Announcements" : undefined}
+          >
+            <Megaphone size={20} />
+            {!collapsed && <span className="nav-label">Announcements</span>}
           </li>
           <li
             className={current === "keeper" ? "active" : ""}
