@@ -88,12 +88,49 @@ type Tab = "teams" | "fixtures" | "stats"
 /** A → N: the fourteen groups, across the four leagues. */
 const GROUP_KEYS = "ABCDEFGHIJKLMN".split("")
 
-const FIXTURE_STATUSES = [
-  { value: "scheduled", label: "Scheduled" },
-  { value: "finished", label: "Finished" },
+/**
+ * What an admin actually has to decide.
+ *
+ * The stored status has four values, but two of them are not choices:
+ * `scheduled` and `finished` follow from whether a score exists, and the
+ * backend infers them when no status is sent. Offering all four made the
+ * ordinary case — type the score, save — look like a decision with a wrong
+ * answer available.
+ *
+ * Only two cases carry information the score cannot:
+ *
+ *  - **Awarded**: UEFA decided the result rather than the pitch, typically
+ *    3-0 after a forfeit. The score is entered normally and counts in the
+ *    table exactly like any other; this only records that it was
+ *    administrative.
+ *  - **Postponed**: rearranged rather than simply not played yet. Scores stay
+ *    empty either way, so the table is identical — this is for the admin's
+ *    benefit, not the arithmetic's.
+ */
+const RESULT_KINDS = [
+  { value: "", label: "Normal" },
   { value: "awarded", label: "Awarded (walkover)" },
   { value: "postponed", label: "Postponed" },
 ]
+
+/** Small caption over a form field, so a narrow control still says what it is. */
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label
+      style={{
+        display: "block",
+        fontSize: "0.68rem",
+        fontWeight: 700,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
+        color: "hsl(var(--muted-foreground))",
+        marginBottom: "0.25rem",
+      }}
+    >
+      {children}
+    </label>
+  )
+}
 
 /** The edition covering `now`, as UEFA writes it. Group stage runs Sep–Nov. */
 function defaultSeason(now = new Date()): string {
@@ -292,41 +329,53 @@ export default function NationsLeaguePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "90px 1fr 1.4fr auto",
+            gridTemplateColumns: "130px 1fr 1.4fr auto",
             gap: "0.5rem",
-            alignItems: "center",
+            alignItems: "end",
           }}
         >
-          <select
-            className="input-field"
-            value={newTeam.groupKey}
-            onChange={(e) =>
-              setNewTeam((s) => ({ ...s, groupKey: e.target.value }))
-            }
-          >
-            {GROUP_KEYS.map((g) => (
-              <option key={g} value={g}>
-                Group {g}
-              </option>
-            ))}
-          </select>
-          <input
-            className="input-field"
-            placeholder="Nation, e.g. Republic of Ireland"
-            value={newTeam.name}
-            onChange={(e) =>
-              setNewTeam((s) => ({ ...s, name: e.target.value }))
-            }
-            onKeyDown={(e) => e.key === "Enter" && addTeam()}
-          />
-          <input
-            className="input-field"
-            placeholder="Flag URL (optional)"
-            value={newTeam.flagUrl}
-            onChange={(e) =>
-              setNewTeam((s) => ({ ...s, flagUrl: e.target.value }))
-            }
-          />
+          <div>
+            <FieldLabel>Group</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={newTeam.groupKey}
+              onChange={(e) =>
+                setNewTeam((s) => ({ ...s, groupKey: e.target.value }))
+              }
+            >
+              {GROUP_KEYS.map((g) => (
+                <option key={g} value={g}>
+                  Group {g}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Nation</FieldLabel>
+            <input
+              className="input-field"
+              style={{ width: "100%" }}
+              placeholder="e.g. Republic of Ireland"
+              value={newTeam.name}
+              onChange={(e) =>
+                setNewTeam((s) => ({ ...s, name: e.target.value }))
+              }
+              onKeyDown={(e) => e.key === "Enter" && addTeam()}
+            />
+          </div>
+          <div>
+            <FieldLabel>Flag URL (optional)</FieldLabel>
+            <input
+              className="input-field"
+              style={{ width: "100%" }}
+              placeholder="https://flagcdn.com/w320/ie.png"
+              value={newTeam.flagUrl}
+              onChange={(e) =>
+                setNewTeam((s) => ({ ...s, flagUrl: e.target.value }))
+              }
+            />
+          </div>
           <button
             className="btn btn-primary"
             onClick={addTeam}
@@ -486,7 +535,10 @@ export default function NationsLeaguePage() {
     scoreDraft[f.id] ?? {
       home: f.homeScore == null ? "" : String(f.homeScore),
       away: f.awayScore == null ? "" : String(f.awayScore),
-      status: f.status,
+      // "" means Normal — scheduled and finished are inferred from the score
+      // rather than chosen, so they never appear as a selection.
+      status:
+        f.status === "awarded" || f.status === "postponed" ? f.status : "",
     }
 
   const saveScore = async (f: Fixture) => {
@@ -505,7 +557,9 @@ export default function NationsLeaguePage() {
         // Forest v Coventry as a draw in September.
         homeScore: bothFilled ? Number(d.home) : null,
         awayScore: bothFilled ? Number(d.away) : null,
-        status: d.status,
+        // Omitted for "Normal", so the backend derives scheduled/finished
+        // from whether a score is present.
+        status: d.status || undefined,
       })) as { warning: string | null }
       setWarnings((w) => {
         const next = { ...w }
@@ -599,81 +653,100 @@ export default function NationsLeaguePage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "90px 1fr 1fr 1fr 80px auto",
+            gridTemplateColumns: "130px 1fr 1fr 210px 90px auto",
             gap: "0.5rem",
-            alignItems: "center",
+            alignItems: "end",
           }}
         >
-          <select
-            className="input-field"
-            value={newFixture.groupKey}
-            onChange={(e) =>
-              setNewFixture((s) => ({
-                ...s,
-                groupKey: e.target.value,
-                homeTeamId: "",
-                awayTeamId: "",
-              }))
-            }
-          >
-            {GROUP_KEYS.map((g) => (
-              <option key={g} value={g}>
-                Group {g}
-              </option>
-            ))}
-          </select>
+          <div>
+            <FieldLabel>Group</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={newFixture.groupKey}
+              onChange={(e) =>
+                setNewFixture((s) => ({
+                  ...s,
+                  groupKey: e.target.value,
+                  homeTeamId: "",
+                  awayTeamId: "",
+                }))
+              }
+            >
+              {GROUP_KEYS.map((g) => (
+                <option key={g} value={g}>
+                  Group {g}
+                </option>
+              ))}
+            </select>
+          </div>
           {/* Both selects are scoped to the chosen group: the group stage has
               no cross-group fixtures, so offering one would only allow a
               mistake the backend then rejects. */}
-          <select
-            className="input-field"
-            value={newFixture.homeTeamId}
-            onChange={(e) =>
-              setNewFixture((s) => ({ ...s, homeTeamId: e.target.value }))
-            }
-          >
-            <option value="">Home…</option>
-            {groupTeams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="input-field"
-            value={newFixture.awayTeamId}
-            onChange={(e) =>
-              setNewFixture((s) => ({ ...s, awayTeamId: e.target.value }))
-            }
-          >
-            <option value="">Away…</option>
-            {groupTeams
-              .filter((t) => t.id !== newFixture.homeTeamId)
-              .map((t) => (
+          <div>
+            <FieldLabel>Home</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={newFixture.homeTeamId}
+              onChange={(e) =>
+                setNewFixture((s) => ({ ...s, homeTeamId: e.target.value }))
+              }
+            >
+              <option value="">Pick a nation…</option>
+              {groupTeams.map((t) => (
                 <option key={t.id} value={t.id}>
                   {t.name}
                 </option>
               ))}
-          </select>
-          <input
-            className="input-field"
-            type="datetime-local"
-            value={newFixture.kickoffAt}
-            onChange={(e) =>
-              setNewFixture((s) => ({ ...s, kickoffAt: e.target.value }))
-            }
-          />
-          <input
-            className="input-field"
-            type="number"
-            min={1}
-            max={6}
-            placeholder="MD"
-            value={newFixture.matchday}
-            onChange={(e) =>
-              setNewFixture((s) => ({ ...s, matchday: e.target.value }))
-            }
-          />
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Away</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={newFixture.awayTeamId}
+              onChange={(e) =>
+                setNewFixture((s) => ({ ...s, awayTeamId: e.target.value }))
+              }
+            >
+              <option value="">Pick a nation…</option>
+              {groupTeams
+                .filter((t) => t.id !== newFixture.homeTeamId)
+                .map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Kickoff · betting closes</FieldLabel>
+            <input
+              className="input-field"
+              style={{ width: "100%" }}
+              type="datetime-local"
+              value={newFixture.kickoffAt}
+              onChange={(e) =>
+                setNewFixture((s) => ({ ...s, kickoffAt: e.target.value }))
+              }
+            />
+          </div>
+          <div>
+            <FieldLabel>Matchday</FieldLabel>
+            <input
+              className="input-field"
+              style={{ width: "100%" }}
+              type="number"
+              min={1}
+              max={6}
+              value={newFixture.matchday}
+              onChange={(e) =>
+                setNewFixture((s) => ({ ...s, matchday: e.target.value }))
+              }
+            />
+          </div>
           <button
             className="btn btn-primary"
             onClick={addFixture}
@@ -682,6 +755,21 @@ export default function NationsLeaguePage() {
             <Plus size={15} /> Add
           </button>
         </div>
+        <p
+          style={{
+            margin: "0.7rem 0 0",
+            fontSize: "0.75rem",
+            color: "hsl(var(--muted-foreground))",
+            lineHeight: 1.5,
+          }}
+        >
+          Kickoff is also when betting closes. Leave the result kind on{" "}
+          <strong>Normal</strong> for every ordinary match — a fixture counts as
+          played once it has a score, and as not played while it has none. Use{" "}
+          <strong>Awarded</strong> only when UEFA decided the result off the
+          pitch (a 3-0 walkover), and <strong>Postponed</strong> only when a
+          match has been rearranged.
+        </p>
         {groupTeams.length < 2 && (
           <p
             style={{
@@ -858,7 +946,7 @@ export default function NationsLeaguePage() {
                       }))
                     }
                   >
-                    {FIXTURE_STATUSES.map((o) => (
+                    {RESULT_KINDS.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>
