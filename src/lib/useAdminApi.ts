@@ -230,18 +230,23 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      // The pairings follow from who is in the group, so the only input is
-      // when each matchday kicks off. Refused if the group already has
-      // fixtures — a second round-robin would double every pairing.
-      generateUnlFixtures: (body: {
+      // tzOffsetMinutes is the browser's own getTimezoneOffset(), so a bare
+      // "2026-09-04 20:45" in the paste means the same instant as one typed
+      // into the date picker. A kickoff is also the betting deadline.
+      bulkCreateUnlFixtures: (body: {
         season: string
-        groupKey: string
-        kickoffs: string[]
-        rounds: 1 | 2
+        text: string
+        dryRun?: boolean
       }) =>
         apiFetch(
-          "/admin/unl/fixtures/generate",
-          { method: "POST", body: JSON.stringify(body) },
+          "/admin/unl/fixtures/bulk",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              ...body,
+              tzOffsetMinutes: new Date().getTimezoneOffset(),
+            }),
+          },
           90_000
         ),
       getUnlFixtures: (season?: string) =>
