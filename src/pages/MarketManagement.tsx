@@ -73,6 +73,33 @@ interface Dispute {
 
 const PAGE_SIZE = 20
 
+// The competition hubs that render a featured match, by subcategory prefix.
+// Adding a hub here is what makes its matches pinnable — the hub pages already
+// read `isFeatured` off the market, so nothing else has to change.
+const MATCH_HUBS: Record<string, string> = {
+  epl: "Premier League",
+  ucl: "Champions League",
+  unl: "Nations League",
+}
+
+/**
+ * The hub this market's featured slot belongs to, or null if it has none.
+ *
+ * Featuring pins a match to the top of its competition hub, so a market with
+ * no hub has nowhere to go. The " vs " check keeps the season stat markets
+ * out: they share the league prefix but are not matches, and the hub's
+ * featured section renders a two-team card.
+ */
+function featuredHubName(
+  subcategory: string | null | undefined,
+  title: string
+): string | null {
+  const sub = (subcategory || "").toLowerCase()
+  const key = Object.keys(MATCH_HUBS).find((k) => sub.startsWith(`${k}-`))
+  if (!key) return null
+  return title.toLowerCase().includes(" vs ") ? MATCH_HUBS[key] : null
+}
+
 // A timeout or network-level failure — the signature of hitting a backend that
 // spun down and is cold-starting. (A 4xx/5xx from the app carries a real message
 // and is NOT retried.)
@@ -486,11 +513,16 @@ const MarketManagement: React.FC = () => {
     try {
       await api.updateMarket(m.id, { isFeatured: next })
       refresh()
+      // Deliberately not "the featured match": a hub shows every pinned match,
+      // in kickoff order, and there is no automatic pick when none are pinned —
+      // the section is simply absent. Saying otherwise sends an admin hunting
+      // for a fallback that was never built.
+      const hub = featuredHubName(m.subcategory, m.title) ?? "the"
       notify(
         "success",
         next
-          ? "Pinned as the featured match."
-          : "Unpinned — featured match reverts to the biggest-pool pick."
+          ? `Pinned to the top of the ${hub} hub.`
+          : `Unpinned from the ${hub} hub.`
       )
     } catch (e: unknown) {
       notify(
@@ -1136,26 +1168,14 @@ const MarketManagement: React.FC = () => {
                               </button>
                             )}
                             {(m.status === "upcoming" || m.status === "open") &&
-                              ((m.subcategory || "")
-                                .toLowerCase()
-                                .includes("epl") ||
-                                (m.subcategory || "")
-                                  .toLowerCase()
-                                  .includes("ucl")) &&
-                              m.title.toLowerCase().includes(" vs ") && (
+                              featuredHubName(m.subcategory, m.title) && (
                                 <button
                                   onClick={() => handleToggleFeatured(m)}
                                   className="secondary"
                                   title={
                                     m.isFeatured
-                                      ? "Featured match — click to unpin"
-                                      : `Pin as the featured match in the ${
-                                          (m.subcategory || "")
-                                            .toLowerCase()
-                                            .includes("ucl")
-                                            ? "Champions League"
-                                            : "EPL"
-                                        } hub`
+                                      ? `Featured in the ${featuredHubName(m.subcategory, m.title)} hub — click to unpin`
+                                      : `Pin as a featured match in the ${featuredHubName(m.subcategory, m.title)} hub`
                                   }
                                   style={{
                                     color: m.isFeatured
