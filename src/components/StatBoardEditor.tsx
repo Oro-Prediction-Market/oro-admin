@@ -70,7 +70,13 @@ export default function StatBoardEditor({
   league,
   leagueLabel,
 }: {
-  league: "epl" | "ucl"
+  /**
+   * Widened for the Nations League, whose BOTH boards are manual — the
+   * component body needs no other change, since it only passes this through
+   * to the API. What differs there is the copy: for "unl" an empty board is
+   * the starting state rather than a feed that has not filled yet.
+   */
+  league: "epl" | "ucl" | "unl"
   leagueLabel: string
 }) {
   const token = sessionStorage.getItem("admin_token")

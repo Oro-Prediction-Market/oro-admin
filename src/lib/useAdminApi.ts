@@ -169,11 +169,121 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
+      // ── Nations League stat markets ──
+      // No live leaderboard behind these: both boards are admin-entered, so
+      // the preview shows what has been published rather than a feed.
+      getUnlStatMarketPreview: () => apiFetch("/admin/unl/stat-market/preview"),
+      createUnlStatMarket: (body: {
+        stat: string
+        closesAt?: string
+        topN?: number
+      }) =>
+        apiFetch("/admin/unl/stat-market", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      // ── Nations League teams, fixtures and match markets ──
+      //
+      // The competition has no provider, so these endpoints ARE the feed.
+      // Note what is deliberately absent: nothing here settles a market.
+      // Saving a score has no market side effects at all, and proposing is a
+      // separate call — which is what makes a mistyped score free to fix.
+      getUnlSeason: () => apiFetch("/admin/unl/season"),
+      getUnlTeams: (season?: string) =>
+        apiFetch(
+          `/admin/unl/teams${season ? `?season=${encodeURIComponent(season)}` : ""}`
+        ),
+      createUnlTeam: (body: {
+        season: string
+        groupKey: string
+        name: string
+        flagUrl?: string | null
+        sortOrder?: number
+      }) =>
+        apiFetch("/admin/unl/teams", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      updateUnlTeam: (
+        id: string,
+        body: {
+          name?: string
+          flagUrl?: string | null
+          sortOrder?: number
+          groupKey?: string
+        }
+      ) =>
+        apiFetch(`/admin/unl/teams/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        }),
+      deleteUnlTeam: (id: string) =>
+        apiFetch(`/admin/unl/teams/${id}`, { method: "DELETE" }),
+      getUnlFixtures: (season?: string) =>
+        apiFetch(
+          `/admin/unl/fixtures${season ? `?season=${encodeURIComponent(season)}` : ""}`
+        ),
+      createUnlFixture: (body: {
+        season: string
+        homeTeamId: string
+        awayTeamId: string
+        kickoffAt: string
+        matchday?: number | null
+      }) =>
+        apiFetch("/admin/unl/fixtures", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      updateUnlFixture: (
+        id: string,
+        body: { kickoffAt?: string; matchday?: number | null }
+      ) =>
+        apiFetch(`/admin/unl/fixtures/${id}`, {
+          method: "PATCH",
+          body: JSON.stringify(body),
+        }),
+      deleteUnlFixture: (id: string) =>
+        apiFetch(`/admin/unl/fixtures/${id}`, { method: "DELETE" }),
+      // Saving a score does NOT propose anything. The response carries a
+      // `warning` when the new score contradicts a market that has already
+      // settled — the one case that needs a human.
+      setUnlScore: (
+        id: string,
+        body: {
+          homeScore: number | null
+          awayScore: number | null
+          status?: string
+        }
+      ) =>
+        apiFetch(`/admin/unl/fixtures/${id}/score`, {
+          method: "PUT",
+          body: JSON.stringify(body),
+        }),
+      createUnlMarket: (fixtureId: string) =>
+        apiFetch(
+          `/admin/unl/fixtures/${fixtureId}/market`,
+          { method: "POST" },
+          90_000
+        ),
+      createUnlMarketWindow: (days: number) =>
+        apiFetch(
+          "/admin/unl/markets/window",
+          { method: "POST", body: JSON.stringify({ days }) },
+          90_000
+        ),
+      // Reads the winner from the outcome ids stored on the fixture row, so no
+      // team name is ever compared. Opens the objection window; nothing
+      // settles when it expires except an admin.
+      proposeUnlResult: (fixtureId: string, windowMinutes = 60) =>
+        apiFetch(`/admin/unl/fixtures/${fixtureId}/propose`, {
+          method: "POST",
+          body: JSON.stringify({ windowMinutes }),
+        }),
       // ── Stat board overrides (players the live feed doesn't carry) ──
-      getStatOverrides: (league: "epl" | "ucl") =>
+      getStatOverrides: (league: "epl" | "ucl" | "unl") =>
         apiFetch(`/admin/${league}/stat-overrides`),
       saveStatOverride: (
-        league: "epl" | "ucl",
+        league: "epl" | "ucl" | "unl",
         // Only the fields sent are written. `null` clears one, handing it
         // back to the provider; omitting one leaves it as it was.
         body: {
@@ -189,9 +299,9 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      deleteStatOverride: (league: "epl" | "ucl", id: string) =>
+      deleteStatOverride: (league: "epl" | "ucl" | "unl", id: string) =>
         apiFetch(`/admin/${league}/stat-overrides/${id}`, { method: "DELETE" }),
-      openBettingOnStatOverride: (league: "epl" | "ucl", id: string) =>
+      openBettingOnStatOverride: (league: "epl" | "ucl" | "unl", id: string) =>
         apiFetch(`/admin/${league}/stat-overrides/${id}/open-betting`, {
           method: "POST",
         }),
