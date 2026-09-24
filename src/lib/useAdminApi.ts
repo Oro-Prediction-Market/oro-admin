@@ -219,6 +219,31 @@ export function useAdminApi(token: string | null) {
         }),
       deleteUnlTeam: (id: string) =>
         apiFetch(`/admin/unl/teams/${id}`, { method: "DELETE" }),
+      // Pass dryRun to preview a paste without writing anything — the page
+      // shows what would be created before committing fifty-odd rows.
+      bulkCreateUnlTeams: (body: {
+        season: string
+        text: string
+        dryRun?: boolean
+      }) =>
+        apiFetch("/admin/unl/teams/bulk", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      // The pairings follow from who is in the group, so the only input is
+      // when each matchday kicks off. Refused if the group already has
+      // fixtures — a second round-robin would double every pairing.
+      generateUnlFixtures: (body: {
+        season: string
+        groupKey: string
+        kickoffs: string[]
+        rounds: 1 | 2
+      }) =>
+        apiFetch(
+          "/admin/unl/fixtures/generate",
+          { method: "POST", body: JSON.stringify(body) },
+          90_000
+        ),
       getUnlFixtures: (season?: string) =>
         apiFetch(
           `/admin/unl/fixtures${season ? `?season=${encodeURIComponent(season)}` : ""}`

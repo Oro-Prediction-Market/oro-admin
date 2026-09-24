@@ -8,6 +8,8 @@ import {
   Trophy,
   AlertTriangle,
   BarChart3,
+  ListChecks,
+  Wand2,
 } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
 import { useToast } from "../components/Toast"
@@ -81,6 +83,18 @@ interface SeasonInfo {
   season: string | null
   groupCount: number
   teamCount: number
+}
+
+interface BulkPreview {
+  parsed: {
+    groupKey: string
+    name: string
+    flagUrl: string | null
+    unknownNation: boolean
+  }[]
+  errors: string[]
+  created: number
+  skipped: { name: string; groupKey: string; reason: string }[]
 }
 
 type Tab = "teams" | "fixtures" | "stats"
@@ -320,11 +334,232 @@ export default function NationsLeaguePage() {
     )
   }
 
+  // ── Bulk: paste a draw ───────────────────────────────────────────────────
+
+  const [bulkText, setBulkText] = useState("")
+  const [bulkPreview, setBulkPreview] = useState<BulkPreview | null>(null)
+
+  const previewBulk = async () => {
+    if (!bulkText.trim()) {
+      notify("error", "Paste the draw first.")
+      return
+    }
+    setBusy("bulk-preview")
+    try {
+      const res = (await api.bulkCreateUnlTeams({
+        season,
+        text: bulkText,
+        dryRun: true,
+      })) as BulkPreview
+      setBulkPreview(res)
+    } catch (e) {
+      notify("error", (e as Error).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const commitBulk = async () => {
+    setBusy("bulk-commit")
+    try {
+      const res = (await api.bulkCreateUnlTeams({
+        season,
+        text: bulkText,
+        dryRun: false,
+      })) as BulkPreview
+      notify(
+        "success",
+        `${res.created} nation(s) added` +
+          (res.skipped.length ? `, ${res.skipped.length} already there.` : ".")
+      )
+      setBulkText("")
+      setBulkPreview(null)
+      await load(season)
+    } catch (e) {
+      notify("error", (e as Error).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const TeamsTab = (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Paste the whole draw. Previewed before anything is written, because
+          this is the one action that creates fifty-odd rows at once and the
+          names become market outcome labels that cannot be renamed later. */}
+      <div className="glass-card" style={{ padding: "1rem" }}>
+        <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>
+          Paste the draw
+        </h3>
+        <p
+          style={{
+            margin: "0 0 0.75rem",
+            fontSize: "0.78rem",
+            color: "hsl(var(--muted-foreground))",
+            lineHeight: 1.5,
+          }}
+        >
+          One line per group. Flags fill in automatically for every UEFA nation,
+          so you only type names. Re-pasting later tops up what is missing
+          rather than duplicating.
+        </p>
+        <textarea
+          className="input-field"
+          style={{
+            width: "100%",
+            minHeight: 130,
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            fontSize: "0.82rem",
+            lineHeight: 1.6,
+            resize: "vertical",
+          }}
+          spellCheck={false}
+          placeholder={`A: France, Italy, Belgium, Türkiye\nB: Spain, Netherlands, Denmark, Czechia\nC: Portugal, Croatia, Poland, Scotland`}
+          value={bulkText}
+          onChange={(e) => {
+            setBulkText(e.target.value)
+            setBulkPreview(null)
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            gap: "0.5rem",
+            marginTop: "0.6rem",
+            alignItems: "center",
+          }}
+        >
+          <button
+            className="secondary"
+            onClick={previewBulk}
+            disabled={busy === "bulk-preview"}
+          >
+            <ListChecks size={15} /> Preview
+          </button>
+          {bulkPreview && bulkPreview.created > 0 && (
+            <button onClick={commitBulk} disabled={busy === "bulk-commit"}>
+              <Plus size={15} /> Add {bulkPreview.created} nation
+              {bulkPreview.created === 1 ? "" : "s"}
+            </button>
+          )}
+        </div>
+
+        {bulkPreview && (
+          <div style={{ marginTop: "0.85rem" }}>
+            {bulkPreview.errors.length > 0 && (
+              <div
+                style={{
+                  marginBottom: "0.6rem",
+                  padding: "0.6rem 0.7rem",
+                  borderRadius: 8,
+                  background: "hsl(0 60% 20% / 0.45)",
+                  border: "1px solid hsl(0 60% 40%)",
+                  fontSize: "0.78rem",
+                  lineHeight: 1.5,
+                }}
+              >
+                {bulkPreview.errors.map((e, i) => (
+                  <div key={i}>{e}</div>
+                ))}
+              </div>
+            )}
+
+            {bulkPreview.parsed.length === 0 ? (
+              <p
+                style={{
+                  fontSize: "0.8rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                Nothing recognised yet.
+              </p>
+            ) : (
+              <>
+                <p
+                  style={{
+                    margin: "0 0 0.5rem",
+                    fontSize: "0.78rem",
+                    color: "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  {bulkPreview.created} to add
+                  {bulkPreview.skipped.length > 0 &&
+                    `, ${bulkPreview.skipped.length} already in the group`}
+                  .
+                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "0.35rem",
+                  }}
+                >
+                  {bulkPreview.parsed.map((t, i) => {
+                    const dup = bulkPreview.skipped.some(
+                      (sk) => sk.name === t.name && sk.groupKey === t.groupKey
+                    )
+                    return (
+                      <span
+                        key={`${t.groupKey}-${t.name}-${i}`}
+                        title={
+                          dup
+                            ? "Already in that group — will be skipped"
+                            : t.unknownNation
+                              ? "Not a UEFA nation we recognise. It will still be added, but with no flag — check the spelling."
+                              : undefined
+                        }
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          padding: "0.2rem 0.5rem",
+                          borderRadius: 7,
+                          fontSize: "0.76rem",
+                          background: dup
+                            ? "hsl(var(--muted) / 0.3)"
+                            : t.unknownNation
+                              ? "hsl(38 90% 20% / 0.5)"
+                              : "hsl(160 60% 20% / 0.4)",
+                          border: `1px solid ${
+                            dup
+                              ? "transparent"
+                              : t.unknownNation
+                                ? "hsl(38 90% 45%)"
+                                : "hsl(160 60% 35%)"
+                          }`,
+                          opacity: dup ? 0.5 : 1,
+                          textDecoration: dup ? "line-through" : undefined,
+                        }}
+                      >
+                        {t.flagUrl ? (
+                          <img
+                            src={t.flagUrl}
+                            alt=""
+                            style={{
+                              width: 16,
+                              height: 16,
+                              borderRadius: "50%",
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : (
+                          <AlertTriangle size={12} />
+                        )}
+                        <strong style={{ opacity: 0.6 }}>{t.groupKey}</strong>
+                        {t.name}
+                      </span>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="glass-card" style={{ padding: "1rem" }}>
         <h3 style={{ margin: "0 0 0.75rem", fontSize: "0.95rem" }}>
-          Add a nation
+          Add one nation
         </h3>
         <div
           style={{
@@ -494,6 +729,64 @@ export default function NationsLeaguePage() {
     matchday: "1",
   })
   const [windowDays, setWindowDays] = useState("7")
+
+  // ── Bulk: generate a group's fixtures ────────────────────────────────────
+  //
+  // Matchday count follows from the group size and the number of legs, so it
+  // is derived rather than asked for. Dates are prefilled three days apart —
+  // a starting point, not a claim: real international windows are not evenly
+  // spaced, so every row stays editable.
+  const [genGroup, setGenGroup] = useState("A")
+  const [genRounds, setGenRounds] = useState<1 | 2>(2)
+  const [genDates, setGenDates] = useState<string[]>([])
+
+  const genTeamCount = (teamsByGroup.get(genGroup) ?? []).length
+  // (n - 1) matchdays per leg, with an odd count padded by a bye — the same
+  // arithmetic as matchdayCount() on the server, which is what validates it.
+  const genRequired =
+    genTeamCount < 2
+      ? 0
+      : ((genTeamCount % 2 === 1 ? genTeamCount + 1 : genTeamCount) - 1) *
+        genRounds
+  const genGroupHasFixtures = fixtures.some((f) => f.groupKey === genGroup)
+
+  const prefillDates = (count: number) => {
+    const base = new Date()
+    base.setDate(base.getDate() + 7)
+    base.setHours(20, 45, 0, 0)
+    return Array.from({ length: count }, (_, i) => {
+      const d = new Date(base)
+      d.setDate(d.getDate() + i * 3)
+      const pad = (n: number) => String(n).padStart(2, "0")
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    })
+  }
+
+  // Keep the date rows in step with however many matchdays are needed.
+  useEffect(() => {
+    setGenDates((prev) =>
+      prev.length === genRequired ? prev : prefillDates(genRequired)
+    )
+  }, [genRequired])
+
+  const generateFixtures = async () => {
+    await run(
+      "generate",
+      async () => {
+        const res = (await api.generateUnlFixtures({
+          season,
+          groupKey: genGroup,
+          kickoffs: genDates.map((d) => new Date(d).toISOString()),
+          rounds: genRounds,
+        })) as { created: number }
+        notify(
+          "success",
+          `${res.created} fixtures generated for Group ${genGroup}.`
+        )
+      },
+      "Done."
+    )
+  }
   const [editingTime, setEditingTime] = useState<string | null>(null)
   const [timeDraft, setTimeDraft] = useState("")
   const [scoreDraft, setScoreDraft] = useState<
@@ -589,6 +882,154 @@ export default function NationsLeaguePage() {
 
   const FixturesTab = (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Generate a group's whole fixture list. The pairings are determined by
+          who is in the group, so the only real input is the kickoff times. */}
+      <div className="glass-card" style={{ padding: "1rem" }}>
+        <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>
+          Generate a group's fixtures
+        </h3>
+        <p
+          style={{
+            margin: "0 0 0.85rem",
+            fontSize: "0.78rem",
+            color: "hsl(var(--muted-foreground))",
+            lineHeight: 1.5,
+          }}
+        >
+          Every pairing in the group, in order, with no typing. Dates are
+          prefilled three days apart as a starting point — international windows
+          are not evenly spaced, so edit them, or move any single kickoff
+          afterwards.
+        </p>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "130px 160px auto",
+            gap: "0.5rem",
+            alignItems: "end",
+            marginBottom: "0.85rem",
+          }}
+        >
+          <div>
+            <FieldLabel>Group</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={genGroup}
+              onChange={(e) => setGenGroup(e.target.value)}
+            >
+              {GROUP_KEYS.map((g) => (
+                <option key={g} value={g}>
+                  Group {g} ({(teamsByGroup.get(g) ?? []).length})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <FieldLabel>Legs</FieldLabel>
+            <select
+              className="input-field"
+              style={{ width: "100%" }}
+              value={genRounds}
+              onChange={(e) =>
+                setGenRounds(Number(e.target.value) === 1 ? 1 : 2)
+              }
+            >
+              <option value={2}>Home and away</option>
+              <option value={1}>Single round</option>
+            </select>
+          </div>
+          <button
+            onClick={generateFixtures}
+            disabled={
+              busy === "generate" || genRequired === 0 || genGroupHasFixtures
+            }
+          >
+            <Wand2 size={15} /> Generate{" "}
+            {genRequired > 0
+              ? `${(genTeamCount * (genTeamCount - 1) * genRounds) / 2} fixtures`
+              : ""}
+          </button>
+        </div>
+
+        {genTeamCount < 2 ? (
+          <p
+            style={{ margin: 0, fontSize: "0.78rem", color: "hsl(38 90% 60%)" }}
+          >
+            Group {genGroup} has {genTeamCount} nation
+            {genTeamCount === 1 ? "" : "s"}. Add at least two on the Teams tab
+            first.
+          </p>
+        ) : genGroupHasFixtures ? (
+          <p
+            style={{ margin: 0, fontSize: "0.78rem", color: "hsl(38 90% 60%)" }}
+          >
+            Group {genGroup} already has fixtures. Generating again would create
+            a second copy of every pairing — delete the existing ones first.
+          </p>
+        ) : (
+          <>
+            <FieldLabel>
+              Kickoff per matchday ({genRequired} matchdays)
+            </FieldLabel>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns:
+                  "repeat(auto-fill, minmax(min(100%, 230px), 1fr))",
+                gap: "0.5rem",
+              }}
+            >
+              {genDates.map((d, i) => (
+                <div
+                  key={i}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: "0.72rem",
+                      fontWeight: 700,
+                      color: "hsl(var(--muted-foreground))",
+                      width: 34,
+                      flexShrink: 0,
+                    }}
+                  >
+                    MD{i + 1}
+                  </span>
+                  <input
+                    className="input-field"
+                    style={{ flex: 1, minWidth: 0 }}
+                    type="datetime-local"
+                    value={d}
+                    onChange={(e) =>
+                      setGenDates((prev) =>
+                        prev.map((x, j) => (j === i ? e.target.value : x))
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+            {genTeamCount % 2 === 1 && (
+              <p
+                style={{
+                  margin: "0.6rem 0 0",
+                  fontSize: "0.75rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                {genTeamCount} teams, so one rests each matchday.
+              </p>
+            )}
+          </>
+        )}
+      </div>
+
       {/* Bulk market creation */}
       <div className="glass-card" style={{ padding: "1rem" }}>
         <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>
