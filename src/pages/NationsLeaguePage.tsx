@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
   CalendarDays,
   Flag,
@@ -155,6 +155,8 @@ export default function NationsLeaguePage() {
 
   const [tab, setTab] = useState<Tab>("teams")
   const [season, setSeason] = useState(defaultSeason())
+  /** What is in the box. `season` is what has actually been loaded. */
+  const [seasonInput, setSeasonInput] = useState(defaultSeason())
   const [info, setInfo] = useState<SeasonInfo | null>(null)
   const [teams, setTeams] = useState<Team[]>([])
   const [fixtures, setFixtures] = useState<Fixture[]>([])
@@ -179,36 +181,52 @@ export default function NationsLeaguePage() {
    */
   const [warnings, setWarnings] = useState<Record<string, string>>({})
 
-  const load = useCallback(
-    async (target: string) => {
-      setLoading(true)
-      setErr(null)
-      try {
-        const [i, t, f] = await Promise.all([
-          api.getUnlSeason(),
-          api.getUnlTeams(target),
-          api.getUnlFixtures(target),
-        ])
-        setInfo(i as SeasonInfo)
-        setTeams((t as Team[]) ?? [])
-        setFixtures((f as Fixture[]) ?? [])
-      } catch (e) {
-        setErr((e as Error).message)
-      } finally {
-        setLoading(false)
-      }
-    },
-    [api]
-  )
+  /**
+   * Deliberately a plain function, not a useCallback keyed on `api`.
+   *
+   * `useAdminApi` returns a fresh object literal every render (it spreads a
+   * memoised `api` alongside its own `loading`/`error` state), so `api` is
+   * never referentially stable. A `useCallback(..., [api])` therefore produces
+   * a new `load` on every render, and an effect depending on it re-fires on
+   * every render — which loops: fetch → setState → render → fetch. It shows up
+   * as "You're doing that too quickly" from the global 120 req/min throttler,
+   * not as an obvious infinite loop.
+   *
+   * Every other admin page avoids this the same way: a plain function plus an
+   * effect that lists only the values that should actually re-trigger it.
+   */
+  const load = async (target: string) => {
+    setLoading(true)
+    setErr(null)
+    try {
+      const [i, t, f] = await Promise.all([
+        api.getUnlSeason(),
+        api.getUnlTeams(target),
+        api.getUnlFixtures(target),
+      ])
+      setInfo(i as SeasonInfo)
+      setTeams((t as Team[]) ?? [])
+      setFixtures((f as Fixture[]) ?? [])
+    } catch (e) {
+      setErr((e as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  // Only when the edition actually changes.
   useEffect(() => {
-    load(season)
-  }, [season, load])
+    void load(season)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [season])
 
   // Adopt the edition already in the database, so a fresh page does not sit on
   // a computed guess while real data exists under a different key.
   useEffect(() => {
-    if (info?.season && info.season !== season) setSeason(info.season)
+    if (info?.season && info.season !== season) {
+      setSeason(info.season)
+      setSeasonInput(info.season)
+    }
     // Only when the server reports one; the admin's own typing wins after that.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [info?.season])
@@ -1006,12 +1024,24 @@ export default function NationsLeaguePage() {
         }}
       >
         <h1 style={{ margin: 0, fontSize: "1.4rem" }}>Nations League</h1>
+        {/* Committed on blur or Enter, not per keystroke. `season` drives the
+            reload effect, so binding it straight to onChange would fire a
+            three-endpoint refetch for every character typed. */}
         <input
           className="input-field"
           style={{ width: 120 }}
-          value={season}
-          onChange={(e) => setSeason(e.target.value)}
-          title="Edition, e.g. 2026-27"
+          value={seasonInput}
+          onChange={(e) => setSeasonInput(e.target.value)}
+          onBlur={() => {
+            const v = seasonInput.trim()
+            if (v && v !== season) setSeason(v)
+            else setSeasonInput(season)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") (e.target as HTMLInputElement).blur()
+            if (e.key === "Escape") setSeasonInput(season)
+          }}
+          title="Edition, e.g. 2026-27 — press Enter to load it"
         />
         <button
           className="btn btn-ghost"
