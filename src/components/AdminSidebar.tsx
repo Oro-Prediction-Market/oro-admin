@@ -243,6 +243,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 UCL Markets
               </li>
               <li
+                className={current === "unl-markets" ? "active" : ""}
+                onClick={() => onNavigate("unl-markets")}
+                style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}
+              >
+                <Trophy size={18} />
+                Nations League
+              </li>
+              <li
                 className={current === "settlements" ? "active" : ""}
                 onClick={() => onNavigate("settlements")}
                 style={{ padding: "0.5rem 1rem", fontSize: "0.9rem" }}

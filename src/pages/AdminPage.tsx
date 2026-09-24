@@ -27,6 +27,7 @@ const UsdtUsersPage = lazy(() => import("./UsdtUsersPage"))
 const PlatformAccuracyPage = lazy(() => import("./PlatformAccuracyPage"))
 const EplStatMarketsPage = lazy(() => import("./EplStatMarketsPage"))
 const UclStatMarketsPage = lazy(() => import("./UclStatMarketsPage"))
+const NationsLeaguePage = lazy(() => import("./NationsLeaguePage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -258,6 +259,7 @@ const AdminPage: React.FC = () => {
   else if (page === "platform-accuracy") content = <PlatformAccuracyPage />
   else if (page === "epl-markets") content = <EplStatMarketsPage />
   else if (page === "ucl-markets") content = <UclStatMarketsPage />
+  else if (page === "unl-markets") content = <NationsLeaguePage />
 
   return (
     <div className="admin-layout">
