@@ -376,11 +376,7 @@ export default function NationsLeaguePage() {
               }
             />
           </div>
-          <button
-            className="btn btn-primary"
-            onClick={addTeam}
-            disabled={busy === "add-team"}
-          >
+          <button onClick={addTeam} disabled={busy === "add-team"}>
             <Plus size={15} /> Add
           </button>
         </div>
@@ -442,7 +438,7 @@ export default function NationsLeaguePage() {
                 )}
                 <span style={{ flex: 1, fontWeight: 600 }}>{t.name}</span>
                 <button
-                  className="btn btn-ghost"
+                  className="secondary"
                   title="Remove"
                   disabled={busy === `del-team-${t.id}`}
                   onClick={() =>
@@ -622,7 +618,6 @@ export default function NationsLeaguePage() {
           />
           <span style={{ fontSize: "0.85rem" }}>days ahead</span>
           <button
-            className="btn btn-primary"
             disabled={busy === "window"}
             onClick={() =>
               run(
@@ -748,7 +743,6 @@ export default function NationsLeaguePage() {
             />
           </div>
           <button
-            className="btn btn-primary"
             onClick={addFixture}
             disabled={busy === "add-fixture" || groupTeams.length < 2}
           >
@@ -853,7 +847,7 @@ export default function NationsLeaguePage() {
                             onChange={(e) => setTimeDraft(e.target.value)}
                           />
                           <button
-                            className="btn btn-ghost"
+                            className="secondary"
                             style={{
                               padding: "0.2rem 0.5rem",
                               fontSize: "0.7rem",
@@ -877,7 +871,7 @@ export default function NationsLeaguePage() {
                             Save
                           </button>
                           <button
-                            className="btn btn-ghost"
+                            className="secondary"
                             style={{
                               padding: "0.2rem 0.5rem",
                               fontSize: "0.7rem",
@@ -889,7 +883,7 @@ export default function NationsLeaguePage() {
                         </>
                       ) : (
                         <button
-                          className="btn btn-ghost"
+                          className="secondary"
                           style={{
                             padding: "0.1rem 0.3rem",
                             fontSize: "0.72rem",
@@ -953,7 +947,7 @@ export default function NationsLeaguePage() {
                     ))}
                   </select>
                   <button
-                    className="btn btn-ghost"
+                    className="secondary"
                     disabled={busy === `score-${f.id}`}
                     onClick={() => saveScore(f)}
                   >
@@ -968,7 +962,7 @@ export default function NationsLeaguePage() {
                     />
                   ) : (
                     <button
-                      className="btn btn-ghost"
+                      className="secondary"
                       disabled={busy === `mkt-${f.id}`}
                       onClick={() =>
                         run(
@@ -995,7 +989,6 @@ export default function NationsLeaguePage() {
 
                   {f.canPropose && (
                     <button
-                      className="btn btn-primary"
                       disabled={busy === `prop-${f.id}`}
                       onClick={() =>
                         setConfirm({
@@ -1024,7 +1017,7 @@ export default function NationsLeaguePage() {
 
                   {!f.marketId && (
                     <button
-                      className="btn btn-ghost"
+                      className="secondary"
                       title="Delete fixture"
                       disabled={busy === `del-fx-${f.id}`}
                       onClick={() =>
@@ -1101,7 +1094,24 @@ export default function NationsLeaguePage() {
   ]
 
   return (
-    <div style={{ padding: "1.5rem", maxWidth: 1200, margin: "0 auto" }}>
+    <div
+      className="unl-page"
+      style={{ padding: "1.5rem", maxWidth: 1200, margin: "0 auto" }}
+    >
+      <style>{`
+        /* The app's global button rule is not a flex container, so a lucide
+           icon followed by a text label wraps onto a second line. Every button
+           on this page carries an icon, so scope the fix here rather than
+           changing a rule the rest of the dashboard is already laid out around. */
+        .unl-page button {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+          white-space: nowrap;
+        }
+        .unl-page button svg { flex-shrink: 0; }
+      `}</style>
       <div
         style={{
           display: "flex",
@@ -1132,7 +1142,7 @@ export default function NationsLeaguePage() {
           title="Edition, e.g. 2026-27 — press Enter to load it"
         />
         <button
-          className="btn btn-ghost"
+          className="secondary"
           onClick={() => load(season)}
           disabled={loading}
         >
@@ -1170,7 +1180,7 @@ export default function NationsLeaguePage() {
         {TABS.map((t) => (
           <button
             key={t.id}
-            className={tab === t.id ? "btn btn-primary" : "btn btn-ghost"}
+            className={tab === t.id ? undefined : "secondary"}
             onClick={() => setTab(t.id)}
           >
             {t.icon} {t.label}
