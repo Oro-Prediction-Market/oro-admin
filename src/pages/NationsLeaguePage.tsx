@@ -32,9 +32,12 @@ import StatBoardEditor from "../components/StatBoardEditor"
  * **Saving a score does nothing to the market.** That is the single most
  * important thing about this page, and the reason Propose is a separate
  * button: a mistyped score is free to fix right up until someone proposes on
- * it. Nothing between the two is automatic — Nations League markets are
- * excluded from both auto-settlers, so even an expired objection window
- * settles nothing without an admin.
+ * it.
+ *
+ * Proposing is the point of no return. From there the market runs the normal
+ * objection window and settles itself if nobody objects — there is no second
+ * admin confirmation, and this competition has no data feed behind it, so the
+ * window is the only thing standing between a typed score and a payout.
  */
 
 // ── Types (the API returns untyped JSON) ─────────────────────────────────────
@@ -1448,8 +1451,9 @@ export default function NationsLeaguePage() {
                             `${home?.name} ${f.homeScore}–${f.awayScore} ${away?.name}\n\n` +
                             `This proposes "${f.proposedLabel}" as the winner and opens a ` +
                             `60-minute objection window.\n\n` +
-                            `Nothing settles on its own when the window closes — you ` +
-                            `resolve it yourself afterwards, with evidence.`,
+                            `If nobody objects, it settles itself when the window closes ` +
+                            `and winners are paid. There is no second confirmation, so ` +
+                            `check the score above before proposing.`,
                           confirmLabel: "Propose",
                           onConfirm: () => {
                             setConfirm(null)
