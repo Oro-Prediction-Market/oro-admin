@@ -262,8 +262,22 @@ export default function NationsLeaguePage() {
    * Every other admin page avoids this the same way: a plain function plus an
    * effect that lists only the values that should actually re-trigger it.
    */
-  const load = async (target: string) => {
-    setLoading(true)
+  /**
+   * `silent` refetches without swapping the list out for "Loading…".
+   *
+   * Every action on this page finishes by reloading the data, and doing that
+   * loudly unmounts the whole fixtures list and remounts it — which throws the
+   * scroll position back to the top. Matchday 4 is a long way down a list of
+   * 156 fixtures, so entering a round of scores meant scrolling back after
+   * every single save.
+   *
+   * The rows are keyed by id, so a silent refetch reconciles in place: the
+   * numbers update, the DOM stays, and so does the scroll position. The spinner
+   * is still worth having on the first load and on an edition change, where
+   * there is nothing on screen to preserve.
+   */
+  const load = async (target: string, opts?: { silent?: boolean }) => {
+    if (!opts?.silent) setLoading(true)
     setErr(null)
     try {
       const [i, t, f] = await Promise.all([
@@ -277,7 +291,7 @@ export default function NationsLeaguePage() {
     } catch (e) {
       setErr((e as Error).message)
     } finally {
-      setLoading(false)
+      if (!opts?.silent) setLoading(false)
     }
   }
 
@@ -313,7 +327,7 @@ export default function NationsLeaguePage() {
     try {
       await fn()
       notify("success", ok)
-      await load(season)
+      await load(season, { silent: true })
     } catch (e) {
       notify("error", (e as Error).message)
     } finally {
@@ -390,7 +404,7 @@ export default function NationsLeaguePage() {
       )
       setBulkText("")
       setBulkPreview(null)
-      await load(season)
+      await load(season, { silent: true })
     } catch (e) {
       notify("error", (e as Error).message)
     } finally {
@@ -815,7 +829,7 @@ export default function NationsLeaguePage() {
       notify("success", `${res.created} fixture(s) added.`)
       setFxText("")
       setFxPreview(null)
-      await load(season)
+      await load(season, { silent: true })
     } catch (e) {
       notify("error", (e as Error).message)
     } finally {
@@ -865,7 +879,7 @@ export default function NationsLeaguePage() {
           ? "Score saved — but it disagrees with a settled market. See the notice."
           : "Score saved. Nothing has been proposed."
       )
-      await load(season)
+      await load(season, { silent: true })
     } catch (e) {
       notify("error", (e as Error).message)
     } finally {
