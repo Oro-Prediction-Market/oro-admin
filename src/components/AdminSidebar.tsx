@@ -29,6 +29,7 @@ import {
   Users,
   Wallet,
   Hourglass,
+  Wrench,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -326,6 +327,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Hourglass size={20} />
             {!collapsed && <span className="nav-label">Stuck Withdrawals</span>}
+          </li>
+          <li
+            className={current === "corrections" ? "active" : ""}
+            onClick={() => onNavigate("corrections")}
+            title={collapsed ? "Corrections" : undefined}
+          >
+            <Wrench size={20} />
+            {!collapsed && <span className="nav-label">Corrections</span>}
           </li>
           <li
             className={current === "disputes" ? "active" : ""}

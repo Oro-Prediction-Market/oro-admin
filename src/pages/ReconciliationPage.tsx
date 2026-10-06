@@ -29,6 +29,8 @@ const TX_LABELS: Record<string, string> = {
   referral_prize: "Referral Prize",
   duel_wager: "Duel Wager",
   duel_payout: "Duel Payout",
+  season_prize: "Season Prize",
+  adjustment: "Adjustment",
 }
 
 interface ReconciliationData {

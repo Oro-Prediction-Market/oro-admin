@@ -62,6 +62,7 @@ const TYPE_LABELS: Record<string, string> = {
   duel_wager: "Duel Wager",
   duel_payout: "Duel Payout",
   season_prize: "Season Prize",
+  adjustment: "Adjustment",
 }
 
 const SUMMARY_TYPES = [

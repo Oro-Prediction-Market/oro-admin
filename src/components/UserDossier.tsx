@@ -106,6 +106,7 @@ const TYPE_LABELS: Record<string, string> = {
   dispute_bond: "Dispute bond",
   duel_wager: "Duel wager",
   duel_payout: "Duel payout",
+  adjustment: "Adjustment",
 }
 
 // Currencies never mix — each book is formatted in its own unit.

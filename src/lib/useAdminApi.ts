@@ -790,6 +790,34 @@ export function useAdminApi(token: string | null) {
         ),
       getSegregationInvariants: () => apiFetch("/reconciliation/segregation"),
       getWithdrawalAttention: () => apiFetch("/admin/withdrawals/attention"),
+      getAdjustments: (userId?: string) =>
+        apiFetch(
+          "/admin/adjustments" +
+            (userId ? `?userId=${encodeURIComponent(userId)}` : "")
+        ),
+      previewAdjustment: (body: {
+        userId: string
+        currency: string
+        amount: number
+      }) =>
+        apiFetch("/admin/adjustments/preview", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      createAdjustment: (body: {
+        requestId: string
+        userId: string
+        currency: string
+        amount: number
+        reason: string
+        note: string
+        userNote?: string
+        reference?: string
+      }) =>
+        apiFetch("/admin/adjustments", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
       resolveWithdrawal: (
         id: string,
         body: {

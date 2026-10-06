@@ -32,6 +32,7 @@ const SeasonsPage = lazy(() => import("./SeasonsPage"))
 const UsdtDepositsPage = lazy(() => import("./UsdtDepositsPage"))
 const DisputesPage = lazy(() => import("./DisputesPage"))
 const StuckWithdrawalsPage = lazy(() => import("./StuckWithdrawalsPage"))
+const CorrectionsPage = lazy(() => import("./CorrectionsPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -266,6 +267,7 @@ const AdminPage: React.FC = () => {
   else if (page === "reporting") content = <ReportingPage />
   else if (page === "disputes") content = <DisputesPage />
   else if (page === "stuck-withdrawals") content = <StuckWithdrawalsPage />
+  else if (page === "corrections") content = <CorrectionsPage />
   else if (page === "revenue") content = <RevenuePage />
   else if (page === "seasons") content = <SeasonsPage />
   else if (page === "aml") content = <AMLPage />
