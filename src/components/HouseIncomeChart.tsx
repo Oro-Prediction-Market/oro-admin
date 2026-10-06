@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 
 type Period = "all" | "week" | "month"
@@ -26,9 +26,8 @@ const PERIODS: { key: Period; label: string }[] = [
 ]
 
 const LINE = "hsl(var(--primary))"
-const W = 720
 const H = 200
-const PAD = { top: 12, right: 12, bottom: 24, left: 46 }
+const PAD = { top: 12, right: 14, bottom: 24, left: 40 }
 
 function money(n: number, currency: Currency) {
   const v = n.toLocaleString("en-US", {
@@ -75,6 +74,20 @@ export default function HouseIncomeChart() {
   const [data, setData] = useState<IncomeResponse | null>(null)
   const [err, setErr] = useState<string | null>(null)
   const [hover, setHover] = useState<number | null>(null)
+
+  // Draw at the card's real pixel width, so the chart always spans the card
+  // edge to edge and text never stretches.
+  const [W, setW] = useState(720)
+  const observer = useRef<ResizeObserver | null>(null)
+  const plotRef = useCallback((el: HTMLDivElement | null) => {
+    observer.current?.disconnect()
+    observer.current = null
+    if (!el) return
+    const measure = () => setW(Math.max(280, Math.round(el.clientWidth)))
+    measure()
+    observer.current = new ResizeObserver(measure)
+    observer.current.observe(el)
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -221,13 +234,17 @@ export default function HouseIncomeChart() {
       )}
 
       {data && buckets.length > 0 && total !== 0 && (
-        <div style={{ position: "relative", marginTop: "0.5rem" }}>
+        <div
+          ref={plotRef}
+          style={{ position: "relative", marginTop: "0.5rem" }}
+        >
           <svg
             viewBox={`0 0 ${W} ${H}`}
-            width="100%"
+            width={W}
+            height={H}
             role="img"
             aria-label={`Profit by ${unit}, ${rangeText}`}
-            style={{ display: "block", maxHeight: 230 }}
+            style={{ display: "block" }}
             onMouseLeave={() => setHover(null)}
           >
             {ticks.map((v) => (
