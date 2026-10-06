@@ -13,6 +13,7 @@ import {
   BarChart2,
 } from "lucide-react"
 import { useToast } from "../components/Toast"
+import JobHealthPanel from "../components/JobHealthPanel"
 import { handleAdminAuth } from "../lib/useAdminApi"
 
 // ── API base (mirrors useAdminApi.ts logic) ────────────────────────────────
@@ -295,6 +296,8 @@ const KeeperDashboard: React.FC = () => {
           </div>
         ))}
       </div>
+
+      <JobHealthPanel />
 
       {/* ── Main two-column ──────────────────────────────────────────────── */}
       <div

@@ -769,6 +769,7 @@ export function useAdminApi(token: string | null) {
         ),
       getPay21Webhooks: (limit = 50) =>
         apiFetch(`/admin/insights/pay21-webhooks?limit=${limit}`),
+      getJobHealth: () => apiFetch("/admin/insights/jobs"),
 
       getPendingWithdrawals: (limit = 50) =>
         apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),
