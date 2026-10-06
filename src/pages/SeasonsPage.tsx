@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from "react"
-import { CheckCircle2, RefreshCw, Trophy, XCircle } from "lucide-react"
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  Trophy,
+  XCircle,
+} from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
 
 interface PodiumPlace {
@@ -12,6 +19,11 @@ interface PodiumPlace {
   paid: boolean
   paidAmount: number | null
   paidAt: string | null
+  /** The in-app prize popup was created. Only sent on a fresh credit. */
+  notified: boolean
+  notifiedAt: string | null
+  /** When the winner opened it; null until then. */
+  seenAt: string | null
 }
 
 interface SeasonRow {
@@ -189,6 +201,7 @@ function SeasonCard({
                 <th>Volume</th>
                 <th>Prize</th>
                 <th>Credited</th>
+                <th>Notification</th>
               </tr>
             </thead>
             <tbody>
@@ -229,6 +242,9 @@ function SeasonCard({
                       </span>
                     )}
                   </td>
+                  <td>
+                    <NoticeCell place={p} paysOut={s.paysOut} />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -236,5 +252,55 @@ function SeasonCard({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * The in-app popup is the only notification with a read receipt — Telegram
+ * does not report whether a DM was read. Three states worth telling apart:
+ * opened, delivered but not yet opened, and never sent at all (credited but
+ * the notification step failed after the money moved).
+ */
+function NoticeCell({
+  place: p,
+  paysOut,
+}: {
+  place: PodiumPlace
+  paysOut: boolean
+}) {
+  if (!paysOut || !p.paid) return <>—</>
+  if (!p.notified)
+    return (
+      <span
+        style={{ color: "#f87171" }}
+        title="Prize was credited but no in-app notification exists"
+      >
+        Never sent
+      </span>
+    )
+  if (p.seenAt)
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 4,
+          color: "#34d399",
+        }}
+      >
+        <Eye size={14} /> Seen {new Date(p.seenAt).toLocaleDateString()}
+      </span>
+    )
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        color: "#fbbf24",
+      }}
+    >
+      <EyeOff size={14} /> Not opened yet
+    </span>
   )
 }
