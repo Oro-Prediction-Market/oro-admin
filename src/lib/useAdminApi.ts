@@ -781,6 +781,9 @@ export function useAdminApi(token: string | null) {
         apiFetch(`/admin/insights/pay21-webhooks?limit=${limit}`),
       getJobHealth: () => apiFetch("/admin/insights/jobs"),
       getAttention: () => apiFetch("/admin/insights/attention"),
+      getSettlementAudit: () => apiFetch("/admin/keeper/settlement-audit"),
+      runSettlementAudit: () =>
+        apiFetch("/admin/keeper/settlement-audit/run", { method: "POST" }),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>
         apiFetch(`/admin/insights/signups?period=${period}&count=${count}`),
       getDisputeCases: (p: {

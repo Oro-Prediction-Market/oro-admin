@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useToast } from "../components/Toast"
 import JobHealthPanel from "../components/JobHealthPanel"
+import SettlementAuditPanel from "../components/SettlementAuditPanel"
 import { handleAdminAuth } from "../lib/useAdminApi"
 
 // ── API base (mirrors useAdminApi.ts logic) ────────────────────────────────
@@ -298,6 +299,7 @@ const KeeperDashboard: React.FC = () => {
       </div>
 
       <JobHealthPanel />
+      <SettlementAuditPanel />
 
       {/* ── Main two-column ──────────────────────────────────────────────── */}
       <div
