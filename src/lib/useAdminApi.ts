@@ -783,6 +783,16 @@ export function useAdminApi(token: string | null) {
       getAttention: () => apiFetch("/admin/insights/attention"),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>
         apiFetch(`/admin/insights/signups?period=${period}&count=${count}`),
+      getCategoryRevenue: (p: {
+        from?: string
+        to?: string
+        currency: "BTN" | "USDT"
+      }) => {
+        const qs = new URLSearchParams({ currency: p.currency })
+        if (p.from) qs.set("from", p.from)
+        if (p.to) qs.set("to", p.to)
+        return apiFetch(`/admin/insights/category-revenue?${qs.toString()}`)
+      },
 
       getPendingWithdrawals: (limit = 50) =>
         apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),

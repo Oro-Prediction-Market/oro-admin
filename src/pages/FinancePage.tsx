@@ -8,6 +8,7 @@ import {
   Trash2,
 } from "lucide-react"
 import { handleAdminAuth } from "../lib/useAdminApi"
+import CategoryRevenue from "../components/CategoryRevenue"
 
 const API_BASE =
   (import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/admin").replace(
@@ -728,6 +729,8 @@ const FinancePage: React.FC = () => {
           </div>
         )}
       </div>
+
+      <CategoryRevenue />
     </div>
   )
 }
