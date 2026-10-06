@@ -23,7 +23,14 @@ interface RevenueDistribution {
   marketId: string
   settlementId: string
   amount: number
+  /** Pool money only — see houseForfeit. */
   houseEdgePct: number
+  /**
+   * The part of `amount` that came from forfeited dispute bonds rather than
+   * the pool. Zero on almost every row, and on every row written before the
+   * column existed.
+   */
+  houseForfeit?: number
   totalPool: number
   /** The book this row belongs to. Absent on pre-USDT rows, all ngultrum. */
   currency?: string
@@ -406,6 +413,7 @@ const RevenuePage: React.FC = () => {
               <th>Market</th>
               <th>Pool</th>
               <th>Edge %</th>
+              <th>Bonds</th>
               <th>Amount</th>
               <th>Dest</th>
               <th>Status</th>
@@ -416,7 +424,7 @@ const RevenuePage: React.FC = () => {
             {distributions.length === 0 && (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{
                     textAlign: "center",
                     color: "hsl(var(--muted-foreground))",
@@ -440,6 +448,25 @@ const RevenuePage: React.FC = () => {
                 </td>
                 <td>{money(Number(d.totalPool), d.currency)}</td>
                 <td>{Number(d.houseEdgePct)}%</td>
+                {/* Forfeited dispute bonds. Shown so `Amount` reconciles:
+                    Amount = Pool x Edge% + Bonds. Without this column the
+                    edge looked wrong whenever an objector lost a bond. */}
+                <td
+                  style={{
+                    color: Number(d.houseForfeit ?? 0)
+                      ? undefined
+                      : "hsl(var(--muted-foreground))",
+                  }}
+                  title={
+                    Number(d.houseForfeit ?? 0)
+                      ? "Forfeited dispute bonds — not pool money, so excluded from Edge %"
+                      : undefined
+                  }
+                >
+                  {Number(d.houseForfeit ?? 0)
+                    ? money(Number(d.houseForfeit), d.currency)
+                    : "—"}
+                </td>
                 <td style={{ fontWeight: 600 }}>
                   {money(Number(d.amount), d.currency)}
                 </td>
