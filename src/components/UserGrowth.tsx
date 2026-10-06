@@ -41,6 +41,13 @@ const RANGES: { days: number; label: string }[] = [
   { days: 0, label: "All" },
 ]
 
+// signupsPerDay dates are Thimphu calendar days as "YYYY-MM-DD". Built from
+// the parts so the browser's zone can't move them to the day before.
+function dayOf(date: string): Date {
+  const [y, m, d] = date.slice(0, 10).split("-").map(Number)
+  return new Date(y, m - 1, d)
+}
+
 function pct(part: number, whole: number): string {
   if (whole <= 0) return "0%"
   return `${Math.round((part / whole) * 100)}%`
@@ -289,7 +296,7 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
                     background: "hsl(var(--primary))",
                     opacity: 0.8,
                   }}
-                  title={`${new Date(date).toLocaleDateString("en-US", {
+                  title={`${dayOf(date).toLocaleDateString("en-US", {
                     month: "short",
                     day: "numeric",
                   })}: ${count} signup${count === 1 ? "" : "s"}`}
@@ -301,7 +308,7 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
                       color: "hsl(var(--muted-foreground))",
                     }}
                   >
-                    {new Date(date).getDate()}
+                    {dayOf(date).getDate()}
                   </span>
                 )}
               </div>
