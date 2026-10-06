@@ -512,7 +512,11 @@ export function useAdminApi(token: string | null) {
         dkStatus?: "all" | "linked" | "unlinked"
         /** Reputation rung, e.g. "scout". "all" clears the filter. */
         tier?: string
-        sortField?: "name" | "balance" | "streak" | "joined"
+        /** Betting P&L bucket; "none" = no settled bets. */
+        profit?: "all" | "profitable" | "losing" | "even" | "none"
+        minProfit?: number
+        maxProfit?: number
+        sortField?: "name" | "balance" | "streak" | "joined" | "profit"
         sortDir?: "asc" | "desc"
         page?: number
         limit?: number
@@ -525,6 +529,12 @@ export function useAdminApi(token: string | null) {
         if (params?.dkStatus && params.dkStatus !== "all")
           qs.set("dkStatus", params.dkStatus)
         if (params?.tier && params.tier !== "all") qs.set("tier", params.tier)
+        if (params?.profit && params.profit !== "all")
+          qs.set("profit", params.profit)
+        if (params?.minProfit !== undefined)
+          qs.set("minProfit", String(params.minProfit))
+        if (params?.maxProfit !== undefined)
+          qs.set("maxProfit", String(params.maxProfit))
         if (params?.sortField) qs.set("sortField", params.sortField)
         if (params?.sortDir) qs.set("sortDir", params.sortDir)
         if (params?.page) qs.set("page", String(params.page))

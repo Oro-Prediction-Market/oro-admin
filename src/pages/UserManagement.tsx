@@ -37,6 +37,11 @@ interface AdminUser {
   referredByUsername: string | null
   referredByTelegramId: string | null
   createdAt: string
+  /** Betting P&L on settled, real-money bets: payouts − stakes. */
+  profit?: number
+  staked?: number
+  settledBets?: number
+  pnlCurrency?: string
   // computed by backend — never raw hashes
   // balance?: string | number
 }
@@ -59,8 +64,17 @@ const UserManagement: React.FC = () => {
   const [dkFilter, setDkFilter] = useState<"all" | "linked" | "unlinked">("all")
   const [tierFilter, setTierFilter] = useState<string>("all")
   const [sortField, setSortField] = useState<
-    "name" | "balance" | "streak" | "joined"
+    "name" | "balance" | "streak" | "joined" | "profit"
   >("joined")
+  // Betting P&L filter. Min/max are typed as text and committed on blur or
+  // Enter, so each keystroke does not fire a query.
+  const [profitFilter, setProfitFilter] = useState<
+    "all" | "profitable" | "losing" | "even" | "none"
+  >("all")
+  const [minProfitInput, setMinProfitInput] = useState("")
+  const [maxProfitInput, setMaxProfitInput] = useState("")
+  const [minProfit, setMinProfit] = useState<number | undefined>(undefined)
+  const [maxProfit, setMaxProfit] = useState<number | undefined>(undefined)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc")
   const [page, setPage] = useState(1)
 
@@ -89,6 +103,9 @@ const UserManagement: React.FC = () => {
         role: roleFilter,
         dkStatus: dkFilter,
         tier: tierFilter,
+        profit: profitFilter,
+        minProfit,
+        maxProfit,
         // Ngultrum accounts only. Every column on this page comes from the DK
         // Bank rail — CID, account name, account number — and a USDT account
         // has none of them, so it appeared here as a row of dashes. Those
@@ -124,7 +141,18 @@ const UserManagement: React.FC = () => {
     return () => {
       cancelled = true
     } // cancel stale requests on fast changes
-  }, [search, roleFilter, dkFilter, tierFilter, sortField, sortDir, page])
+  }, [
+    search,
+    roleFilter,
+    dkFilter,
+    tierFilter,
+    profitFilter,
+    minProfit,
+    maxProfit,
+    sortField,
+    sortDir,
+    page,
+  ])
 
   // ── Debounce search input → commit after 400 ms, reset to page 1 ──────────
   useEffect(() => {
@@ -152,6 +180,9 @@ const UserManagement: React.FC = () => {
         role: roleFilter,
         dkStatus: dkFilter,
         tier: tierFilter,
+        profit: profitFilter,
+        minProfit,
+        maxProfit,
         sortField,
         sortDir,
         page,
@@ -198,7 +229,10 @@ const UserManagement: React.FC = () => {
     !!search.trim() ||
     roleFilter !== "all" ||
     dkFilter !== "all" ||
-    tierFilter !== "all"
+    tierFilter !== "all" ||
+    profitFilter !== "all" ||
+    minProfit !== undefined ||
+    maxProfit !== undefined
 
   const inputStyle: React.CSSProperties = {
     background: "hsl(var(--background))",
@@ -318,6 +352,47 @@ const UserManagement: React.FC = () => {
             </option>
           ))}
         </select>
+        {/* Betting P&L — payouts minus stakes on settled real-money bets */}
+        <select
+          value={profitFilter}
+          onChange={(e) => {
+            setProfitFilter(e.target.value as typeof profitFilter)
+            setPage(1)
+          }}
+          style={inputStyle}
+          title="Betting P&L on settled, real-money bets (Nu)"
+        >
+          <option value="all">All P&amp;L</option>
+          <option value="profitable">In profit</option>
+          <option value="losing">In loss</option>
+          <option value="even">Break-even</option>
+          <option value="none">No settled bets</option>
+        </select>
+        {(["min", "max"] as const).map((which) => {
+          const value = which === "min" ? minProfitInput : maxProfitInput
+          const setValue =
+            which === "min" ? setMinProfitInput : setMaxProfitInput
+          const commit = () => {
+            const n = value.trim() === "" ? undefined : Number(value)
+            const next = n !== undefined && Number.isFinite(n) ? n : undefined
+            if (which === "min") setMinProfit(next)
+            else setMaxProfit(next)
+            setPage(1)
+          }
+          return (
+            <input
+              key={which}
+              type="number"
+              inputMode="decimal"
+              placeholder={which === "min" ? "Min P&L" : "Max P&L"}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onBlur={commit}
+              onKeyDown={(e) => e.key === "Enter" && commit()}
+              style={{ ...inputStyle, width: 110 }}
+            />
+          )
+        })}
         {/* Sort */}
         <select
           value={sortField}
@@ -330,6 +405,7 @@ const UserManagement: React.FC = () => {
           <option value="joined">Sort: Joined</option>
           <option value="name">Sort: Name</option>
           <option value="streak">Sort: Streak</option>
+          <option value="profit">Sort: Profit</option>
         </select>
         <button
           onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
@@ -357,6 +433,11 @@ const UserManagement: React.FC = () => {
               setRoleFilter("all")
               setDkFilter("all")
               setTierFilter("all")
+              setProfitFilter("all")
+              setMinProfitInput("")
+              setMaxProfitInput("")
+              setMinProfit(undefined)
+              setMaxProfit(undefined)
               setPage(1)
             }}
             className="secondary"
@@ -511,6 +592,20 @@ const UserManagement: React.FC = () => {
                     }}
                   >
                     Predictions
+                  </th>
+                  <th
+                    style={{
+                      padding: "1rem",
+                      textAlign: "right",
+                      fontWeight: 600,
+                      color: "hsl(var(--muted-foreground))",
+                      textTransform: "uppercase",
+                      fontSize: "0.75rem",
+                      letterSpacing: "0.05em",
+                    }}
+                    title="Betting P&L: payouts minus stakes on settled, real-money bets"
+                  >
+                    P&amp;L
                   </th>
                   <th
                     style={{
@@ -733,6 +828,33 @@ const UserManagement: React.FC = () => {
                       }}
                     >
                       {user.totalPredictions ?? 0}
+                    </td>
+
+                    {/* Betting P&L */}
+                    <td
+                      style={{
+                        padding: "1rem",
+                        textAlign: "right",
+                        fontWeight: 700,
+                        fontVariantNumeric: "tabular-nums",
+                        whiteSpace: "nowrap",
+                        color: !user.settledBets
+                          ? "hsl(var(--muted-foreground))"
+                          : (user.profit ?? 0) > 0
+                            ? "#34d399"
+                            : (user.profit ?? 0) < 0
+                              ? "#f87171"
+                              : undefined,
+                      }}
+                      title={
+                        user.settledBets
+                          ? `Staked ${(user.staked ?? 0).toLocaleString()} across ${user.settledBets} settled bet(s)`
+                          : "No settled real-money bets"
+                      }
+                    >
+                      {!user.settledBets
+                        ? "—"
+                        : `${(user.profit ?? 0) > 0 ? "+" : ""}${(user.profit ?? 0).toLocaleString("en-US", { maximumFractionDigits: 2 })}`}
                     </td>
 
                     {/* DK Bank */}
