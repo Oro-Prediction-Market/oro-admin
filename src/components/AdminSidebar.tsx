@@ -65,7 +65,13 @@ const AdminSidebar: React.FC<SidebarProps> = ({
   // has a single home, and the BTN screens stop being interleaved with pages
   // that do not apply to them.
   const [isUsdtOpen, setIsUsdtOpen] = useState(
-    ["usdt-users", "usdt-payments", "usdt-withdrawals", "kyc"].includes(current)
+    [
+      "usdt-users",
+      "usdt-payments",
+      "usdt-deposits",
+      "usdt-withdrawals",
+      "kyc",
+    ].includes(current)
   )
   const [isLogsOpen, setIsLogsOpen] = useState(
     ["payments", "audit", "resolution-log", "reconciliation"].includes(current)
@@ -362,6 +368,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               [
                 "usdt-users",
                 "usdt-payments",
+                "usdt-deposits",
                 "usdt-withdrawals",
                 "kyc",
               ].includes(current) && "active-parent"
@@ -407,6 +414,12 @@ const AdminSidebar: React.FC<SidebarProps> = ({
                 onClick={() => onNavigate("usdt-payments")}
               >
                 <span className="nav-label">Ledger</span>
+              </li>
+              <li
+                className={current === "usdt-deposits" ? "active" : ""}
+                onClick={() => onNavigate("usdt-deposits")}
+              >
+                <span className="nav-label">Deposits</span>
               </li>
               <li
                 className={current === "usdt-withdrawals" ? "active" : ""}

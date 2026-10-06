@@ -762,6 +762,13 @@ export function useAdminApi(token: string | null) {
       getSeasonInsights: (limit = 12) =>
         apiFetch(`/admin/insights/seasons?limit=${limit}`),
       getEdgeExceptions: () => apiFetch("/admin/insights/edge-exceptions"),
+      getUsdtDeposits: (limit = 50, status?: string) =>
+        apiFetch(
+          `/admin/insights/usdt-deposits?limit=${limit}` +
+            (status ? `&status=${encodeURIComponent(status)}` : "")
+        ),
+      getPay21Webhooks: (limit = 50) =>
+        apiFetch(`/admin/insights/pay21-webhooks?limit=${limit}`),
 
       getPendingWithdrawals: (limit = 50) =>
         apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),

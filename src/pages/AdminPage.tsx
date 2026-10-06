@@ -29,6 +29,7 @@ const EplStatMarketsPage = lazy(() => import("./EplStatMarketsPage"))
 const UclStatMarketsPage = lazy(() => import("./UclStatMarketsPage"))
 const NationsLeaguePage = lazy(() => import("./NationsLeaguePage"))
 const SeasonsPage = lazy(() => import("./SeasonsPage"))
+const UsdtDepositsPage = lazy(() => import("./UsdtDepositsPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -254,6 +255,7 @@ const AdminPage: React.FC = () => {
   else if (page === "seasons") content = <SeasonsPage />
   else if (page === "aml") content = <AMLPage />
   else if (page === "kyc") content = <KycReviewPage />
+  else if (page === "usdt-deposits") content = <UsdtDepositsPage />
   else if (page === "usdt-withdrawals") content = <UsdtWithdrawalsPage />
   else if (page === "usdt-users") content = <UsdtUsersPage />
   else if (page === "usdt-payments")
