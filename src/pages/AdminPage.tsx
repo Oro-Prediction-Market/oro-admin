@@ -82,6 +82,17 @@ const AdminPage: React.FC = () => {
       window.removeEventListener("admin:unauthorized", onUnauthorized)
   }, [])
 
+  // Panels deep in a page (the dashboard's "needs attention" list) can send the
+  // admin to another page without threading a callback down through props.
+  useEffect(() => {
+    const onNavigate = (e: Event) => {
+      const target = (e as CustomEvent<string>).detail
+      if (typeof target === "string" && target) setPage(target)
+    }
+    window.addEventListener("admin:navigate", onNavigate)
+    return () => window.removeEventListener("admin:navigate", onNavigate)
+  }, [])
+
   if (!token) {
     return (
       <div
