@@ -7,6 +7,7 @@ import {
   TrendingDown,
 } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import LedgerHealthPanel from "../components/LedgerHealthPanel"
 
 const nu = (n: number) =>
   `NU. ${Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
@@ -188,6 +189,8 @@ const ReconciliationPage: React.FC = () => {
           Refresh
         </button>
       </div>
+
+      <LedgerHealthPanel />
 
       {/* Error */}
       {(fetchError || error) && (

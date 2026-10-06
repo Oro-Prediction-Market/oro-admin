@@ -782,6 +782,13 @@ export function useAdminApi(token: string | null) {
       getJobHealth: () => apiFetch("/admin/insights/jobs"),
       getAttention: () => apiFetch("/admin/insights/attention"),
       getSettlementAudit: () => apiFetch("/admin/keeper/settlement-audit"),
+      getLedgerHealth: () => apiFetch("/admin/ledger/health"),
+      rebuildLedger: (userId: string, currency: string) =>
+        apiFetch(
+          `/admin/ledger/rebuild/${encodeURIComponent(userId)}?currency=${encodeURIComponent(currency)}`,
+          { method: "POST" }
+        ),
+      getSegregationInvariants: () => apiFetch("/reconciliation/segregation"),
       runSettlementAudit: () =>
         apiFetch("/admin/keeper/settlement-audit/run", { method: "POST" }),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>
