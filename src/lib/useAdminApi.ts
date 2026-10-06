@@ -120,9 +120,12 @@ export function useAdminApi(token: string | null) {
         category?: string
         subcategory?: string
         search?: string
+        /** "nonstandard": only markets not on the standard house edge. */
+        edge?: "nonstandard"
       }) => {
         const qs = new URLSearchParams()
         if (params?.page) qs.set("page", String(params.page))
+        if (params?.edge) qs.set("edge", params.edge)
         if (params?.limit) qs.set("limit", String(params.limit))
         if (params?.status && params.status !== "All")
           qs.set("status", params.status)

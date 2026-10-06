@@ -144,6 +144,8 @@ const MarketManagement: React.FC = () => {
   const [search, setSearch] = useState("")
   const [filterCategory, setFilterCategory] = useState("All")
   const [filterSubcategory, setFilterSubcategory] = useState("All")
+  // Only markets not on the standard house edge (the banner above the list).
+  const [filterEdge, setFilterEdge] = useState(false)
   const [expandedMarket, setExpandedMarket] = useState<string | null>(null)
 
   const getMarketsRef = useRef(api.getMarkets)
@@ -177,7 +179,8 @@ const MarketManagement: React.FC = () => {
       status: string,
       category: string,
       subcategory: string,
-      searchQ: string
+      searchQ: string,
+      edgeOnly: boolean
     ) => {
       let cancelled = false
       setFetching(true)
@@ -192,6 +195,7 @@ const MarketManagement: React.FC = () => {
           category,
           subcategory,
           search: searchQ,
+          edge: edgeOnly ? "nonstandard" : undefined,
         })
         .then((res) => {
           if (cancelled) return
@@ -223,9 +227,17 @@ const MarketManagement: React.FC = () => {
       filterStatus,
       filterCategory,
       filterSubcategory,
-      debouncedSearch
+      debouncedSearch,
+      filterEdge
     )
-  }, [page, filterStatus, filterCategory, filterSubcategory, debouncedSearch])
+  }, [
+    page,
+    filterStatus,
+    filterCategory,
+    filterSubcategory,
+    debouncedSearch,
+    filterEdge,
+  ])
 
   const refresh = () =>
     fetchMarkets.current(
@@ -233,7 +245,8 @@ const MarketManagement: React.FC = () => {
       filterStatus,
       filterCategory,
       filterSubcategory,
-      debouncedSearch
+      debouncedSearch,
+      filterEdge
     )
 
   const statuses = [
@@ -287,7 +300,10 @@ const MarketManagement: React.FC = () => {
   ).sort()
 
   const filtersActive =
-    !!search.trim() || filterCategory !== "All" || filterSubcategory !== "All"
+    !!search.trim() ||
+    filterCategory !== "All" ||
+    filterSubcategory !== "All" ||
+    filterEdge
 
   const handleCreate = async (data: MarketFormData) => {
     const submit = async () => {
@@ -711,7 +727,13 @@ const MarketManagement: React.FC = () => {
   return (
     <div className="market-management">
       {ToastContainer}
-      <EdgeExceptionsPanel />
+      <EdgeExceptionsPanel
+        active={filterEdge}
+        onToggle={() => {
+          setFilterEdge((v) => !v)
+          setPage(1)
+        }}
+      />
       <div className="page-header">
         <div>
           <h2>Market Management</h2>
@@ -921,6 +943,27 @@ const MarketManagement: React.FC = () => {
               </option>
             ))}
           </select>
+          <select
+            value={filterEdge ? "nonstandard" : "all"}
+            onChange={(e) => {
+              setFilterEdge(e.target.value === "nonstandard")
+              setPage(1)
+            }}
+            style={{
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              fontSize: "0.82rem",
+              flex: "0 1 200px",
+            }}
+          >
+            <option value="all">All house edges</option>
+            <option value="nonstandard">
+              Not on the standard {DEFAULT_HOUSE_EDGE_PCT}%
+            </option>
+          </select>
           {filtersActive && (
             <button
               className="secondary"
@@ -928,6 +971,7 @@ const MarketManagement: React.FC = () => {
                 setSearch("")
                 setFilterCategory("All")
                 setFilterSubcategory("All")
+                setFilterEdge(false)
                 setPage(1)
               }}
               style={{
@@ -988,7 +1032,10 @@ const MarketManagement: React.FC = () => {
                     <React.Fragment key={m.id}>
                       <tr>
                         <td>
-                          <div style={{ fontWeight: 600 }}>{m.title}</div>
+                          <div style={{ fontWeight: 600 }}>
+                            {m.title}
+                            <EdgeBadge market={m} />
+                          </div>
                           {(m.category || m.subcategory) && (
                             <div
                               style={{
@@ -1502,3 +1549,48 @@ const MarketManagement: React.FC = () => {
 }
 
 export default MarketManagement
+
+/**
+ * A market's edge, shown only when it is not the standard one. Settlement
+ * charges each book's edge, so a book that differs from the market row is
+ * called out: what the admin sees is then not what bettors pay.
+ */
+function EdgeBadge({
+  market,
+}: {
+  market: {
+    houseEdgePct?: number
+    books?: { currency: string; houseEdgePct: number }[]
+  }
+}) {
+  const edge = Number(market.houseEdgePct ?? DEFAULT_HOUSE_EDGE_PCT)
+  const books = market.books ?? []
+  const offBooks = books.filter((b) => Number(b.houseEdgePct) !== edge)
+  if (edge === DEFAULT_HOUSE_EDGE_PCT && offBooks.length === 0) return null
+  return (
+    <span
+      style={{
+        marginLeft: 8,
+        fontSize: "0.7rem",
+        fontWeight: 600,
+        padding: "1px 6px",
+        borderRadius: 6,
+        border: "1px solid rgba(251,191,36,0.5)",
+        color: "#fbbf24",
+        whiteSpace: "nowrap",
+      }}
+      title="Not the standard house edge"
+    >
+      {edge}% edge
+      {offBooks.length > 0 && (
+        <span style={{ color: "#f87171" }}>
+          {" "}
+          · charges{" "}
+          {offBooks
+            .map((b) => `${Number(b.houseEdgePct)}% ${b.currency}`)
+            .join(", ")}
+        </span>
+      )}
+    </span>
+  )
+}

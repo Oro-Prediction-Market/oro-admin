@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
-import { AlertTriangle, ChevronDown, ChevronRight } from "lucide-react"
+import { AlertTriangle, Filter, X } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { DEFAULT_HOUSE_EDGE_PCT } from "../lib/fee"
 
 interface EdgeBook {
   currency: string
@@ -27,18 +28,27 @@ interface EdgeException {
  * hand-written SQL. Renders nothing at all when every market is standard, so
  * it costs no space on a normal day.
  *
+ * Clicking it filters the market list to those markets; each row there shows
+ * its edge, and what its books actually charge.
+ *
  * Settlement charges the BOOK's edge. A mismatch — the market row showing one
  * edge while a book charges another — is called out separately, because it is
  * the case where what an admin sees is not what bettors pay.
  */
-export default function EdgeExceptionsPanel() {
+export default function EdgeExceptionsPanel({
+  active,
+  onToggle,
+}: {
+  /** Whether the market list below is filtered to these markets. */
+  active: boolean
+  onToggle: () => void
+}) {
   const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
   const [data, setData] = useState<{
     standard: number
     markets: EdgeException[]
   } | null>(null)
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     api
@@ -50,10 +60,11 @@ export default function EdgeExceptionsPanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  if (!data || data.markets.length === 0) return null
+  // Stays visible while the filter is on, so it can always be switched off.
+  if (!active && (!data || data.markets.length === 0)) return null
 
-  const mismatches = data.markets.filter((m) => m.mismatch).length
-  const Chevron = open ? ChevronDown : ChevronRight
+  const count = data?.markets.length ?? 0
+  const mismatches = data?.markets.filter((m) => m.mismatch).length ?? 0
 
   return (
     <div
@@ -61,12 +72,13 @@ export default function EdgeExceptionsPanel() {
       style={{
         padding: "0.75rem 1rem",
         marginBottom: "1rem",
-        border: "1px solid rgba(251,191,36,0.4)",
+        border: `1px solid ${active ? "rgba(251,191,36,0.9)" : "rgba(251,191,36,0.4)"}`,
       }}
     >
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={onToggle}
+        aria-pressed={active}
         style={{
           display: "flex",
           alignItems: "center",
@@ -82,73 +94,36 @@ export default function EdgeExceptionsPanel() {
       >
         <AlertTriangle size={16} color="#fbbf24" />
         <span style={{ fontWeight: 600 }}>
-          {data.markets.length} market(s) not on the standard {data.standard}%
-          house edge
+          {count} market(s) not on the standard{" "}
+          {data?.standard ?? DEFAULT_HOUSE_EDGE_PCT}% house edge
         </span>
         {mismatches > 0 && (
           <span style={{ color: "#f87171", fontWeight: 600 }}>
             · {mismatches} charging a different edge than they show
           </span>
         )}
-        <Chevron size={16} style={{ marginLeft: "auto" }} />
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            color: active ? "#fbbf24" : "hsl(var(--muted-foreground))",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          {active ? (
+            <>
+              Showing only these · Show all <X size={14} />
+            </>
+          ) : (
+            <>
+              Show only these <Filter size={14} />
+            </>
+          )}
+        </span>
       </button>
-
-      {open && (
-        <div style={{ overflowX: "auto", marginTop: "0.75rem" }}>
-          <table>
-            <thead>
-              <tr>
-                <th>Market</th>
-                <th>Status</th>
-                <th>Market edge</th>
-                <th>Charged (book)</th>
-                <th>Pool</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.markets.map((m) => (
-                <tr key={m.id}>
-                  <td title={m.id}>
-                    {m.title}
-                    {m.mismatch && (
-                      <span
-                        style={{
-                          marginLeft: 6,
-                          color: "#f87171",
-                          fontSize: "0.75rem",
-                        }}
-                      >
-                        MISMATCH
-                      </span>
-                    )}
-                  </td>
-                  <td>{m.status}</td>
-                  <td>{m.marketEdge}%</td>
-                  <td>
-                    {m.books.length === 0
-                      ? "—"
-                      : m.books
-                          .map((b) => `${b.edge}% ${b.currency}`)
-                          .join(", ")}
-                  </td>
-                  <td>
-                    {m.books.length === 0
-                      ? "—"
-                      : m.books
-                          .map(
-                            (b) =>
-                              `${b.pool.toLocaleString("en-US")} ${b.currency}`
-                          )
-                          .join(", ")}
-                  </td>
-                  <td>{new Date(m.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
   )
 }
