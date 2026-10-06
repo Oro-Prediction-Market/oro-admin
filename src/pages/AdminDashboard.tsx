@@ -6,6 +6,7 @@ import { UserGrowth } from "../components/UserGrowth"
 import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 import { TierDistribution } from "../components/TierDistribution"
 import AttentionPanel from "../components/AttentionPanel"
+import SignupsByPeriod from "../components/SignupsByPeriod"
 
 const AdminDashboard: React.FC = () => {
   const token =
@@ -145,6 +146,8 @@ const AdminDashboard: React.FC = () => {
       <HealthCheck />
 
       <UserGrowth token={token} />
+
+      <SignupsByPeriod />
 
       <BehavioralAnalytics token={token} />
     </div>
