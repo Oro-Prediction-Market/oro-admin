@@ -27,8 +27,8 @@ const PERIODS: { key: Period; label: string }[] = [
 
 const LINE = "hsl(var(--primary))"
 const W = 720
-const H = 150
-const PAD = { top: 10, right: 12, bottom: 22, left: 44 }
+const H = 200
+const PAD = { top: 12, right: 12, bottom: 24, left: 46 }
 
 function money(n: number, currency: Currency) {
   const v = n.toLocaleString("en-US", {
@@ -137,7 +137,7 @@ export default function HouseIncomeChart() {
   return (
     <div
       className="glass-card"
-      style={{ padding: "0.75rem 1rem", marginBottom: "1.5rem" }}
+      style={{ padding: "0.9rem 1rem", marginBottom: "1.75rem" }}
     >
       <div
         style={{
@@ -149,9 +149,9 @@ export default function HouseIncomeChart() {
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <h3 style={{ margin: 0, fontSize: "0.9rem" }}>Profit</h3>
+          <h3 style={{ margin: 0, fontSize: "0.95rem" }}>Profit</h3>
           {data && (
-            <span style={{ fontSize: "1.05rem", fontWeight: 700 }}>
+            <span style={{ fontSize: "1.2rem", fontWeight: 700 }}>
               {money(total, currency)}
             </span>
           )}
@@ -227,7 +227,7 @@ export default function HouseIncomeChart() {
             width="100%"
             role="img"
             aria-label={`Profit by ${unit}, ${rangeText}`}
-            style={{ display: "block", maxHeight: 170 }}
+            style={{ display: "block", maxHeight: 230 }}
             onMouseLeave={() => setHover(null)}
           >
             {ticks.map((v) => (
@@ -244,7 +244,7 @@ export default function HouseIncomeChart() {
                   x={PAD.left - 6}
                   y={y(v) + 3}
                   textAnchor="end"
-                  fontSize={9}
+                  fontSize={10}
                   fill="hsl(var(--muted-foreground))"
                 >
                   {compact(v)}
@@ -258,7 +258,7 @@ export default function HouseIncomeChart() {
                 x={x(i)}
                 y={H - 6}
                 textAnchor="middle"
-                fontSize={9}
+                fontSize={10}
                 fill="hsl(var(--muted-foreground))"
               >
                 {shortLabel(buckets[i].start, unit)}
@@ -281,7 +281,7 @@ export default function HouseIncomeChart() {
               d={solid}
               fill="none"
               stroke={LINE}
-              strokeWidth={1.25}
+              strokeWidth={1.5}
               strokeLinejoin="round"
               strokeLinecap="round"
             />
@@ -290,7 +290,7 @@ export default function HouseIncomeChart() {
                 d={dashed}
                 fill="none"
                 stroke={LINE}
-                strokeWidth={1.25}
+                strokeWidth={1.5}
                 strokeDasharray="3 3"
                 strokeLinecap="round"
               />
