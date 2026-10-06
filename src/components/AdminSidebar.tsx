@@ -319,6 +319,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             {!collapsed && <span className="nav-label">Financials</span>}
           </li>
           <li
+            className={current === "disputes" ? "active" : ""}
+            onClick={() => onNavigate("disputes")}
+            title={collapsed ? "Disputes" : undefined}
+          >
+            <Scale size={20} />
+            {!collapsed && <span className="nav-label">Disputes</span>}
+          </li>
+          <li
             className={current === "reporting" ? "active" : ""}
             onClick={() => onNavigate("reporting")}
             title={collapsed ? "Reporting" : undefined}

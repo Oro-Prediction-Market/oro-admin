@@ -783,6 +783,26 @@ export function useAdminApi(token: string | null) {
       getAttention: () => apiFetch("/admin/insights/attention"),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>
         apiFetch(`/admin/insights/signups?period=${period}&count=${count}`),
+      getDisputeCases: (p: {
+        status: "all" | "open" | "resolved"
+        verdict: "all" | "overturned" | "stood"
+        from?: string
+        to?: string
+        search?: string
+        page: number
+        limit: number
+      }) => {
+        const qs = new URLSearchParams({
+          status: p.status,
+          verdict: p.verdict,
+          page: String(p.page),
+          limit: String(p.limit),
+        })
+        if (p.from) qs.set("from", p.from)
+        if (p.to) qs.set("to", p.to)
+        if (p.search) qs.set("search", p.search)
+        return apiFetch(`/admin/insights/disputes?${qs.toString()}`)
+      },
       getCategoryRevenue: (p: {
         from?: string
         to?: string
