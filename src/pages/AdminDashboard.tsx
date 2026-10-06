@@ -5,7 +5,6 @@ import HealthCheck from "../components/HealthCheck"
 import { UserGrowth } from "../components/UserGrowth"
 import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 import { TierDistribution } from "../components/TierDistribution"
-import AttentionPanel from "../components/AttentionPanel"
 import SignupsByPeriod from "../components/SignupsByPeriod"
 
 const AdminDashboard: React.FC = () => {
@@ -67,8 +66,6 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="dashboard-view">
       <h2 style={{ marginBottom: "2rem" }}>System Overview</h2>
-
-      <AttentionPanel />
 
       <div className="stat-grid">
         <div className="glass-card stat-card">
