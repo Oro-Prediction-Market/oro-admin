@@ -149,11 +149,11 @@ const AdminDashboard: React.FC = () => {
 
       <HouseIncomeChart />
 
-      <TierDistribution token={token} />
-
       <UserGrowth token={token} />
 
       <SignupsByPeriod />
+
+      <TierDistribution token={token} />
 
       <BehavioralAnalytics token={token} />
     </div>
