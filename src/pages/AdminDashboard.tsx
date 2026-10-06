@@ -66,7 +66,13 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="dashboard-view">
-      <h2 style={{ marginBottom: "2rem" }}>System Overview</h2>
+      {/* HealthCheck's card brings its own 2rem top margin, so the heading
+          carries none here. */}
+      <h2 style={{ marginBottom: 0 }}>System Overview</h2>
+
+      <div style={{ marginBottom: "2rem" }}>
+        <HealthCheck />
+      </div>
 
       <div className="kpi-grid">
         <div className="stat-grid">
@@ -144,8 +150,6 @@ const AdminDashboard: React.FC = () => {
       <HouseIncomeChart />
 
       <TierDistribution token={token} />
-
-      <HealthCheck />
 
       <UserGrowth token={token} />
 
