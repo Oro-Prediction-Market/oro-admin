@@ -790,6 +790,22 @@ export function useAdminApi(token: string | null) {
         ),
       getSegregationInvariants: () => apiFetch("/reconciliation/segregation"),
       getWithdrawalAttention: () => apiFetch("/admin/withdrawals/attention"),
+      previewSettlementCorrection: (marketId: string, toOutcomeId: string) =>
+        apiFetch(
+          `/admin/settlement-corrections/preview?marketId=${encodeURIComponent(marketId)}&toOutcomeId=${encodeURIComponent(toOutcomeId)}`
+        ),
+      applySettlementCorrection: (body: {
+        marketId: string
+        toOutcomeId: string
+        mode: "clawback" | "keep"
+        note: string
+        fingerprint: string
+      }) =>
+        apiFetch("/admin/settlement-corrections", {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
+      getSettlementCorrections: () => apiFetch("/admin/settlement-corrections"),
       getAdjustments: (userId?: string) =>
         apiFetch(
           "/admin/adjustments" +

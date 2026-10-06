@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { CheckCircle2, RefreshCw, ShieldAlert, ShieldCheck } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { RESETTLE_PREFILL_KEY } from "./ResettlePanel"
 
 interface Mismatch {
   source: "football" | "ucl"
@@ -208,8 +209,40 @@ export default function SettlementAuditPanel() {
                         <CheckCircle2 size={14} /> Corrected
                       </span>
                     ) : (
-                      <span style={{ color: RED, fontWeight: 600 }}>
-                        Needs correcting
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          gap: 8,
+                          alignItems: "center",
+                        }}
+                      >
+                        <span style={{ color: RED, fontWeight: 600 }}>
+                          Needs correcting
+                        </span>
+                        <button
+                          className="secondary"
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem(
+                                RESETTLE_PREFILL_KEY,
+                                JSON.stringify({
+                                  marketId: m.marketId,
+                                  title: m.title,
+                                  outcomeId: m.shouldBe.id,
+                                })
+                              )
+                            } catch {
+                              /* the page still opens; the market is searched by hand */
+                            }
+                            window.dispatchEvent(
+                              new CustomEvent("admin:navigate", {
+                                detail: "corrections",
+                              })
+                            )
+                          }}
+                        >
+                          Correct…
+                        </button>
                       </span>
                     )}
                   </td>
