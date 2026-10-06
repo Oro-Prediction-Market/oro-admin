@@ -329,6 +329,16 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             {!collapsed && <span className="nav-label">Revenue</span>}
           </li>
           <li
+            className={current === "seasons" ? "active" : ""}
+            onClick={() => onNavigate("seasons")}
+            title={collapsed ? "Seasons & Prizes" : undefined}
+          >
+            <Trophy size={20} />
+            {!collapsed && (
+              <span className="nav-label">Seasons &amp; Prizes</span>
+            )}
+          </li>
+          <li
             className={current === "platform-accuracy" ? "active" : ""}
             onClick={() => onNavigate("platform-accuracy")}
             title={collapsed ? "Platform Accuracy" : undefined}

@@ -758,6 +758,10 @@ export function useAdminApi(token: string | null) {
       // A withdrawal debits the user the moment it is requested and is only
       // *sent* once approved here, so this queue is money already taken from
       // someone and not yet delivered.
+      // ── Insights (read-only) ──────────────────────────────────────────
+      getSeasonInsights: (limit = 12) =>
+        apiFetch(`/admin/insights/seasons?limit=${limit}`),
+
       getPendingWithdrawals: (limit = 50) =>
         apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),
       approveWithdrawal: (id: string) =>
