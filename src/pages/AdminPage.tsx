@@ -31,6 +31,7 @@ const NationsLeaguePage = lazy(() => import("./NationsLeaguePage"))
 const SeasonsPage = lazy(() => import("./SeasonsPage"))
 const UsdtDepositsPage = lazy(() => import("./UsdtDepositsPage"))
 const DisputesPage = lazy(() => import("./DisputesPage"))
+const StuckWithdrawalsPage = lazy(() => import("./StuckWithdrawalsPage"))
 import { loginWithDevSecret } from "../lib/useAdminApi"
 
 const AdminPage: React.FC = () => {
@@ -264,6 +265,7 @@ const AdminPage: React.FC = () => {
     content = <AutoMarketManagement source="btc" />
   else if (page === "reporting") content = <ReportingPage />
   else if (page === "disputes") content = <DisputesPage />
+  else if (page === "stuck-withdrawals") content = <StuckWithdrawalsPage />
   else if (page === "revenue") content = <RevenuePage />
   else if (page === "seasons") content = <SeasonsPage />
   else if (page === "aml") content = <AMLPage />

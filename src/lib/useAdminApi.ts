@@ -789,6 +789,19 @@ export function useAdminApi(token: string | null) {
           { method: "POST" }
         ),
       getSegregationInvariants: () => apiFetch("/reconciliation/segregation"),
+      getWithdrawalAttention: () => apiFetch("/admin/withdrawals/attention"),
+      resolveWithdrawal: (
+        id: string,
+        body: {
+          verdict: "sent" | "not_sent"
+          note: string
+          notifyUser: boolean
+        }
+      ) =>
+        apiFetch(`/admin/withdrawals/${encodeURIComponent(id)}/resolve`, {
+          method: "POST",
+          body: JSON.stringify(body),
+        }),
       runSettlementAudit: () =>
         apiFetch("/admin/keeper/settlement-audit/run", { method: "POST" }),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>

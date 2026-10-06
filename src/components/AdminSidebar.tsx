@@ -28,6 +28,7 @@ import {
   Trophy,
   Users,
   Wallet,
+  Hourglass,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -317,6 +318,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           >
             <Wallet size={20} />
             {!collapsed && <span className="nav-label">Financials</span>}
+          </li>
+          <li
+            className={current === "stuck-withdrawals" ? "active" : ""}
+            onClick={() => onNavigate("stuck-withdrawals")}
+            title={collapsed ? "Stuck Withdrawals" : undefined}
+          >
+            <Hourglass size={20} />
+            {!collapsed && <span className="nav-label">Stuck Withdrawals</span>}
           </li>
           <li
             className={current === "disputes" ? "active" : ""}
