@@ -6,6 +6,7 @@ import { UserGrowth } from "../components/UserGrowth"
 import { BehavioralAnalytics } from "../components/BehavioralAnalytics"
 import { TierDistribution } from "../components/TierDistribution"
 import SignupsByPeriod from "../components/SignupsByPeriod"
+import HouseIncomeChart from "../components/HouseIncomeChart"
 
 const AdminDashboard: React.FC = () => {
   const token =
@@ -137,6 +138,8 @@ const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <HouseIncomeChart />
 
       <TierDistribution token={token} />
 

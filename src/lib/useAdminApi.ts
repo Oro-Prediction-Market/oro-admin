@@ -852,6 +852,13 @@ export function useAdminApi(token: string | null) {
         apiFetch("/admin/keeper/settlement-audit/run", { method: "POST" }),
       getSignupsByPeriod: (period: "week" | "month", count = 12) =>
         apiFetch(`/admin/insights/signups?period=${period}&count=${count}`),
+      getHouseIncome: (
+        period: "all" | "week" | "month",
+        currency: "BTN" | "USDT"
+      ) =>
+        apiFetch(
+          `/admin/insights/income?period=${period}&currency=${currency}`
+        ),
       getDisputeCases: (p: {
         status: "all" | "open" | "resolved"
         verdict: "all" | "overturned" | "stood"
