@@ -217,31 +217,33 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
     >
       {header}
 
-      <div className="stat-grid" style={{ marginBottom: 0 }}>
-        <StatCard
-          label="Total Users"
-          value={data.totals.allTime.toLocaleString()}
-          sub={`+${data.totals.today} today · +${data.totals.last7} this week`}
-          Icon={Users}
-        />
-        <StatCard
-          label={`New (${rangeLabel})`}
-          value={data.newUsers.toLocaleString()}
-          sub={`+${data.totals.last30} in the last 30 days`}
-          Icon={UserPlus}
-        />
-        <StatCard
-          label="Via Referral"
-          value={data.referral.viaReferral.toLocaleString()}
-          sub={`${pct(data.referral.viaReferral, data.newUsers)} of new · ${data.referral.organic.toLocaleString()} organic`}
-          Icon={Share2}
-        />
-        <StatCard
-          label="Activated"
-          value={data.activation.placedBet.toLocaleString()}
-          sub={`${pct(data.activation.placedBet, data.activation.acquired)} placed a bet`}
-          Icon={Zap}
-        />
+      <div className="kpi-grid">
+        <div className="stat-grid" style={{ marginBottom: 0 }}>
+          <StatCard
+            label="Total Users"
+            value={data.totals.allTime.toLocaleString()}
+            sub={`+${data.totals.today} today · +${data.totals.last7} this week`}
+            Icon={Users}
+          />
+          <StatCard
+            label={`New (${rangeLabel})`}
+            value={data.newUsers.toLocaleString()}
+            sub={`+${data.totals.last30} in the last 30 days`}
+            Icon={UserPlus}
+          />
+          <StatCard
+            label="Via Referral"
+            value={data.referral.viaReferral.toLocaleString()}
+            sub={`${pct(data.referral.viaReferral, data.newUsers)} of new · ${data.referral.organic.toLocaleString()} organic`}
+            Icon={Share2}
+          />
+          <StatCard
+            label="Activated"
+            value={data.activation.placedBet.toLocaleString()}
+            sub={`${pct(data.activation.placedBet, data.activation.acquired)} placed a bet`}
+            Icon={Zap}
+          />
+        </div>
       </div>
 
       {/* Signups per day */}

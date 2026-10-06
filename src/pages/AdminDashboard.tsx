@@ -68,73 +68,75 @@ const AdminDashboard: React.FC = () => {
     <div className="dashboard-view">
       <h2 style={{ marginBottom: "2rem" }}>System Overview</h2>
 
-      <div className="stat-grid">
-        <div className="glass-card stat-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-            }}
-          >
-            <h3>Active Markets</h3>
-            <Activity size={20} color="hsl(var(--primary))" />
+      <div className="kpi-grid">
+        <div className="stat-grid">
+          <div className="glass-card stat-card">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "start",
+              }}
+            >
+              <h3>Active Markets</h3>
+              <Activity size={20} color="hsl(var(--primary))" />
+            </div>
+            <p>{stats.activeMarkets}</p>
           </div>
-          <p>{stats.activeMarkets}</p>
-        </div>
 
-        <div className="glass-card stat-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-            }}
-          >
-            <h3>Total Pool Volume</h3>
-            <TrendingUp size={20} color="hsl(var(--primary))" />
+          <div className="glass-card stat-card">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "start",
+              }}
+            >
+              <h3>Total Pool Volume</h3>
+              <TrendingUp size={20} color="hsl(var(--primary))" />
+            </div>
+            <p>{formatVolume(stats.totalPoolVolume)}</p>
           </div>
-          <p>{formatVolume(stats.totalPoolVolume)}</p>
-        </div>
 
-        <div className="glass-card stat-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-            }}
-          >
-            <h3>Unsettled</h3>
-            <AlertCircle size={20} color="hsl(var(--primary))" />
+          <div className="glass-card stat-card">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "start",
+              }}
+            >
+              <h3>Unsettled</h3>
+              <AlertCircle size={20} color="hsl(var(--primary))" />
+            </div>
+            <p>{stats.unsettledMarkets}</p>
           </div>
-          <p>{stats.unsettledMarkets}</p>
-        </div>
 
-        {/* Registered users is a vanity number; this is people who actually
+          {/* Registered users is a vanity number; this is people who actually
             put money on something. The 30-day line sits underneath because the
             all-time figure only ever goes up — on its own it can't tell a
             growing platform from a dead one. */}
-        <div className="glass-card stat-card">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "start",
-            }}
-          >
-            <h3>People Who Bet</h3>
-            <Users size={20} color="hsl(var(--primary))" />
-          </div>
-          <p>{stats.totalBettors.toLocaleString()}</p>
-          <div
-            style={{
-              marginTop: "0.5rem",
-              fontSize: "0.75rem",
-              color: "hsl(var(--muted-foreground))",
-            }}
-          >
-            {stats.activeBettors30d.toLocaleString()} in the last 30 days
+          <div className="glass-card stat-card">
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "start",
+              }}
+            >
+              <h3>People Who Bet</h3>
+              <Users size={20} color="hsl(var(--primary))" />
+            </div>
+            <p>{stats.totalBettors.toLocaleString()}</p>
+            <div
+              style={{
+                marginTop: "0.5rem",
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              {stats.activeBettors30d.toLocaleString()} in the last 30 days
+            </div>
           </div>
         </div>
       </div>

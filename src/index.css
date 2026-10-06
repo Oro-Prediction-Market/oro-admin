@@ -321,6 +321,33 @@ button.secondary:hover {
   margin-bottom: 2rem;
 }
 
+/* Four headline cards: 4 across, 2×2, or stacked — never 3 and a straggler.
+   Sized by the space the cards actually get, not the viewport, because the
+   sidebar can be open or collapsed. */
+.kpi-grid {
+  container-type: inline-size;
+}
+
+.kpi-grid > .stat-grid {
+  grid-template-columns: 1fr;
+}
+
+@container (min-width: 600px) {
+  .kpi-grid > .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1100px) {
+  .kpi-grid > .stat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  /* A quarter of the row is narrow; keep "NU. 29,425" on one line. */
+  .kpi-grid .stat-card p {
+    font-size: 2.1rem;
+  }
+}
+
 .stat-card h3 {
   font-size: 0.75rem;
   color: hsl(var(--muted-foreground));
