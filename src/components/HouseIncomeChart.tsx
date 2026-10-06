@@ -26,7 +26,7 @@ const PERIODS: { key: Period; label: string }[] = [
 ]
 
 const LINE = "hsl(var(--primary))"
-const H = 200
+const H = 280
 const PAD = { top: 12, right: 14, bottom: 24, left: 40 }
 
 function money(n: number, currency: Currency) {
