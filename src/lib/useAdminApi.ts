@@ -761,6 +761,7 @@ export function useAdminApi(token: string | null) {
       // ── Insights (read-only) ──────────────────────────────────────────
       getSeasonInsights: (limit = 12) =>
         apiFetch(`/admin/insights/seasons?limit=${limit}`),
+      getEdgeExceptions: () => apiFetch("/admin/insights/edge-exceptions"),
 
       getPendingWithdrawals: (limit = 50) =>
         apiFetch(`/payments/usdt/admin/withdrawals/pending?limit=${limit}`),

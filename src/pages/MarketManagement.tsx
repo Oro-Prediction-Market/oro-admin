@@ -34,6 +34,7 @@ import {
   RotateCcw,
   Search,
 } from "lucide-react"
+import EdgeExceptionsPanel from "../components/EdgeExceptionsPanel"
 
 interface Outcome {
   id: string
@@ -710,6 +711,7 @@ const MarketManagement: React.FC = () => {
   return (
     <div className="market-management">
       {ToastContainer}
+      <EdgeExceptionsPanel />
       <div className="page-header">
         <div>
           <h2>Market Management</h2>
