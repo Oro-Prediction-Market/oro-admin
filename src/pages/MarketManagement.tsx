@@ -727,6 +727,13 @@ const MarketManagement: React.FC = () => {
   return (
     <div className="market-management">
       {ToastContainer}
+      <EdgeExceptionsPanel
+        active={filterEdge}
+        onToggle={() => {
+          setFilterEdge((v) => !v)
+          setPage(1)
+        }}
+      />
       <div className="page-header">
         <div>
           <h2>Market Management</h2>
@@ -838,13 +845,6 @@ const MarketManagement: React.FC = () => {
               {status}
             </button>
           ))}
-          <EdgeExceptionsPanel
-            active={filterEdge}
-            onToggle={() => {
-              setFilterEdge((v) => !v)
-              setPage(1)
-            }}
-          />
         </div>
 
         {/* Search + category / subcategory filters */}
@@ -942,6 +942,27 @@ const MarketManagement: React.FC = () => {
                 {filterCategory === "gaming" ? gamingSubLabel(s) : s}
               </option>
             ))}
+          </select>
+          <select
+            value={filterEdge ? "nonstandard" : "all"}
+            onChange={(e) => {
+              setFilterEdge(e.target.value === "nonstandard")
+              setPage(1)
+            }}
+            style={{
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: "1px solid hsl(var(--border))",
+              background: "hsl(var(--background))",
+              color: "hsl(var(--foreground))",
+              fontSize: "0.82rem",
+              flex: "0 1 200px",
+            }}
+          >
+            <option value="all">All house edges</option>
+            <option value="nonstandard">
+              Not on the standard {DEFAULT_HOUSE_EDGE_PCT}%
+            </option>
           </select>
           {filtersActive && (
             <button
