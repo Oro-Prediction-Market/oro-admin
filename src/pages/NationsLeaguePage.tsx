@@ -412,7 +412,9 @@ export default function NationsLeaguePage() {
     }
   }
 
-  const TeamsTab = (
+  // Built only for the tab on screen: as plain JSX constants both tabs were
+  // rebuilt on every keystroke in either one.
+  const renderTeamsTab = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {/* Paste the whole draw. Previewed before anything is written, because
           this is the one action that creates fifty-odd rows at once and the
@@ -897,7 +899,7 @@ export default function NationsLeaguePage() {
     return [...m.entries()].sort((a, b) => Number(a[0]) - Number(b[0]))
   }, [fixtures])
 
-  const FixturesTab = (
+  const renderFixturesTab = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {/* Paste the fixture list, the same way the draw is entered. Previewed
           first: a kickoff is also the market's betting deadline, so a
@@ -1679,9 +1681,9 @@ export default function NationsLeaguePage() {
           Loading…
         </div>
       ) : tab === "teams" ? (
-        TeamsTab
+        renderTeamsTab()
       ) : tab === "fixtures" ? (
-        FixturesTab
+        renderFixturesTab()
       ) : (
         <StatBoardEditor league="unl" leagueLabel="Nations League" />
       )}
