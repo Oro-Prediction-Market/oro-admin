@@ -66,6 +66,13 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
           ? 100
           : 1000
 
+  // Read through a ref: the limit steps down near close, and as an effect dep
+  // it restarted the poll (and fired an extra request) at each step.
+  const betSizeLimitRef = useRef(betSizeLimit)
+  useEffect(() => {
+    betSizeLimitRef.current = betSizeLimit
+  })
+
   // Smooth 1s countdown from the market close time (display only).
   useEffect(() => {
     if (!market.closesAt || market.status !== "open") return
@@ -98,7 +105,7 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
           onDetectedRef.current?.({
             marketId: market.id,
             lateMoneyPercentage: data.percentageByAmount,
-            betSizeLimit,
+            betSizeLimit: betSizeLimitRef.current,
             timeUntilClose: data.timeUntilCloseMs ?? 0,
           })
         }
@@ -125,7 +132,7 @@ export const LateMoneyMonitor: React.FC<LateMoneyMonitorProps> = ({
       cancelled = true
       clearTimeout(timer)
     }
-  }, [fetchLateMoney, market.id, market.closesAt, market.status, betSizeLimit])
+  }, [fetchLateMoney, market.id, market.closesAt, market.status])
 
   const formatTime = (ms: number) => {
     if (ms <= 0) return "Closed"
