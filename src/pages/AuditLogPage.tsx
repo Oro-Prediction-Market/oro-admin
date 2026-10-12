@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react"
+import { useEffect, useState, useMemo, useRef, useDeferredValue } from "react"
 import { useAdminApi } from "../lib/useAdminApi"
 import {
   Shield,
@@ -716,8 +716,32 @@ export function AuditLogPage() {
     [logs]
   )
 
+  // What the search matches against, built once per log list rather than on
+  // every keystroke — it serialises each payload. The filter runs on a
+  // deferred copy of the query, so the box keeps up while it does.
+  const haystacks = useMemo(
+    () =>
+      new Map(
+        logs.map((l) => [
+          l.id,
+          [
+            l.action,
+            l.adminUsername ?? "",
+            l.adminId,
+            l.entityId ?? "",
+            l.ipAddress ?? "",
+            JSON.stringify(l.payload ?? {}),
+          ]
+            .join(" ")
+            .toLowerCase(),
+        ])
+      ),
+    [logs]
+  )
+  const deferredSearch = useDeferredValue(search)
+
   const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim()
+    const q = deferredSearch.toLowerCase().trim()
     return logs.filter((l) => {
       if (filterAction !== "all" && l.action !== filterAction) return false
       if (
@@ -738,24 +762,13 @@ export function AuditLogPage() {
       if (dateFrom && new Date(l.createdAt) < new Date(dateFrom)) return false
       if (dateTo && new Date(l.createdAt) > new Date(dateTo + "T23:59:59"))
         return false
-      if (q) {
-        const hay = [
-          l.action,
-          l.adminUsername ?? "",
-          l.adminId,
-          l.entityId ?? "",
-          l.ipAddress ?? "",
-          JSON.stringify(l.payload ?? {}),
-        ]
-          .join(" ")
-          .toLowerCase()
-        if (!hay.includes(q)) return false
-      }
+      if (q && !haystacks.get(l.id)?.includes(q)) return false
       return true
     })
   }, [
     logs,
-    search,
+    haystacks,
+    deferredSearch,
     filterAction,
     filterAdmin,
     filterCategory,
