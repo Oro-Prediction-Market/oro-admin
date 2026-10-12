@@ -92,9 +92,16 @@ const UserManagement: React.FC = () => {
     getUsersRef.current = api.getUsers
   })
 
-  // ── Single fetch effect — depends only on the real query params ───────────
+  // ── Manual refresh (e.g. after promote/demote) ────────────────────────────
+  const [refreshTick, setRefreshTick] = useState(0)
+  const forceRefresh = useCallback(() => setRefreshTick((n) => n + 1), [])
+
+  // ── Single fetch effect — the query params, plus refreshTick ──────────────
   useEffect(() => {
     let cancelled = false
+    // The spinner shows the moment the query changes, before the request
+    // resolves; deriving it would need the request in render.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setFetching(true)
 
     getUsersRef
@@ -152,6 +159,7 @@ const UserManagement: React.FC = () => {
     sortField,
     sortDir,
     page,
+    refreshTick,
   ])
 
   // ── Debounce search input → commit after 400 ms, reset to page 1 ──────────
@@ -162,56 +170,6 @@ const UserManagement: React.FC = () => {
     }, 400)
     return () => clearTimeout(t)
   }, [searchInput])
-
-  // ── Manual refresh (e.g. after promote/demote) ────────────────────────────
-  const [refreshTick, setRefreshTick] = useState(0)
-  const forceRefresh = useCallback(() => setRefreshTick((n) => n + 1), [])
-
-  // tie refreshTick into the fetch effect by making page "re-set" trigger it
-  // simpler: just re-add refreshTick as a dep on the fetch effect
-  useEffect(() => {
-    if (refreshTick === 0) return // skip initial mount (already fetched above)
-    let cancelled = false
-    setFetching(true)
-
-    getUsersRef
-      .current({
-        search,
-        role: roleFilter,
-        dkStatus: dkFilter,
-        tier: tierFilter,
-        profit: profitFilter,
-        minProfit,
-        maxProfit,
-        sortField,
-        sortDir,
-        page,
-        limit: PAGE_SIZE,
-      })
-      .then((res) => {
-        if (cancelled) return
-        const r = res as {
-          data: AdminUser[]
-          total: number
-          page: number
-          pages: number
-        }
-        setUsers(r.data)
-        setTotal(r.total)
-        setPages(r.pages)
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) console.error("Failed to fetch users", e)
-      })
-      .finally(() => {
-        if (!cancelled) setFetching(false)
-      })
-
-    return () => {
-      cancelled = true
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshTick])
 
   const handleToggleAdmin = async (userId: string, currentStatus: boolean) => {
     try {
