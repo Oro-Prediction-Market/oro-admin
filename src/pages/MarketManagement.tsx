@@ -165,13 +165,19 @@ const MarketManagement: React.FC = () => {
   // sends zero requests, the server sleeps, and the eventual submit lands on a
   // cold start and times out. Pings /admin/health every 60s; bypasses the shared
   // loading flag so it never flickers the form buttons.
+  //
+  // Keyed on `keepAlive` itself, not `api`: useAdminApi returns a new wrapper
+  // every render, which tore this interval down and restarted it on each
+  // render, so on a busy form it never reached 60 s and never fired. The
+  // function inside is stable for a given token.
+  const keepAlive = api.keepAlive
   useEffect(() => {
     if (view !== "create" && view !== "edit") return
     const id = setInterval(() => {
-      void api.keepAlive()
+      void keepAlive()
     }, 60_000)
     return () => clearInterval(id)
-  }, [view, api])
+  }, [view, keepAlive])
 
   const fetchMarkets = useRef(
     (
