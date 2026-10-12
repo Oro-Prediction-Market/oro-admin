@@ -72,12 +72,6 @@ const AdminDashboard: React.FC = () => {
     return `NU. ${new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(val)}`
   }
 
-  if (loading)
-    return (
-      <div style={{ padding: "2rem", color: "hsl(var(--muted-foreground))" }}>
-        Initializing uplink...
-      </div>
-    )
   if (error)
     return (
       <div style={{ padding: "2rem", color: "hsl(var(--destructive))" }}>
@@ -85,137 +79,152 @@ const AdminDashboard: React.FC = () => {
       </div>
     )
 
+  // The panels below fetch their own data. They are mounted (hidden) while
+  // the headline numbers load, so their requests run alongside instead of
+  // starting only once those numbers are back. The loading screen is the same.
   return (
-    <div className="dashboard-view">
-      {/* HealthCheck's card brings its own 2rem top margin, so the heading
-          carries none here. */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: "1rem",
-          flexWrap: "wrap",
-        }}
-      >
-        <h2 style={{ marginBottom: 0 }}>System Overview</h2>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-          {exportError && (
-            <span
-              style={{ color: "hsl(var(--destructive))", fontSize: "0.8rem" }}
-            >
-              {exportError}
-            </span>
-          )}
-          <button
-            type="button"
-            className="glass-card"
-            onClick={handleExport}
-            disabled={exporting}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              padding: "0.5rem 1rem",
-              cursor: exporting ? "default" : "pointer",
-              opacity: exporting ? 0.6 : 1,
-              fontSize: "0.85rem",
-              color: "hsl(var(--foreground))",
-            }}
-          >
-            <Download size={16} />
-            {exporting ? "Exporting…" : "Export CSV"}
-          </button>
+    <>
+      {loading && (
+        <div style={{ padding: "2rem", color: "hsl(var(--muted-foreground))" }}>
+          Initializing uplink...
         </div>
-      </div>
-
-      <div style={{ marginBottom: "2rem" }}>
-        <HealthCheck />
-      </div>
-
-      <div className="kpi-grid">
-        <div className="stat-grid">
-          <div className="glass-card stat-card">
-            <div
+      )}
+      <div
+        className="dashboard-view"
+        style={loading ? { display: "none" } : undefined}
+      >
+        {/* HealthCheck's card brings its own 2rem top margin, so the heading
+          carries none here. */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: "1rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <h2 style={{ marginBottom: 0 }}>System Overview</h2>
+          <div
+            style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}
+          >
+            {exportError && (
+              <span
+                style={{ color: "hsl(var(--destructive))", fontSize: "0.8rem" }}
+              >
+                {exportError}
+              </span>
+            )}
+            <button
+              type="button"
+              className="glass-card"
+              onClick={handleExport}
+              disabled={exporting}
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "0.5rem",
+                padding: "0.5rem 1rem",
+                cursor: exporting ? "default" : "pointer",
+                opacity: exporting ? 0.6 : 1,
+                fontSize: "0.85rem",
+                color: "hsl(var(--foreground))",
               }}
             >
-              <h3>Active Markets</h3>
-              <Activity size={20} color="hsl(var(--primary))" />
-            </div>
-            <p>{stats.activeMarkets}</p>
+              <Download size={16} />
+              {exporting ? "Exporting…" : "Export CSV"}
+            </button>
           </div>
+        </div>
 
-          <div className="glass-card stat-card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
-              }}
-            >
-              <h3>Total Pool Volume</h3>
-              <TrendingUp size={20} color="hsl(var(--primary))" />
+        <div style={{ marginBottom: "2rem" }}>
+          <HealthCheck />
+        </div>
+
+        <div className="kpi-grid">
+          <div className="stat-grid">
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>Active Markets</h3>
+                <Activity size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{stats.activeMarkets}</p>
             </div>
-            <p>{formatVolume(stats.totalPoolVolume)}</p>
-          </div>
 
-          <div className="glass-card stat-card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
-              }}
-            >
-              <h3>Unsettled</h3>
-              <AlertCircle size={20} color="hsl(var(--primary))" />
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>Total Pool Volume</h3>
+                <TrendingUp size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{formatVolume(stats.totalPoolVolume)}</p>
             </div>
-            <p>{stats.unsettledMarkets}</p>
-          </div>
 
-          {/* Registered users is a vanity number; this is people who actually
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>Unsettled</h3>
+                <AlertCircle size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{stats.unsettledMarkets}</p>
+            </div>
+
+            {/* Registered users is a vanity number; this is people who actually
             put money on something. The 30-day line sits underneath because the
             all-time figure only ever goes up — on its own it can't tell a
             growing platform from a dead one. */}
-          <div className="glass-card stat-card">
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "start",
-              }}
-            >
-              <h3>People Who Bet</h3>
-              <Users size={20} color="hsl(var(--primary))" />
-            </div>
-            <p>{stats.totalBettors.toLocaleString()}</p>
-            <div
-              style={{
-                marginTop: "0.5rem",
-                fontSize: "0.75rem",
-                color: "hsl(var(--muted-foreground))",
-              }}
-            >
-              {stats.activeBettors30d.toLocaleString()} in the last 30 days
+            <div className="glass-card stat-card">
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "start",
+                }}
+              >
+                <h3>People Who Bet</h3>
+                <Users size={20} color="hsl(var(--primary))" />
+              </div>
+              <p>{stats.totalBettors.toLocaleString()}</p>
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  fontSize: "0.75rem",
+                  color: "hsl(var(--muted-foreground))",
+                }}
+              >
+                {stats.activeBettors30d.toLocaleString()} in the last 30 days
+              </div>
             </div>
           </div>
         </div>
+
+        <HouseIncomeChart />
+
+        <UserGrowth token={token} />
+
+        <SignupsByPeriod />
+
+        <TierDistribution token={token} />
+
+        <BehavioralAnalytics token={token} />
       </div>
-
-      <HouseIncomeChart />
-
-      <UserGrowth token={token} />
-
-      <SignupsByPeriod />
-
-      <TierDistribution token={token} />
-
-      <BehavioralAnalytics token={token} />
-    </div>
+    </>
   )
 }
 
