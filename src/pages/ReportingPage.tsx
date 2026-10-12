@@ -142,6 +142,16 @@ function StatCard({
 
 // ─── Transaction Audits Tab ───────────────────────────────────────────────────
 
+/** `value`, once it has stopped changing for `ms`. */
+function useDebounced<T>(value: T, ms: number): T {
+  const [settled, setSettled] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(value), ms)
+    return () => clearTimeout(t)
+  }, [value, ms])
+  return settled
+}
+
 function TransactionAuditsTab() {
   const token = sessionStorage.getItem("admin_token")
   const api = useAdminApi(token)
@@ -163,35 +173,35 @@ function TransactionAuditsTab() {
   const [page, setPage] = useState(1)
   const limit = 50
 
+  // The typed filters query once typing pauses, not on every keystroke —
+  // each one was a transactions query and a stats query.
+  const appliedSearch = useDebounced(search, 300)
+  const appliedMarket = useDebounced(filterMarket, 300)
+  const appliedUser = useDebounced(filterUser, 300)
+
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([
-      api.getReportingTransactionAudits({
-        search: search || undefined,
+    api
+      .getReportingTransactionAudits({
+        search: appliedSearch || undefined,
         type: filterType || undefined,
         status: filterStatus || undefined,
-        marketId: filterMarket || undefined,
-        userId: filterUser || undefined,
+        marketId: appliedMarket || undefined,
+        userId: appliedUser || undefined,
         from: dateFrom || undefined,
         to: dateTo || undefined,
         page,
         limit,
-      }),
-      api.getReportingTransactionStats({
-        from: dateFrom || undefined,
-        to: dateTo || undefined,
-      }),
-    ])
-      .then(([txRes, statsRes]) => {
+      })
+      .then((txRes) => {
         if (cancelled) return
         const r = txRes as
           | { data?: Transaction[]; total?: number }
           | Transaction[]
         setRows(Array.isArray(r) ? r : (r.data ?? []))
         setTotal(Array.isArray(r) ? r.length : (r.total ?? 0))
-        setStats(statsRes as TransactionStats)
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message)
@@ -204,16 +214,37 @@ function TransactionAuditsTab() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    search,
+    appliedSearch,
     filterType,
     filterStatus,
-    filterMarket,
-    filterUser,
+    appliedMarket,
+    appliedUser,
     dateFrom,
     dateTo,
     page,
     tick,
   ])
+
+  // The stats only take the date range, so paging and the other filters do
+  // not re-run them.
+  useEffect(() => {
+    let cancelled = false
+    api
+      .getReportingTransactionStats({
+        from: dateFrom || undefined,
+        to: dateTo || undefined,
+      })
+      .then((statsRes) => {
+        if (!cancelled) setStats(statsRes as TransactionStats)
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setError(e.message)
+      })
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFrom, dateTo, tick])
 
   const totalPages = Math.max(1, Math.ceil(total / limit))
 
