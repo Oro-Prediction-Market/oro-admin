@@ -9,6 +9,7 @@ import {
   XCircle,
 } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { pollWhileVisible } from "../lib/poll"
 
 interface HealthStatus {
   status: "healthy" | "degraded" | "unhealthy"
@@ -51,8 +52,7 @@ const HealthCheck: React.FC = () => {
     }
 
     fetchHealth()
-    const interval = setInterval(fetchHealth, 30000) // Refresh every 30 seconds
-    return () => clearInterval(interval)
+    return pollWhileVisible(fetchHealth, 30000) // Refresh every 30 seconds
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run on mount and set up interval
 

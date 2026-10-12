@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react"
 import { Activity, RefreshCw } from "lucide-react"
 import { useAdminApi } from "../lib/useAdminApi"
+import { pollWhileVisible } from "../lib/poll"
 
 type JobStatus = "ok" | "failing" | "stale" | "disabled" | "never"
 
@@ -70,8 +71,7 @@ export default function JobHealthPanel() {
 
   useEffect(() => {
     void load()
-    const id = setInterval(() => void load(), 60_000)
-    return () => clearInterval(id)
+    return pollWhileVisible(() => void load(), 60_000)
   }, [load])
 
   const problems =

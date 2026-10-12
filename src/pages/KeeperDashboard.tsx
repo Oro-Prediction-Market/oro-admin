@@ -16,6 +16,7 @@ import { useToast } from "../components/Toast"
 import JobHealthPanel from "../components/JobHealthPanel"
 import SettlementAuditPanel from "../components/SettlementAuditPanel"
 import { handleAdminAuth } from "../lib/useAdminApi"
+import { pollWhileVisible } from "../lib/poll"
 
 // ── API base (mirrors useAdminApi.ts logic) ────────────────────────────────
 const API_BASE =
@@ -93,11 +94,10 @@ const KeeperDashboard: React.FC = () => {
     }
   }, [apiFetch])
 
-  // Poll every 8 seconds
+  // Poll every 8 seconds, while the tab is visible
   useEffect(() => {
     fetchStatus()
-    const interval = setInterval(fetchStatus, 8000)
-    return () => clearInterval(interval)
+    return pollWhileVisible(fetchStatus, 8000)
   }, [fetchStatus])
 
   // Scroll to the top (newest first) when a new entry arrives. Keyed on the

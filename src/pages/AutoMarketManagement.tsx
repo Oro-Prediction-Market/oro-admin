@@ -20,6 +20,7 @@ import {
   Edit,
   Trash2,
 } from "lucide-react"
+import { pollWhileVisible } from "../lib/poll"
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -259,10 +260,9 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
     return fetchHistoryRef.current(tablePage, tableStatus, source)
   }, [tablePage, tableStatus, source])
 
-  // Price refresh every 30 s
+  // Price refresh every 30 s, while the tab is visible
   useEffect(() => {
-    const id = setInterval(fetchPrice, 30_000)
-    return () => clearInterval(id)
+    return pollWhileVisible(fetchPrice, 30_000)
   }, [fetchPrice])
 
   // Countdown every second
