@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 
 // Backend uses a global /api prefix — strip the trailing /admin from the env var
 // then re-add /api so all requests go to /api/admin/...
@@ -45,11 +45,15 @@ export function handleAdminAuth(response: Response): Response {
 export function useAdminApi(token: string | null) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Requests in flight. `loading` flips on with the first and off with the
+  // last: per request it cost two renders of the page, and with requests
+  // overlapping, the first to finish cleared it while others still ran.
+  const inFlight = useRef(0)
 
   const apiFetch = useCallback(
     async (path: string, options: RequestInit = {}, timeoutMs = 45_000) => {
       if (!token) throw new Error("No admin token provided")
-      setLoading(true)
+      if (inFlight.current++ === 0) setLoading(true)
       setError(null)
       // Abort a stalled request instead of hanging forever. A dead keep-alive
       // connection (tab left open, laptop slept, backend cold-started) would
@@ -103,7 +107,7 @@ export function useAdminApi(token: string | null) {
         throw new Error(msg)
       } finally {
         clearTimeout(timeout)
-        setLoading(false)
+        if (--inFlight.current === 0) setLoading(false)
       }
     },
     [token]
