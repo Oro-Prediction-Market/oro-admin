@@ -112,8 +112,13 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
   // Deps are [token, days] and nothing else. Deliberately a raw fetch rather
   // than useAdminApi: that hook returns a fresh object every render, so an
   // effect depending on it re-fires forever (the 429 loop AMLPage hit).
+  //
+  // `live` drops a response that arrives after the range changed again:
+  // clicking 7d then 90d quickly could otherwise let the slower 7d answer
+  // land last, drawing 7 days under the 90d button.
   useEffect(() => {
     if (!token) return
+    let live = true
     fetch(`${API_BASE}/admin/user-growth?days=${days}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -123,13 +128,19 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
         return r.json()
       })
       .then((d) => {
+        if (!live) return
         setData(d)
         setError(null)
       })
-      .catch((e: Error) =>
-        setError(`Failed to load growth data (${e.message})`)
-      )
-      .finally(() => setLoading(false))
+      .catch((e: Error) => {
+        if (live) setError(`Failed to load growth data (${e.message})`)
+      })
+      .finally(() => {
+        if (live) setLoading(false)
+      })
+    return () => {
+      live = false
+    }
   }, [token, days])
 
   const rangeButtons = (
