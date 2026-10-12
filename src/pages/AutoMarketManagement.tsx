@@ -105,6 +105,23 @@ function fmtCountdown(closesAt: string): string {
   return `${s}s`
 }
 
+/**
+ * The "closes in" text, ticking on its own. In the page's state, the one-second
+ * timer re-rendered the whole page — price card, history table and all — every
+ * second. Keyed by closesAt where it is used, so a new market starts fresh.
+ */
+function Countdown({ closesAt }: { closesAt: string | null | undefined }) {
+  const [label, setLabel] = useState(() =>
+    closesAt ? fmtCountdown(closesAt) : ""
+  )
+  useEffect(() => {
+    if (!closesAt) return
+    const id = setInterval(() => setLabel(fmtCountdown(closesAt)), 1_000)
+    return () => clearInterval(id)
+  }, [closesAt])
+  return <>{label || "…"}</>
+}
+
 function fmtNum(n: number | undefined | null, decimals = 2): string {
   if (n == null || !isFinite(n)) return "—"
   return n.toLocaleString("en-US", {
@@ -161,7 +178,6 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
   const [openMarket, setOpenMarket] = useState<AutoMarket | null>(null)
   const [livePrice, setLivePrice] = useState<LivePrice | null>(null)
   const [spawning, setSpawning] = useState(false)
-  const [countdown, setCountdown] = useState("")
 
   // ── Table state ───────────────────────────────────────────────────────────
   const [tableMarkets, setTableMarkets] = useState<AutoMarket[]>([])
@@ -264,18 +280,6 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
   useEffect(() => {
     return pollWhileVisible(fetchPrice, 30_000)
   }, [fetchPrice])
-
-  // Countdown every second
-  useEffect(() => {
-    if (!openMarket?.closesAt) {
-      setCountdown("")
-      return
-    }
-    const update = () => setCountdown(fmtCountdown(openMarket.closesAt!))
-    update()
-    const id = setInterval(update, 1_000)
-    return () => clearInterval(id)
-  }, [openMarket?.closesAt])
 
   // ── Derived ────────────────────────────────────────────────────────────────
 
@@ -687,7 +691,11 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                     animation: "heartbeat 2.4s ease-in-out infinite",
                   }}
                 />
-                Closes in {countdown || "…"}
+                Closes in{" "}
+                <Countdown
+                  key={openMarket?.closesAt ?? ""}
+                  closesAt={openMarket?.closesAt}
+                />
               </div>
 
               {/* Reference vs live */}
