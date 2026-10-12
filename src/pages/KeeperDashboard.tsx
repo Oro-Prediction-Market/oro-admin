@@ -100,10 +100,13 @@ const KeeperDashboard: React.FC = () => {
     return () => clearInterval(interval)
   }, [fetchStatus])
 
-  // Auto-scroll logs to top (newest first)
+  // Scroll to the top (newest first) when a new entry arrives. Keyed on the
+  // newest entry, not the array: every 8 s poll returns a fresh array, which
+  // jumped the pane back to the top while an admin was reading it.
+  const newestLogId = status?.logs?.[0]?.id
   useEffect(() => {
     if (logsRef.current) logsRef.current.scrollTop = 0
-  }, [status?.logs])
+  }, [newestLogId])
 
   const toggleKeeper = async () => {
     if (!status) return
