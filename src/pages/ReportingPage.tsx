@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import {
   TrendingUp,
   RefreshCw,
@@ -227,8 +227,14 @@ function TransactionAuditsTab() {
 
   // The stats only take the date range, so paging and the other filters do
   // not re-run them.
+  const statsRange = useRef("")
   useEffect(() => {
     let cancelled = false
+    // A new range must not show the previous range's volume while it loads,
+    // or after it fails (the transactions query clears the error banner).
+    const range = `${dateFrom}|${dateTo}`
+    if (statsRange.current !== range) setStats(null)
+    statsRange.current = range
     api
       .getReportingTransactionStats({
         from: dateFrom || undefined,
@@ -238,7 +244,9 @@ function TransactionAuditsTab() {
         if (!cancelled) setStats(statsRes as TransactionStats)
       })
       .catch((e: Error) => {
-        if (!cancelled) setError(e.message)
+        if (cancelled) return
+        setStats(null)
+        setError(e.message)
       })
     return () => {
       cancelled = true
