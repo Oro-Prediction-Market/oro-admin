@@ -102,6 +102,32 @@ function featuredHubName(
   return title.toLowerCase().includes(" vs ") ? MATCH_HUBS[key] : null
 }
 
+/**
+ * Where pinning this market puts it, or null when it cannot be pinned.
+ *
+ * A match with a competition hub is pinned in that hub. A market with no hub
+ * (Ballon d'Or and other one-off markets) is pinned to the top of the app
+ * feed in the Telegram app and the PWA — and stays pinnable while closed or
+ * resolving, when a market about to settle is most worth showing.
+ */
+function pinTarget(
+  m: Pick<Market, "subcategory" | "title" | "status">
+): { kind: "hub"; name: string } | { kind: "feed" } | null {
+  const hub = featuredHubName(m.subcategory, m.title)
+  if (hub) {
+    return m.status === "upcoming" || m.status === "open"
+      ? { kind: "hub", name: hub }
+      : null
+  }
+  if (
+    !(m.subcategory || "").trim() &&
+    ["upcoming", "open", "closed", "resolving"].includes(m.status)
+  ) {
+    return { kind: "feed" }
+  }
+  return null
+}
+
 // A timeout or network-level failure — the signature of hitting a backend that
 // spun down and is cold-starting. (A 4xx/5xx from the app carries a real message
 // and is NOT retried.)
@@ -535,18 +561,20 @@ const MarketManagement: React.FC = () => {
   const handleToggleFeatured = async (m: Market) => {
     const next = !m.isFeatured
     try {
-      await api.updateMarket(m.id, { isFeatured: next })
+      // Its own endpoint: it writes the one column, where a general market
+      // update would save a cached copy of the whole row back.
+      await api.setMarketFeatured(m.id, next)
       refresh()
       // Deliberately not "the featured match": a hub shows every pinned match,
       // in kickoff order, and there is no automatic pick when none are pinned —
       // the section is simply absent. Saying otherwise sends an admin hunting
       // for a fallback that was never built.
-      const hub = featuredHubName(m.subcategory, m.title) ?? "the"
+      const target = pinTarget(m)
+      const where =
+        target?.kind === "hub" ? `the ${target.name} hub` : "the app feed"
       notify(
         "success",
-        next
-          ? `Pinned to the top of the ${hub} hub.`
-          : `Unpinned from the ${hub} hub.`
+        next ? `Pinned to the top of ${where}.` : `Unpinned from ${where}.`
       )
     } catch (e: unknown) {
       notify(
@@ -1223,30 +1251,32 @@ const MarketManagement: React.FC = () => {
                                 <Megaphone size={14} />
                               </button>
                             )}
-                            {(m.status === "upcoming" || m.status === "open") &&
-                              featuredHubName(m.subcategory, m.title) && (
-                                <button
-                                  onClick={() => handleToggleFeatured(m)}
-                                  className="secondary"
-                                  title={
-                                    m.isFeatured
-                                      ? `Featured in the ${featuredHubName(m.subcategory, m.title)} hub — click to unpin`
-                                      : `Pin as a featured match in the ${featuredHubName(m.subcategory, m.title)} hub`
-                                  }
-                                  style={{
-                                    color: m.isFeatured
-                                      ? "hsl(45, 90%, 55%)"
-                                      : undefined,
-                                  }}
-                                >
-                                  <Star
-                                    size={14}
-                                    fill={
-                                      m.isFeatured ? "currentColor" : "none"
-                                    }
-                                  />
-                                </button>
-                              )}
+                            {pinTarget(m) && (
+                              <button
+                                onClick={() => handleToggleFeatured(m)}
+                                className="secondary"
+                                title={(() => {
+                                  const t = pinTarget(m)
+                                  if (t?.kind === "hub")
+                                    return m.isFeatured
+                                      ? `Featured in the ${t.name} hub — click to unpin`
+                                      : `Pin as a featured match in the ${t.name} hub`
+                                  return m.isFeatured
+                                    ? "Pinned to the top of the app feed — click to unpin"
+                                    : "Pin to the top of the app feed (Telegram app and PWA)"
+                                })()}
+                                style={{
+                                  color: m.isFeatured
+                                    ? "hsl(45, 90%, 55%)"
+                                    : undefined,
+                                }}
+                              >
+                                <Star
+                                  size={14}
+                                  fill={m.isFeatured ? "currentColor" : "none"}
+                                />
+                              </button>
+                            )}
                             {m.status === "upcoming" && (
                               <button
                                 onClick={() => handleTransition(m.id, "open")}

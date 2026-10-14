@@ -482,6 +482,11 @@ export function useAdminApi(token: string | null) {
       getResolutionLog: () =>
         fetch(`${API_BASE}/markets/resolution-log`).then((r) => r.json()),
       getPool: (id: string) => apiFetch(`/admin/markets/${id}/pool`),
+      setMarketFeatured: (id: string, isFeatured: boolean) =>
+        apiFetch(`/admin/markets/${id}/featured`, {
+          method: "PATCH",
+          body: JSON.stringify({ isFeatured }),
+        }),
       getMarketParticipants: (id: string) =>
         apiFetch(`/admin/markets/${id}/participants`),
       getLateMoney: (id: string, windowMinutes = 1) =>
