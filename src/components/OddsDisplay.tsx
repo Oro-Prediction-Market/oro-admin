@@ -92,18 +92,6 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
 
   const minusPoolWarning = getMinusPoolWarning()
 
-  // What one backer of this outcome walks away with if it wins. The outcome's
-  // total (stake × odds) is the whole payout pool on every row, so on its own
-  // it says nothing about any one person. Without each person's stake here,
-  // one backer gets it all and several get the average share.
-  const perPersonPayout = (total: number, backers?: number) => {
-    if (backers === 0) return "no one to pay"
-    if (backers === 1) return `${money(total)} to 1 person`
-    if (typeof backers === "number")
-      return `≈ ${money(total / backers)} each (avg of ${backers})`
-    return `${money(total)} payout`
-  }
-
   const people = (n: number) =>
     `${n.toLocaleString()} ${n === 1 ? "person" : "people"}`
 
@@ -261,17 +249,6 @@ export const OddsDisplay: React.FC<OddsDisplayProps> = ({
                   }}
                 >
                   {finalOdds.toFixed(2)}x
-                </div>
-                <div
-                  style={{
-                    fontSize: "0.75rem",
-                    color: "hsl(var(--muted-foreground))",
-                  }}
-                >
-                  {perPersonPayout(
-                    Number(outcome.totalBetAmount || 0) * finalOdds,
-                    outcome.bettorCount
-                  )}
                 </div>
               </div>
             </div>
