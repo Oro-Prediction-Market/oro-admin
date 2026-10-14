@@ -98,6 +98,8 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
   const [error, setError] = useState<string | null>(() =>
     token ? null : "Not authenticated"
   )
+  /** The signups-per-day bar last clicked, by its date. */
+  const [pickedDay, setPickedDay] = useState<string | null>(null)
 
   // Switching range sets the spinner here rather than in the effect body:
   // calling setState synchronously inside an effect triggers a cascading
@@ -207,6 +209,14 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
 
   const series = data.signupsPerDay ?? []
   const maxSignups = Math.max(...series.map((d) => d.count), 1)
+  // Gone when the range changes and that day is no longer in it.
+  const picked = series.find((d) => d.date === pickedDay) ?? null
+  const dayLabel = (date: string) =>
+    dayOf(date).toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    })
   const providers = data.byProvider ?? []
   const providerTotal = providers.reduce((s, p) => s + p.count, 0)
   const referrers = data.referral?.topReferrers ?? []
@@ -271,6 +281,27 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
           <h3 style={{ margin: 0, fontSize: "0.9rem" }}>
             Signups per Day ({rangeLabel})
           </h3>
+          {/* The clicked bar's count, in the title row so the card keeps
+              its height. */}
+          <span
+            style={{
+              marginLeft: "auto",
+              fontSize: "0.8rem",
+              color: "hsl(var(--muted-foreground))",
+            }}
+          >
+            {picked ? (
+              <>
+                {dayLabel(picked.date)}:{" "}
+                <strong style={{ color: "hsl(var(--foreground))" }}>
+                  {picked.count.toLocaleString()}
+                </strong>{" "}
+                {picked.count === 1 ? "signup" : "signups"}
+              </>
+            ) : (
+              series.length > 0 && "Click a bar to see its count"
+            )}
+          </span>
         </div>
         {series.length === 0 ? (
           <p
@@ -291,14 +322,27 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
             }}
           >
             {series.map(({ date, count }) => (
+              // The whole column is the hit target, not just the bar: a quiet
+              // day's bar is 4px tall.
               <div
                 key={date}
+                role="button"
+                tabIndex={0}
+                aria-pressed={pickedDay === date}
+                onClick={() => setPickedDay(pickedDay === date ? null : date)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    setPickedDay(pickedDay === date ? null : date)
+                  }
+                }}
                 style={{
                   flex: 1,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   gap: 4,
+                  cursor: "pointer",
                 }}
               >
                 <div
@@ -307,12 +351,10 @@ export const UserGrowth: React.FC<{ token: string | null }> = ({ token }) => {
                     height: `${Math.max(4, (count / maxSignups) * 52)}px`,
                     borderRadius: 3,
                     background: "hsl(var(--primary))",
-                    opacity: 0.8,
+                    opacity:
+                      pickedDay === null || pickedDay === date ? 0.8 : 0.35,
                   }}
-                  title={`${dayOf(date).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}: ${count} signup${count === 1 ? "" : "s"}`}
+                  title={`${dayLabel(date)}: ${count} signup${count === 1 ? "" : "s"}`}
                 />
                 {series.length <= 45 && (
                   <span
