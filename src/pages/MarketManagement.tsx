@@ -17,6 +17,7 @@ import ProposeMarketModal from "../components/ProposeMarketModal"
 import CancelMarketModal from "../components/CancelMarketModal"
 import ConfirmDialog from "../components/ConfirmDialog"
 import { OddsDisplay } from "../components/OddsDisplay"
+import { MarketParticipants } from "../components/MarketParticipants"
 import { LateMoneyMonitor } from "../components/LateMoneyMonitor"
 import { useToast } from "../components/Toast"
 import {
@@ -1379,6 +1380,10 @@ const MarketManagement: React.FC = () => {
                                 currency={m.poolCurrency}
                                 bettorCount={m.bettorCount}
                                 betCount={m.betCount}
+                              />
+                              <MarketParticipants
+                                marketId={m.id}
+                                fetchParticipants={api.getMarketParticipants}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor

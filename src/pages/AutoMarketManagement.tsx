@@ -6,6 +6,7 @@ import ProposeMarketModal from "../components/ProposeMarketModal"
 import ResolveMarketModal from "../components/ResolveMarketModal"
 import MarketForm, { type MarketFormData } from "../components/MarketForm"
 import { OddsDisplay } from "../components/OddsDisplay"
+import { MarketParticipants } from "../components/MarketParticipants"
 import { LateMoneyMonitor } from "../components/LateMoneyMonitor"
 import {
   RefreshCw,
@@ -1139,6 +1140,10 @@ const AutoMarketManagement: React.FC<{ source: "ter" | "btc" }> = ({
                                 currency={m.poolCurrency}
                                 bettorCount={m.bettorCount}
                                 betCount={m.betCount}
+                              />
+                              <MarketParticipants
+                                marketId={m.id}
+                                fetchParticipants={api.getMarketParticipants}
                               />
                               {m.status === "open" && (
                                 <LateMoneyMonitor
