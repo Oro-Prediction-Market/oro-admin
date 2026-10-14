@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react"
+import React, { useState, useEffect, lazy, Suspense, useRef } from "react"
 import { Menu } from "lucide-react"
 import AdminSidebar from "../components/AdminSidebar"
 
@@ -44,6 +44,12 @@ const AdminPage: React.FC = () => {
   )
   useEffect(() => {
     sessionStorage.setItem("admin_page", page)
+  }, [page])
+  // The page area scrolls, not the window, and kept its offset when the
+  // sidebar switched pages — a new page opened as far down as the last one.
+  const mainRef = useRef<HTMLElement>(null)
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0)
   }, [page])
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => window.innerWidth <= 768
@@ -313,7 +319,7 @@ const AdminPage: React.FC = () => {
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed((c) => !c)}
       />
-      <main className="admin-main">
+      <main className="admin-main" ref={mainRef}>
         <Suspense
           fallback={
             <div
