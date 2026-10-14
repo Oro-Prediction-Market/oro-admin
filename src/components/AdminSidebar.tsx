@@ -26,6 +26,7 @@ import {
   Target,
   TrendingUp,
   Trophy,
+  UserPlus,
   Users,
   Wallet,
   Hourglass,
@@ -369,6 +370,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
             {!collapsed && (
               <span className="nav-label">Seasons &amp; Prizes</span>
             )}
+          </li>
+          <li
+            className={current === "referrals" ? "active" : ""}
+            onClick={() => onNavigate("referrals")}
+            title={collapsed ? "Referrals" : undefined}
+          >
+            <UserPlus size={20} />
+            {!collapsed && <span className="nav-label">Referrals</span>}
           </li>
           <li
             className={current === "platform-accuracy" ? "active" : ""}

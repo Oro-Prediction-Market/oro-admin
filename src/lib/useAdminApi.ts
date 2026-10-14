@@ -793,6 +793,10 @@ export function useAdminApi(token: string | null) {
       // ── Insights (read-only) ──────────────────────────────────────────
       getSeasonInsights: (limit = 12) =>
         apiFetch(`/admin/insights/seasons?limit=${limit}`),
+      getReferralInsights: (limit = 100) =>
+        apiFetch(`/admin/insights/referrals?limit=${limit}`),
+      getReferralsOf: (userId: string) =>
+        apiFetch(`/admin/insights/referrals/${encodeURIComponent(userId)}`),
       getEdgeExceptions: () => apiFetch("/admin/insights/edge-exceptions"),
       getUsdtDeposits: (limit = 50, status?: string) =>
         apiFetch(

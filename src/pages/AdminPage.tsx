@@ -29,6 +29,7 @@ const EplStatMarketsPage = lazy(() => import("./EplStatMarketsPage"))
 const UclStatMarketsPage = lazy(() => import("./UclStatMarketsPage"))
 const NationsLeaguePage = lazy(() => import("./NationsLeaguePage"))
 const SeasonsPage = lazy(() => import("./SeasonsPage"))
+const ReferralsPage = lazy(() => import("./ReferralsPage"))
 const UsdtDepositsPage = lazy(() => import("./UsdtDepositsPage"))
 const DisputesPage = lazy(() => import("./DisputesPage"))
 const StuckWithdrawalsPage = lazy(() => import("./StuckWithdrawalsPage"))
@@ -270,6 +271,7 @@ const AdminPage: React.FC = () => {
   else if (page === "corrections") content = <CorrectionsPage />
   else if (page === "revenue") content = <RevenuePage />
   else if (page === "seasons") content = <SeasonsPage />
+  else if (page === "referrals") content = <ReferralsPage />
   else if (page === "aml") content = <AMLPage />
   else if (page === "kyc") content = <KycReviewPage />
   else if (page === "usdt-deposits") content = <UsdtDepositsPage />
