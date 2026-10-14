@@ -189,13 +189,13 @@ export function useAdminApi(token: string | null) {
           method: "POST",
           body: JSON.stringify(body),
         }),
-      // "Who wins it?" — built server-side from League A of the draw.
+      // "Who wins it?" — built server-side from the nations ticked in the draw.
       getUnlSeasonMarketPreview: () =>
         apiFetch("/admin/unl/season-market/preview"),
-      createUnlSeasonMarket: (closesAt: string) =>
+      createUnlSeasonMarket: (closesAt: string, teamIds: string[]) =>
         apiFetch("/admin/unl/season-market", {
           method: "POST",
-          body: JSON.stringify({ closesAt }),
+          body: JSON.stringify({ closesAt, teamIds }),
         }),
       // ── Nations League teams, fixtures and match markets ──
       //
