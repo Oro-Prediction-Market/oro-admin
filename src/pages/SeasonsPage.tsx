@@ -37,9 +37,20 @@ interface SeasonRow {
   podium: PodiumPlace[]
 }
 
+/** All-time season prizes credited, per currency, from the ledger. */
+interface PaidSummary {
+  currency: string
+  total: number
+  payments: number
+  winners: number
+  months: number
+  lastPaidAt: string | null
+}
+
 interface SeasonsResponse {
   minQualifiers: number
   seasons: SeasonRow[]
+  paid?: PaidSummary[]
 }
 
 const nu = (n: number) =>
@@ -98,6 +109,8 @@ export default function SeasonsPage() {
         </button>
       </div>
 
+      {data && <PaidSummaryCards paid={data.paid ?? []} />}
+
       {err && (
         <div
           className="glass-card"
@@ -132,6 +145,71 @@ export default function SeasonsPage() {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * What has actually been paid in season prizes so far — the ledger's total,
+ * independent of which seasons are listed below.
+ */
+function PaidSummaryCards({ paid }: { paid: PaidSummary[] }) {
+  const money = (n: number, currency: string) =>
+    currency === "USDT"
+      ? `$${n.toLocaleString("en-US", { maximumFractionDigits: 2 })}`
+      : nu(n)
+  // Prizes are paid in Nu; any other currency is shown alongside, never added.
+  const main = paid.find((p) => p.currency === "BTN") ??
+    paid[0] ?? {
+      currency: "BTN",
+      total: 0,
+      payments: 0,
+      winners: 0,
+      months: 0,
+      lastPaidAt: null,
+    }
+  const others = paid.filter((p) => p !== main)
+  const lastPaid = paid
+    .map((p) => p.lastPaidAt)
+    .filter((d): d is string => !!d)
+    .sort()
+    .pop()
+
+  return (
+    <div className="kpi-grid" style={{ marginBottom: "1.5rem" }}>
+      <div className="stat-grid">
+        <div className="stat-card">
+          <h3>Total prizes paid</h3>
+          <p>{money(main.total, main.currency)}</p>
+          {others.map((o) => (
+            <div
+              key={o.currency}
+              style={{ color: "hsl(var(--muted-foreground))", marginTop: 6 }}
+            >
+              + {money(o.total, o.currency)}
+            </div>
+          ))}
+        </div>
+        <div className="stat-card">
+          <h3>Months paid out</h3>
+          <p>{main.months.toLocaleString()}</p>
+          {lastPaid && (
+            <div
+              style={{ color: "hsl(var(--muted-foreground))", marginTop: 6 }}
+            >
+              Last paid {new Date(lastPaid).toLocaleDateString()}
+            </div>
+          )}
+        </div>
+        <div className="stat-card">
+          <h3>Winners paid</h3>
+          <p>{main.winners.toLocaleString()}</p>
+        </div>
+        <div className="stat-card">
+          <h3>Prize payments</h3>
+          <p>{main.payments.toLocaleString()}</p>
+        </div>
+      </div>
     </div>
   )
 }
