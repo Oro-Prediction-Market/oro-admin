@@ -23,6 +23,7 @@ export const SPORT_SUBCATEGORIES = [
   "ucl-match",
   "ucl-season",
   "unl-match",
+  "unl-season",
   "unl-topscorer",
   "unl-assists",
   "bpl-match",

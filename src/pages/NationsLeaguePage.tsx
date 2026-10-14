@@ -14,6 +14,7 @@ import { useAdminApi } from "../lib/useAdminApi"
 import { useToast } from "../components/Toast"
 import ConfirmDialog from "../components/ConfirmDialog"
 import StatBoardEditor from "../components/StatBoardEditor"
+import UnlSeasonMarketCard from "../components/UnlSeasonMarketCard"
 
 /**
  * Nations League admin.
@@ -416,6 +417,12 @@ export default function NationsLeaguePage() {
   // rebuilt on every keystroke in either one.
   const renderTeamsTab = () => (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      <UnlSeasonMarketCard
+        getPreview={api.getUnlSeasonMarketPreview}
+        create={api.createUnlSeasonMarket}
+        notify={notify}
+        reloadKey={teams.length}
+      />
       {/* Paste the whole draw. Previewed before anything is written, because
           this is the one action that creates fifty-odd rows at once and the
           names become market outcome labels that cannot be renamed later. */}
