@@ -105,10 +105,11 @@ function featuredHubName(
 /**
  * Where pinning this market puts it, or null when it cannot be pinned.
  *
- * A match with a competition hub is pinned in that hub. A market with no hub
- * (Ballon d'Or and other one-off markets) is pinned to the top of the app
- * feed in the Telegram app and the PWA — and stays pinnable while closed or
- * resolving, when a market about to settle is most worth showing.
+ * A match with a competition hub is pinned in that hub. Any other market —
+ * Ballon d'Or, a season market, a UFC fight, whatever its subcategory — is
+ * pinned to the top of the app feed in the Telegram app and the PWA, and
+ * stays pinnable while closed or resolving, when a market about to settle is
+ * most worth showing. Must match `isFeedPinned` in both apps' feed pages.
  */
 function pinTarget(
   m: Pick<Market, "subcategory" | "title" | "status">
@@ -119,10 +120,7 @@ function pinTarget(
       ? { kind: "hub", name: hub }
       : null
   }
-  if (
-    !(m.subcategory || "").trim() &&
-    ["upcoming", "open", "closed", "resolving"].includes(m.status)
-  ) {
+  if (["upcoming", "open", "closed", "resolving"].includes(m.status)) {
     return { kind: "feed" }
   }
   return null
