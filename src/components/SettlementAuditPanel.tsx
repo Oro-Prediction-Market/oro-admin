@@ -4,7 +4,7 @@ import { useAdminApi } from "../lib/useAdminApi"
 import { RESETTLE_PREFILL_KEY } from "./ResettlePanel"
 
 interface Mismatch {
-  source: "football" | "ucl"
+  source: "football" | "ucl" | "nba"
   marketId: string
   title: string
   settledAs: { id: string; label: string }
