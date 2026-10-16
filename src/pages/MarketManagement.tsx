@@ -82,6 +82,7 @@ const MATCH_HUBS: Record<string, string> = {
   epl: "Premier League",
   ucl: "Champions League",
   unl: "Nations League",
+  nba: "NBA",
 }
 
 /**
