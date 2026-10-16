@@ -385,7 +385,7 @@ const MarketManagement: React.FC = () => {
       notify(
         "success",
         data.candidates?.length
-          ? `Market group created — ${data.candidates.length} Yes/No candidate markets.`
+          ? `Market group created — ${data.candidates.length} Yes/No markets.`
           : "Market created successfully."
       )
     } catch (e: unknown) {

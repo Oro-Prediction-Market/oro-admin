@@ -145,6 +145,18 @@ function toLocalDatetimeInput(date: Date): string {
 // wiped everything. We now mirror the form to localStorage on every change and
 // restore it on mount, clearing only after a market is successfully created.
 const DRAFT_KEY = "oro_admin_market_draft_v1"
+/**
+ * The draft's market type, kept beside the draft rather than in it: the form
+ * data is posted as-is, and the backend rejects fields it does not know.
+ */
+const DRAFT_TYPE_KEY = "oro_admin_market_draft_type_v1"
+
+/**
+ * "normal": one market, its outcomes sharing one pool.
+ * "group": one Yes/No market per option, sharing a group (Polymarket-style),
+ * the way political markets have always been made. Any category can use it.
+ */
+type MarketType = "normal" | "group"
 
 type MarketDraft = {
   title: string
@@ -246,6 +258,21 @@ const MarketForm: React.FC<MarketFormProps> = ({
     }
     return buildDefaultDraft(initialData)
   })
+  const [marketType, setMarketType] = useState<MarketType>(() => {
+    if (initialData) return "normal"
+    if (!seed) {
+      try {
+        const t = localStorage.getItem(DRAFT_TYPE_KEY)
+        if (t === "group" || t === "normal") return t
+      } catch {
+        /* storage blocked */
+      }
+    }
+    return formData.category === "political" ? "group" : "normal"
+  })
+  // Edit mode never switches type: a group is edited in GroupEditForm, and a
+  // market's outcome count is fixed once it has bets.
+  const isGroup = !initialData && marketType === "group"
 
   // Mirror the form to localStorage (create mode only) so a reload or a failed
   // submit never costs the admin their typing. Debounced 2s: localStorage writes
@@ -257,16 +284,18 @@ const MarketForm: React.FC<MarketFormProps> = ({
     const t = setTimeout(() => {
       try {
         localStorage.setItem(DRAFT_KEY, JSON.stringify(formData))
+        localStorage.setItem(DRAFT_TYPE_KEY, marketType)
       } catch {
         /* storage full/blocked — don't crash the form over a failed save */
       }
     }, 2000)
     return () => clearTimeout(t)
-  }, [formData, initialData, seed])
+  }, [formData, marketType, initialData, seed])
 
   const clearDraft = () => {
     try {
       localStorage.removeItem(DRAFT_KEY)
+      localStorage.removeItem(DRAFT_TYPE_KEY)
     } catch {
       /* ignore */
     }
@@ -277,6 +306,31 @@ const MarketForm: React.FC<MarketFormProps> = ({
     clearDraft()
     setRestoredDraft(false)
     setFormData(buildDefaultDraft(initialData))
+    setMarketType("normal")
+  }
+
+  /**
+   * Switch between one market and a group of Yes/No markets. The options
+   * start over: a normal market's default Yes/No would make a group of two
+   * markets named "Yes" and "No", and a group's blank candidates are not
+   * outcomes anyone would want.
+   */
+  const chooseMarketType = (t: MarketType) => {
+    if (t === marketType) return
+    setMarketType(t)
+    setFormData((prev) => ({
+      ...prev,
+      outcomes:
+        t === "group"
+          ? [
+              { label: "", imageUrl: null },
+              { label: "", imageUrl: null },
+            ]
+          : [
+              { label: "Yes", imageUrl: null },
+              { label: "No", imageUrl: null },
+            ],
+    }))
   }
 
   const handleChange = (
@@ -285,6 +339,13 @@ const MarketForm: React.FC<MarketFormProps> = ({
     >
   ) => {
     const { name, value } = e.target
+
+    // Political defaults to a group and leaving it defaults back, as before
+    // the type became a choice. Any other category keeps what was picked.
+    if (name === "category" && !initialData) {
+      if (value === "political") setMarketType("group")
+      else if (formData.category === "political") setMarketType("normal")
+    }
 
     if (
       name === "category" &&
@@ -515,7 +576,6 @@ const MarketForm: React.FC<MarketFormProps> = ({
     // correct instant regardless of server timezone.
     const toUTC = (local: string) =>
       local ? new Date(local).toISOString() : local
-    const isPoliticalGroup = formData.category === "political" && !initialData
     setSubmitting(true)
     try {
       await onSubmit({
@@ -528,7 +588,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
         closesAt: toUTC(formData.closesAt),
         houseEdgePct: Number(formData.houseEdgePct),
         liquidityParam: Number(formData.liquidityParam),
-        candidates: isPoliticalGroup
+        candidates: isGroup
           ? formData.outcomes.map((o) => ({
               name: o.label,
               imageUrl: o.imageUrl ?? null,
@@ -585,6 +645,79 @@ const MarketForm: React.FC<MarketFormProps> = ({
                 Start fresh
               </button>
             )}
+          </div>
+        )}
+
+        {!initialData && (
+          <div style={{ marginBottom: "1rem" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "0.5rem",
+                fontSize: "0.75rem",
+                color: "hsl(var(--muted-foreground))",
+              }}
+            >
+              MARKET TYPE
+            </label>
+            <div
+              role="radiogroup"
+              aria-label="Market type"
+              style={{ display: "flex", gap: "0.5rem" }}
+            >
+              {(
+                [
+                  [
+                    "normal",
+                    "Normal market",
+                    "One market. Its outcomes share one pool; the winners split it.",
+                  ],
+                  [
+                    "group",
+                    "Group market (Yes/No)",
+                    "One Yes/No market per option, shown together as a group, like the political markets.",
+                  ],
+                ] as [MarketType, string, string][]
+              ).map(([t, label, hint]) => (
+                <button
+                  key={t}
+                  type="button"
+                  role="radio"
+                  aria-checked={marketType === t}
+                  className="secondary"
+                  onClick={() => chooseMarketType(t)}
+                  style={{
+                    flex: 1,
+                    textAlign: "left",
+                    padding: "0.6rem 0.75rem",
+                    whiteSpace: "normal",
+                    textTransform: "none",
+                    letterSpacing: "normal",
+                    ...(marketType === t
+                      ? {
+                          border: "2px solid hsl(var(--primary))",
+                          background: "hsl(var(--primary) / 0.12)",
+                          color: "hsl(var(--primary))",
+                        }
+                      : { border: "2px solid var(--glass-border)" }),
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: "0.85rem" }}>
+                    {label}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "0.7rem",
+                      opacity: 0.75,
+                      marginTop: 2,
+                      fontWeight: 400,
+                    }}
+                  >
+                    {hint}
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -653,8 +786,8 @@ const MarketForm: React.FC<MarketFormProps> = ({
                 fontSize: "0.7rem",
               }}
             >
-              {formData.category === "political" && !initialData
-                ? "(fallback for candidates without their own image)"
+              {isGroup
+                ? "(fallback for options without their own image)"
                 : "(optional)"}
             </span>
           </label>
@@ -919,8 +1052,10 @@ const MarketForm: React.FC<MarketFormProps> = ({
               color: "hsl(var(--muted-foreground))",
             }}
           >
-            {formData.category === "political" && !initialData
-              ? "CANDIDATES"
+            {isGroup
+              ? formData.category === "political"
+                ? "CANDIDATES"
+                : "OPTIONS"
               : "OUTCOMES"}
             {initialData && (
               <span
@@ -1164,7 +1299,7 @@ const MarketForm: React.FC<MarketFormProps> = ({
           ) : (
             /* ── default: standard outcomes (also bpl-match / bpl-winner / bpl-topscorer) ── */
             <div>
-              {formData.category === "political" && !initialData && (
+              {isGroup && (
                 <p
                   style={{
                     fontSize: "0.72rem",
@@ -1173,10 +1308,11 @@ const MarketForm: React.FC<MarketFormProps> = ({
                     opacity: 0.7,
                   }}
                 >
-                  Each candidate gets their own Yes/No market (e.g. "
-                  {formData.title || "Who will win?"}. When it settles, resolve
-                  the winner's market to Yes and every other candidate's market
-                  to No.
+                  Each option gets its own Yes/No market (e.g. "
+                  {formData.title || "Who will win?"} —{" "}
+                  {formData.outcomes[0]?.label || "Option 1"}"). When it
+                  settles, resolve the winner's market to Yes and every other
+                  option's market to No.
                 </p>
               )}
               {formData.subcategory.startsWith("bpl-") && (
@@ -1295,8 +1431,10 @@ const MarketForm: React.FC<MarketFormProps> = ({
                           ? `Club ${index + 1} (e.g. ${BPL_CLUBS[index] ?? "Paro FC"})`
                           : formData.subcategory === "bpl-topscorer"
                             ? `Player ${index + 1}`
-                            : formData.category === "political" && !initialData
-                              ? `Candidate ${index + 1} name (e.g. ${index === 0 ? "Sonam" : "Tenzin"})`
+                            : isGroup
+                              ? formData.category === "political"
+                                ? `Candidate ${index + 1} name (e.g. ${index === 0 ? "Sonam" : "Tenzin"})`
+                                : `Option ${index + 1} name`
                               : `Outcome ${index + 1} label`
                       }
                     />
@@ -1378,8 +1516,10 @@ const MarketForm: React.FC<MarketFormProps> = ({
                   className="secondary"
                   style={{ width: "100%", fontSize: "0.75rem" }}
                 >
-                  {formData.category === "political"
-                    ? "+ Add Candidate"
+                  {isGroup
+                    ? formData.category === "political"
+                      ? "+ Add Candidate"
+                      : "+ Add Option"
                     : "+ Add Outcome"}
                 </button>
               )}
