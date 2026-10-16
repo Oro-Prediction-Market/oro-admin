@@ -730,6 +730,626 @@ const MarketManagement: React.FC = () => {
     }
   }
 
+  // ── Group markets: one combined row per group ───────────────────────────
+  // A group (one Yes/No market per option) used to list as one row per
+  // option, so a 30-team outright filled a page and a half. It is now one row
+  // that opens to its options. The page only holds 20 markets, so each group's
+  // full membership is fetched on its own: by its title, which every option's
+  // title starts with, kept to that groupId.
+  const [groupMembers, setGroupMembers] = useState<Record<string, Market[]>>({})
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    () => new Set()
+  )
+  useEffect(() => {
+    const groups = new Map<string, string>()
+    for (const m of markets) {
+      const gid = m.groupId as string | undefined
+      if (gid && !groups.has(gid))
+        groups.set(
+          gid,
+          (m.groupTitle as string | undefined) ?? m.title.split("—")[0].trim()
+        )
+    }
+    if (!groups.size) return
+    let cancelled = false
+    Promise.all(
+      [...groups].map(([gid, title]) =>
+        getMarketsRef
+          .current({ page: 1, limit: 500, search: title })
+          .then((res) => {
+            const all = ((res as { data?: Market[] }).data ?? []).filter(
+              (x) => x.groupId === gid
+            )
+            return [gid, all] as const
+          })
+          .catch(() => [gid, [] as Market[]] as const)
+      )
+    ).then((entries) => {
+      if (cancelled) return
+      setGroupMembers((prev) => {
+        const next = { ...prev }
+        for (const [gid, all] of entries) if (all.length) next[gid] = all
+        return next
+      })
+    })
+    return () => {
+      cancelled = true
+    }
+    // Refetched whenever the page reloads, so a resolve or edit shows here.
+  }, [markets])
+
+  type ListItem =
+    | { kind: "single"; m: Market }
+    | { kind: "group"; groupId: string; members: Market[] }
+  const listItems: ListItem[] = []
+  {
+    const seen = new Set<string>()
+    for (const m of displayMarkets) {
+      const gid = m.groupId as string | undefined
+      if (!gid) {
+        listItems.push({ kind: "single", m })
+        continue
+      }
+      if (seen.has(gid)) continue
+      seen.add(gid)
+      // Whole group when fetched; until then, the members on this page.
+      const members =
+        groupMembers[gid] ?? displayMarkets.filter((x) => x.groupId === gid)
+      listItems.push({ kind: "group", groupId: gid, members })
+    }
+  }
+
+  /** An option's name: the part of its title after the group's "—". */
+  const optionName = (m: Market) => {
+    const meta = (m.metadata as { candidate?: string } | undefined)?.candidate
+    if (meta?.trim()) return meta.trim()
+    const parts = m.title.split("—")
+    return parts.length > 1 ? parts[parts.length - 1].trim() : m.title
+  }
+
+  const toggleGroup = (gid: string) =>
+    setExpandedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(gid)) next.delete(gid)
+      else next.add(gid)
+      return next
+    })
+
+  const renderGroupRow = (groupId: string, members: Market[]) => {
+    const first = members[0]
+    const open = expandedGroups.has(groupId)
+    const title =
+      (first.groupTitle as string | undefined) ??
+      first.title.split("—")[0].trim()
+    const pool = members.reduce(
+      (sum, x) => sum + parseFloat(String(x.totalPool ?? 0)),
+      0
+    )
+    const bettors = members.reduce((sum, x) => sum + (x.bettorCount ?? 0), 0)
+    const bets = members.reduce((sum, x) => sum + (x.betCount ?? 0), 0)
+    const byStatus = new Map<string, number>()
+    for (const x of members)
+      byStatus.set(x.status, (byStatus.get(x.status) ?? 0) + 1)
+    const closes = members
+      .map((x) => x.closesAt)
+      .filter(Boolean)
+      .sort()[0]
+    const editable = members.some(
+      (x) => x.status === "upcoming" || x.status === "open"
+    )
+    // An option resolved Yes is the group's winner so far.
+    const winners = members.filter((x) =>
+      x.outcomes.some(
+        (o) => o.isWinner && o.label.trim().toLowerCase() === "yes"
+      )
+    )
+    return (
+      <React.Fragment key={`group-${groupId}`}>
+        <tr>
+          <td>
+            <div style={{ fontWeight: 600 }}>
+              {title}
+              <span
+                style={{
+                  marginLeft: 8,
+                  verticalAlign: "middle",
+                  fontSize: "0.62rem",
+                  fontWeight: 800,
+                  padding: "1px 6px",
+                  borderRadius: 4,
+                  background: "hsl(217 91% 65% / 0.15)",
+                  color: "hsl(217 91% 70%)",
+                  letterSpacing: "0.04em",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                GROUP · {members.length} YES/NO
+              </span>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: 4,
+                marginTop: 3,
+                flexWrap: "wrap",
+              }}
+            >
+              {first.category && (
+                <span
+                  style={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "hsl(var(--primary) / 0.1)",
+                    color: "hsl(var(--primary))",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {first.category}
+                </span>
+              )}
+              {first.subcategory && (
+                <span
+                  style={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "hsl(var(--muted) / 0.4)",
+                    color: "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  {first.subcategory}
+                </span>
+              )}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.3rem",
+                marginTop: "0.4rem",
+                fontSize: "0.72rem",
+              }}
+            >
+              {members.map((x) => {
+                const won = winners.includes(x)
+                return (
+                  <span
+                    key={x.id}
+                    style={{
+                      padding: "0.2rem 0.5rem",
+                      borderRadius: "999px",
+                      fontWeight: 600,
+                      border: won
+                        ? "1px solid hsl(var(--primary) / 0.5)"
+                        : "1px solid hsl(var(--muted) / 0.4)",
+                      background: won
+                        ? "hsl(var(--primary) / 0.2)"
+                        : "hsl(var(--muted) / 0.3)",
+                      color: won
+                        ? "hsl(var(--primary))"
+                        : "hsl(var(--foreground))",
+                    }}
+                  >
+                    {optionName(x)}
+                    {won && " ✓"}
+                  </span>
+                )
+              })}
+            </div>
+          </td>
+          <td>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {[...byStatus].map(([st, n]) => (
+                <span
+                  key={st}
+                  className={`badge badge-${st.toLowerCase()}`}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {members.length > 1 ? `${n} ${st}` : st}
+                </span>
+              ))}
+            </div>
+          </td>
+          <td style={{ fontFamily: "monospace" }}>
+            NU. {pool.toLocaleString()}
+          </td>
+          <td
+            style={{ fontFamily: "monospace" }}
+            title="Added up across the group's markets: someone betting on two options counts twice."
+          >
+            {bettors.toLocaleString()}
+            {bets !== bettors && bets > 0 && (
+              <span
+                style={{
+                  color: "hsl(var(--muted-foreground))",
+                  fontSize: "0.75rem",
+                }}
+              >
+                {" "}
+                / {bets.toLocaleString()}
+              </span>
+            )}
+          </td>
+          <td style={{ fontSize: "0.75rem" }}>
+            {closes ? new Date(closes).toLocaleString() : "Not set"}
+          </td>
+          <td>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              {editable && (
+                <button
+                  onClick={() => handleEditGroup(first)}
+                  className="secondary"
+                  title="Edit whole group (title, timing, option names & images)"
+                  style={{ color: "hsl(217 91% 65%)" }}
+                >
+                  <Edit size={14} />
+                </button>
+              )}
+              <button
+                onClick={() => toggleGroup(groupId)}
+                className="secondary"
+                title={
+                  open
+                    ? "Hide the options"
+                    : "Show each option's market (resolve, cancel, details)"
+                }
+                style={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}
+              >
+                {open ? "▼" : "▶"} {members.length}
+              </button>
+            </div>
+          </td>
+        </tr>
+        {open && members.map((x) => renderMarketRow(x, true))}
+      </React.Fragment>
+    )
+  }
+
+  const renderMarketRow = (m: Market, nested = false) => (
+    <React.Fragment key={m.id}>
+      <tr
+        style={nested ? { background: "hsl(var(--muted) / 0.08)" } : undefined}
+      >
+        <td style={nested ? { paddingLeft: "2.25rem" } : undefined}>
+          <div style={{ fontWeight: 600 }}>
+            {nested ? `↳ ${optionName(m)}` : m.title}
+            <EdgeBadge market={m} />
+          </div>
+          {(m.category || m.subcategory) && (
+            <div
+              style={{
+                display: "flex",
+                gap: 4,
+                marginTop: 3,
+                flexWrap: "wrap",
+              }}
+            >
+              {m.category && (
+                <span
+                  style={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "hsl(var(--primary) / 0.1)",
+                    color: "hsl(var(--primary))",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {m.category}
+                </span>
+              )}
+              {m.subcategory && (
+                <span
+                  style={{
+                    fontSize: "0.65rem",
+                    fontWeight: 700,
+                    padding: "1px 6px",
+                    borderRadius: 4,
+                    background: "hsl(var(--muted) / 0.4)",
+                    color: "hsl(var(--muted-foreground))",
+                  }}
+                >
+                  {m.subcategory}
+                </span>
+              )}
+            </div>
+          )}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.3rem",
+              marginTop: "0.4rem",
+              fontSize: "0.72rem",
+            }}
+          >
+            {m.outcomes.map((o: Outcome) => {
+              // Eliminating an outcome only makes sense while the
+              // market is still taking bets and the outcome isn't
+              // already the declared winner.
+              const canToggle =
+                !o.isWinner && (m.status === "open" || m.status === "upcoming")
+              return (
+                <button
+                  key={o.id}
+                  type="button"
+                  disabled={!canToggle}
+                  onClick={
+                    canToggle
+                      ? () => handleToggleEliminated(m.id, o)
+                      : undefined
+                  }
+                  title={
+                    canToggle
+                      ? o.isEliminated
+                        ? "Click to restore (allow bets again)"
+                        : "Click to eliminate (stop new bets)"
+                      : o.isWinner
+                        ? "Declared winner"
+                        : "Only editable while the market is open or upcoming"
+                  }
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.25rem",
+                    padding: "0.2rem 0.5rem",
+                    borderRadius: "999px",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    lineHeight: 1.2,
+                    cursor: canToggle ? "pointer" : "default",
+                    textDecoration: o.isEliminated ? "line-through" : "none",
+                    border: o.isWinner
+                      ? "1px solid hsl(var(--primary) / 0.5)"
+                      : o.isEliminated
+                        ? "1px solid hsl(0 84% 60% / 0.6)"
+                        : canToggle
+                          ? "1px dashed hsl(var(--muted-foreground) / 0.5)"
+                          : "1px solid hsl(var(--muted) / 0.4)",
+                    background: o.isWinner
+                      ? "hsl(var(--primary) / 0.2)"
+                      : o.isEliminated
+                        ? "hsl(0 84% 60% / 0.18)"
+                        : "hsl(var(--muted) / 0.3)",
+                    color: o.isWinner
+                      ? "hsl(var(--primary))"
+                      : o.isEliminated
+                        ? "hsl(0 84% 60%)"
+                        : "hsl(var(--foreground))",
+                  }}
+                >
+                  {o.label}
+                  {o.isWinner && " ✓"}
+                  {o.isEliminated
+                    ? " ✕"
+                    : canToggle && <span style={{ opacity: 0.6 }}>✕</span>}
+                </button>
+              )
+            })}
+          </div>
+        </td>
+        <td>
+          <span className={`badge badge-${m.status.toLowerCase()}`}>
+            {m.status}
+          </span>
+        </td>
+        <td style={{ fontFamily: "monospace" }}>
+          NU. {parseFloat(String(m.totalPool ?? 0)).toLocaleString()}
+        </td>
+        <td style={{ fontFamily: "monospace" }}>
+          {m.bettorCount === undefined ? (
+            "—"
+          ) : m.bettorCount === 0 ? (
+            <span style={{ color: "hsl(var(--muted-foreground))" }}>0</span>
+          ) : (
+            <>
+              {m.bettorCount.toLocaleString()}
+              {/* The bet tally alongside: the gap between them
+                  is the signal. 3 people / 40 bets is a very
+                  different market from 40 people / 40 bets. */}
+              {typeof m.betCount === "number" &&
+                m.betCount !== m.bettorCount && (
+                  <span
+                    style={{
+                      color: "hsl(var(--muted-foreground))",
+                      fontSize: "0.75rem",
+                    }}
+                    title={`${m.betCount.toLocaleString()} predictions placed by ${m.bettorCount.toLocaleString()} people`}
+                  >
+                    {" "}
+                    / {m.betCount.toLocaleString()}
+                  </span>
+                )}
+            </>
+          )}
+        </td>
+        <td style={{ fontSize: "0.75rem" }}>
+          {m.closesAt ? new Date(m.closesAt).toLocaleString() : "Not set"}
+        </td>
+        <td>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            {(m.status === "upcoming" || m.status === "open") && (
+              <button
+                onClick={() => handleAnnounce(m)}
+                className="secondary"
+                title="Announce to Telegram channel"
+              >
+                <Megaphone size={14} />
+              </button>
+            )}
+            {pinTarget(m) && (
+              <button
+                onClick={() => handleToggleFeatured(m)}
+                className="secondary"
+                title={(() => {
+                  const t = pinTarget(m)
+                  if (t?.kind === "hub")
+                    return m.isFeatured
+                      ? `Featured in the ${t.name} hub — click to unpin`
+                      : `Pin as a featured match in the ${t.name} hub`
+                  return m.isFeatured
+                    ? "Pinned to the top of the app feed — click to unpin"
+                    : "Pin to the top of the app feed (Telegram app and PWA)"
+                })()}
+                style={{
+                  color: m.isFeatured ? "hsl(45, 90%, 55%)" : undefined,
+                }}
+              >
+                <Star size={14} fill={m.isFeatured ? "currentColor" : "none"} />
+              </button>
+            )}
+            {m.status === "upcoming" && (
+              <button
+                onClick={() => handleTransition(m.id, "open")}
+                className="secondary"
+                title="Start Market"
+              >
+                <Play size={14} />
+              </button>
+            )}
+            {m.status === "open" && (
+              <button
+                onClick={() => handleTransition(m.id, "closed", m.title)}
+                className="secondary"
+                title="Close Market"
+              >
+                <Square size={14} />
+              </button>
+            )}
+            {m.status === "closed" && (
+              <button
+                onClick={() => setProposingMarket(m)}
+                className="secondary"
+                title="Propose Outcome & Open Dispute Window"
+                style={{ color: "hsl(45, 80%, 60%)" }}
+              >
+                ⚖️
+              </button>
+            )}
+            {m.status === "closed" && m.subcategory?.startsWith("wc-") && (
+              <button
+                onClick={() => handleReopen(m)}
+                className="secondary"
+                title="Reopen Market (World Cup only)"
+                style={{ color: "hsl(140, 60%, 55%)" }}
+              >
+                <RotateCcw size={14} />
+              </button>
+            )}
+            {m.status === "resolving" && (
+              <button
+                onClick={() => handleOpenResolve(m)}
+                className="secondary"
+                title="Final Resolution"
+              >
+                <CheckSquare size={14} />
+              </button>
+            )}
+            {(m.status === "upcoming" || m.status === "open") &&
+              (m.groupId ? (
+                <button
+                  onClick={() => handleEditGroup(m)}
+                  className="secondary"
+                  title="Edit whole group (title, timing, candidate names & images)"
+                  style={{ color: "hsl(217 91% 65%)" }}
+                >
+                  <Edit size={14} />
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditingMarket(m)
+                    setView("edit")
+                  }}
+                  className="secondary"
+                  title="Edit"
+                >
+                  <Edit size={14} />
+                </button>
+              ))}
+            {(m.status === "upcoming" ||
+              m.status === "cancelled" ||
+              parseFloat(String(m.totalPool ?? 0)) === 0) && (
+              <button
+                onClick={() => handleDelete(m.id)}
+                className="secondary"
+                title="Delete"
+                style={{ color: "hsl(var(--destructive))" }}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
+            {(m.status === "upcoming" ||
+              m.status === "open" ||
+              m.status === "closed" ||
+              m.status === "resolving") && (
+              <button
+                onClick={() => setCancellingMarket(m)}
+                className="secondary"
+                title="Cancel & Refund all bets"
+                style={{ color: "hsl(var(--destructive))" }}
+              >
+                <XCircle size={14} />
+              </button>
+            )}
+            <button
+              onClick={() =>
+                setExpandedMarket(expandedMarket === m.id ? null : m.id)
+              }
+              className="secondary"
+              title="View Details"
+              style={{ fontSize: "0.75rem" }}
+            >
+              {expandedMarket === m.id ? "▼" : "▶"}
+            </button>
+          </div>
+        </td>
+      </tr>
+      {expandedMarket === m.id && (
+        <tr>
+          <td
+            colSpan={6}
+            style={{
+              padding: "0",
+              background: "hsl(var(--muted) / 0.1)",
+            }}
+          >
+            <div style={{ padding: "1.5rem" }}>
+              <OddsDisplay
+                outcomes={m.outcomes}
+                totalPool={Number(m.totalPool || 0)}
+                houseEdgePct={Number(m.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT)}
+                isEstimated={m.status === "open"}
+                showWarnings={true}
+                currency={m.poolCurrency}
+                bettorCount={m.bettorCount}
+                betCount={m.betCount}
+              />
+              <MarketParticipants
+                marketId={m.id}
+                fetchParticipants={api.getMarketParticipants}
+              />
+              {m.status === "open" && (
+                <LateMoneyMonitor
+                  market={m}
+                  fetchLateMoney={api.getLateMoney}
+                  onLateMoneyDetected={(data) => {
+                    console.log("Late money detected:", data)
+                    // Could trigger notifications or automatic actions
+                  }}
+                />
+              )}
+            </div>
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  )
+
   if (view === "create") {
     return (
       <>
@@ -1062,374 +1682,11 @@ const MarketManagement: React.FC = () => {
                     </td>
                   </tr>
                 ) : (
-                  displayMarkets.map((m: Market) => (
-                    <React.Fragment key={m.id}>
-                      <tr>
-                        <td>
-                          <div style={{ fontWeight: 600 }}>
-                            {m.title}
-                            <EdgeBadge market={m} />
-                          </div>
-                          {(m.category || m.subcategory) && (
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: 4,
-                                marginTop: 3,
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {m.category && (
-                                <span
-                                  style={{
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    padding: "1px 6px",
-                                    borderRadius: 4,
-                                    background: "hsl(var(--primary) / 0.1)",
-                                    color: "hsl(var(--primary))",
-                                    textTransform: "capitalize",
-                                  }}
-                                >
-                                  {m.category}
-                                </span>
-                              )}
-                              {m.subcategory && (
-                                <span
-                                  style={{
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    padding: "1px 6px",
-                                    borderRadius: 4,
-                                    background: "hsl(var(--muted) / 0.4)",
-                                    color: "hsl(var(--muted-foreground))",
-                                  }}
-                                >
-                                  {m.subcategory}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: "0.3rem",
-                              marginTop: "0.4rem",
-                              fontSize: "0.72rem",
-                            }}
-                          >
-                            {m.outcomes.map((o: Outcome) => {
-                              // Eliminating an outcome only makes sense while the
-                              // market is still taking bets and the outcome isn't
-                              // already the declared winner.
-                              const canToggle =
-                                !o.isWinner &&
-                                (m.status === "open" || m.status === "upcoming")
-                              return (
-                                <button
-                                  key={o.id}
-                                  type="button"
-                                  disabled={!canToggle}
-                                  onClick={
-                                    canToggle
-                                      ? () => handleToggleEliminated(m.id, o)
-                                      : undefined
-                                  }
-                                  title={
-                                    canToggle
-                                      ? o.isEliminated
-                                        ? "Click to restore (allow bets again)"
-                                        : "Click to eliminate (stop new bets)"
-                                      : o.isWinner
-                                        ? "Declared winner"
-                                        : "Only editable while the market is open or upcoming"
-                                  }
-                                  style={{
-                                    display: "inline-flex",
-                                    alignItems: "center",
-                                    gap: "0.25rem",
-                                    padding: "0.2rem 0.5rem",
-                                    borderRadius: "999px",
-                                    fontSize: "0.72rem",
-                                    fontWeight: 600,
-                                    lineHeight: 1.2,
-                                    cursor: canToggle ? "pointer" : "default",
-                                    textDecoration: o.isEliminated
-                                      ? "line-through"
-                                      : "none",
-                                    border: o.isWinner
-                                      ? "1px solid hsl(var(--primary) / 0.5)"
-                                      : o.isEliminated
-                                        ? "1px solid hsl(0 84% 60% / 0.6)"
-                                        : canToggle
-                                          ? "1px dashed hsl(var(--muted-foreground) / 0.5)"
-                                          : "1px solid hsl(var(--muted) / 0.4)",
-                                    background: o.isWinner
-                                      ? "hsl(var(--primary) / 0.2)"
-                                      : o.isEliminated
-                                        ? "hsl(0 84% 60% / 0.18)"
-                                        : "hsl(var(--muted) / 0.3)",
-                                    color: o.isWinner
-                                      ? "hsl(var(--primary))"
-                                      : o.isEliminated
-                                        ? "hsl(0 84% 60%)"
-                                        : "hsl(var(--foreground))",
-                                  }}
-                                >
-                                  {o.label}
-                                  {o.isWinner && " ✓"}
-                                  {o.isEliminated
-                                    ? " ✕"
-                                    : canToggle && (
-                                        <span style={{ opacity: 0.6 }}>✕</span>
-                                      )}
-                                </button>
-                              )
-                            })}
-                          </div>
-                        </td>
-                        <td>
-                          <span
-                            className={`badge badge-${m.status.toLowerCase()}`}
-                          >
-                            {m.status}
-                          </span>
-                        </td>
-                        <td style={{ fontFamily: "monospace" }}>
-                          NU.{" "}
-                          {parseFloat(
-                            String(m.totalPool ?? 0)
-                          ).toLocaleString()}
-                        </td>
-                        <td style={{ fontFamily: "monospace" }}>
-                          {m.bettorCount === undefined ? (
-                            "—"
-                          ) : m.bettorCount === 0 ? (
-                            <span
-                              style={{ color: "hsl(var(--muted-foreground))" }}
-                            >
-                              0
-                            </span>
-                          ) : (
-                            <>
-                              {m.bettorCount.toLocaleString()}
-                              {/* The bet tally alongside: the gap between them
-                                  is the signal. 3 people / 40 bets is a very
-                                  different market from 40 people / 40 bets. */}
-                              {typeof m.betCount === "number" &&
-                                m.betCount !== m.bettorCount && (
-                                  <span
-                                    style={{
-                                      color: "hsl(var(--muted-foreground))",
-                                      fontSize: "0.75rem",
-                                    }}
-                                    title={`${m.betCount.toLocaleString()} predictions placed by ${m.bettorCount.toLocaleString()} people`}
-                                  >
-                                    {" "}
-                                    / {m.betCount.toLocaleString()}
-                                  </span>
-                                )}
-                            </>
-                          )}
-                        </td>
-                        <td style={{ fontSize: "0.75rem" }}>
-                          {m.closesAt
-                            ? new Date(m.closesAt).toLocaleString()
-                            : "Not set"}
-                        </td>
-                        <td>
-                          <div style={{ display: "flex", gap: "0.5rem" }}>
-                            {(m.status === "upcoming" ||
-                              m.status === "open") && (
-                              <button
-                                onClick={() => handleAnnounce(m)}
-                                className="secondary"
-                                title="Announce to Telegram channel"
-                              >
-                                <Megaphone size={14} />
-                              </button>
-                            )}
-                            {pinTarget(m) && (
-                              <button
-                                onClick={() => handleToggleFeatured(m)}
-                                className="secondary"
-                                title={(() => {
-                                  const t = pinTarget(m)
-                                  if (t?.kind === "hub")
-                                    return m.isFeatured
-                                      ? `Featured in the ${t.name} hub — click to unpin`
-                                      : `Pin as a featured match in the ${t.name} hub`
-                                  return m.isFeatured
-                                    ? "Pinned to the top of the app feed — click to unpin"
-                                    : "Pin to the top of the app feed (Telegram app and PWA)"
-                                })()}
-                                style={{
-                                  color: m.isFeatured
-                                    ? "hsl(45, 90%, 55%)"
-                                    : undefined,
-                                }}
-                              >
-                                <Star
-                                  size={14}
-                                  fill={m.isFeatured ? "currentColor" : "none"}
-                                />
-                              </button>
-                            )}
-                            {m.status === "upcoming" && (
-                              <button
-                                onClick={() => handleTransition(m.id, "open")}
-                                className="secondary"
-                                title="Start Market"
-                              >
-                                <Play size={14} />
-                              </button>
-                            )}
-                            {m.status === "open" && (
-                              <button
-                                onClick={() =>
-                                  handleTransition(m.id, "closed", m.title)
-                                }
-                                className="secondary"
-                                title="Close Market"
-                              >
-                                <Square size={14} />
-                              </button>
-                            )}
-                            {m.status === "closed" && (
-                              <button
-                                onClick={() => setProposingMarket(m)}
-                                className="secondary"
-                                title="Propose Outcome & Open Dispute Window"
-                                style={{ color: "hsl(45, 80%, 60%)" }}
-                              >
-                                ⚖️
-                              </button>
-                            )}
-                            {m.status === "closed" &&
-                              m.subcategory?.startsWith("wc-") && (
-                                <button
-                                  onClick={() => handleReopen(m)}
-                                  className="secondary"
-                                  title="Reopen Market (World Cup only)"
-                                  style={{ color: "hsl(140, 60%, 55%)" }}
-                                >
-                                  <RotateCcw size={14} />
-                                </button>
-                              )}
-                            {m.status === "resolving" && (
-                              <button
-                                onClick={() => handleOpenResolve(m)}
-                                className="secondary"
-                                title="Final Resolution"
-                              >
-                                <CheckSquare size={14} />
-                              </button>
-                            )}
-                            {(m.status === "upcoming" || m.status === "open") &&
-                              (m.groupId ? (
-                                <button
-                                  onClick={() => handleEditGroup(m)}
-                                  className="secondary"
-                                  title="Edit whole group (title, timing, candidate names & images)"
-                                  style={{ color: "hsl(217 91% 65%)" }}
-                                >
-                                  <Edit size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => {
-                                    setEditingMarket(m)
-                                    setView("edit")
-                                  }}
-                                  className="secondary"
-                                  title="Edit"
-                                >
-                                  <Edit size={14} />
-                                </button>
-                              ))}
-                            {(m.status === "upcoming" ||
-                              m.status === "cancelled" ||
-                              parseFloat(String(m.totalPool ?? 0)) === 0) && (
-                              <button
-                                onClick={() => handleDelete(m.id)}
-                                className="secondary"
-                                title="Delete"
-                                style={{ color: "hsl(var(--destructive))" }}
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            )}
-                            {(m.status === "upcoming" ||
-                              m.status === "open" ||
-                              m.status === "closed" ||
-                              m.status === "resolving") && (
-                              <button
-                                onClick={() => setCancellingMarket(m)}
-                                className="secondary"
-                                title="Cancel & Refund all bets"
-                                style={{ color: "hsl(var(--destructive))" }}
-                              >
-                                <XCircle size={14} />
-                              </button>
-                            )}
-                            <button
-                              onClick={() =>
-                                setExpandedMarket(
-                                  expandedMarket === m.id ? null : m.id
-                                )
-                              }
-                              className="secondary"
-                              title="View Details"
-                              style={{ fontSize: "0.75rem" }}
-                            >
-                              {expandedMarket === m.id ? "▼" : "▶"}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedMarket === m.id && (
-                        <tr>
-                          <td
-                            colSpan={6}
-                            style={{
-                              padding: "0",
-                              background: "hsl(var(--muted) / 0.1)",
-                            }}
-                          >
-                            <div style={{ padding: "1.5rem" }}>
-                              <OddsDisplay
-                                outcomes={m.outcomes}
-                                totalPool={Number(m.totalPool || 0)}
-                                houseEdgePct={Number(
-                                  m.houseEdgePct || DEFAULT_HOUSE_EDGE_PCT
-                                )}
-                                isEstimated={m.status === "open"}
-                                showWarnings={true}
-                                currency={m.poolCurrency}
-                                bettorCount={m.bettorCount}
-                                betCount={m.betCount}
-                              />
-                              <MarketParticipants
-                                marketId={m.id}
-                                fetchParticipants={api.getMarketParticipants}
-                              />
-                              {m.status === "open" && (
-                                <LateMoneyMonitor
-                                  market={m}
-                                  fetchLateMoney={api.getLateMoney}
-                                  onLateMoneyDetected={(data) => {
-                                    console.log("Late money detected:", data)
-                                    // Could trigger notifications or automatic actions
-                                  }}
-                                />
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  ))
+                  listItems.map((item) =>
+                    item.kind === "single"
+                      ? renderMarketRow(item.m)
+                      : renderGroupRow(item.groupId, item.members)
+                  )
                 )}
               </tbody>
             </table>
