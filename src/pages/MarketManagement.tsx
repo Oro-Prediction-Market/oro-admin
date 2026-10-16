@@ -1102,7 +1102,7 @@ const MarketManagement: React.FC = () => {
             {closes ? new Date(closes).toLocaleString() : "Not set"}
           </td>
           <td>
-            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
               {editable && (
                 <button
                   onClick={() =>
@@ -1149,6 +1149,16 @@ const MarketManagement: React.FC = () => {
                   <Edit size={14} />
                 </button>
               )}
+              <button
+                onClick={() =>
+                  handleGroupDelete(groupId, title, members.length)
+                }
+                className="secondary"
+                title="Delete the whole group (only when no option has predictions)"
+                style={{ color: "hsl(0 84% 60%)" }}
+              >
+                <Trash2 size={14} />
+              </button>
               {cancellableCount > 0 && (
                 <button
                   onClick={() =>
@@ -1161,16 +1171,6 @@ const MarketManagement: React.FC = () => {
                   <XCircle size={14} />
                 </button>
               )}
-              <button
-                onClick={() =>
-                  handleGroupDelete(groupId, title, members.length)
-                }
-                className="secondary"
-                title="Delete the whole group (only when no option has predictions)"
-                style={{ color: "hsl(0 84% 60%)" }}
-              >
-                <Trash2 size={14} />
-              </button>
               <button
                 onClick={() => toggleGroup(groupId)}
                 className="secondary"
