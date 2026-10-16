@@ -815,6 +815,120 @@ const MarketManagement: React.FC = () => {
       return next
     })
 
+  // ── Whole-group actions ────────────────────────────────────────────────
+  // Each reaches every option at once, through the backend's group endpoints.
+  const errText = (e: unknown) => (e instanceof Error ? e.message : String(e))
+  type GroupResult = {
+    closed?: number
+    cancelled?: number
+    skipped?: number
+    failed?: string[]
+  }
+  const reportFailures = (r: GroupResult) => {
+    if (r.failed?.length)
+      notify("error", `Some options failed: ${r.failed.join("; ")}`)
+  }
+
+  const handleGroupAnnounce = (gid: string, title: string, n: number) =>
+    setConfirmDialog({
+      title: "Announce group to Telegram",
+      message: `Announce "${title}" to the Telegram channel as one post listing its ${n} options?\n\nThis will notify all channel members.`,
+      confirmLabel: "Announce",
+      variant: "default",
+      onConfirm: async () => {
+        try {
+          await api.announceMarketGroup(gid)
+          notify("success", "Group announced to the Telegram channel.")
+        } catch (e) {
+          notify("error", `Error announcing group: ${errText(e)}`)
+        }
+      },
+    })
+
+  const handleGroupFeatured = async (
+    gid: string,
+    next: boolean,
+    where: string
+  ) => {
+    try {
+      await api.setMarketGroupFeatured(gid, next)
+      refresh()
+      notify(
+        "success",
+        next
+          ? `Group pinned to the top of ${where}.`
+          : `Group unpinned from ${where}.`
+      )
+    } catch (e) {
+      notify("error", `Error pinning group: ${errText(e)}`)
+    }
+  }
+
+  const handleGroupClose = (gid: string, title: string, n: number) =>
+    setConfirmDialog({
+      title: "Close group",
+      message: `Close all ${n} open option(s) of "${title}"?\n\nThis immediately stops all betting on the whole group.`,
+      confirmLabel: "Close group",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const r = (await api.closeMarketGroup(gid)) as GroupResult
+          refresh()
+          notify("success", `Closed ${r.closed ?? 0} option(s).`)
+          reportFailures(r)
+        } catch (e) {
+          notify("error", `Error closing group: ${errText(e)}`)
+        }
+      },
+    })
+
+  const handleGroupCancel = (gid: string, title: string, n: number) =>
+    setConfirmDialog({
+      title: "Cancel group",
+      message:
+        `Cancel "${title}" and refund every prediction on its ${n} unfinished option(s)?\n\n` +
+        `Options already settled are left alone. One cancellation post goes to the channel, and each bettor gets their refund message. This cannot be undone.`,
+      confirmLabel: "Cancel & refund group",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const r = (await api.cancelMarketGroup(gid)) as GroupResult
+          refresh()
+          notify(
+            "success",
+            `Cancelled and refunded ${r.cancelled ?? 0} option(s).`
+          )
+          reportFailures(r)
+        } catch (e) {
+          notify("error", `Error cancelling group: ${errText(e)}`)
+        }
+      },
+    })
+
+  const handleGroupDelete = (gid: string, title: string, n: number) =>
+    setConfirmDialog({
+      title: "Delete group",
+      message:
+        `Permanently delete "${title}" and all ${n} of its options?\n\n` +
+        `Refused if any option still has predictions: cancel the group first, which refunds them.`,
+      confirmLabel: "Delete group",
+      variant: "danger",
+      onConfirm: async () => {
+        try {
+          const r = (await api.deleteMarketGroup(gid)) as { deleted?: number }
+          setExpandedGroups((prev) => {
+            const next = new Set(prev)
+            next.delete(gid)
+            return next
+          })
+          refresh()
+          notify("success", `Deleted the group (${r.deleted ?? n} options).`)
+        } catch (e) {
+          notify("error", `Error deleting group: ${errText(e)}`)
+        }
+      },
+    })
+
   const renderGroupRow = (groupId: string, members: Market[]) => {
     const first = members[0]
     const open = expandedGroups.has(groupId)
@@ -837,6 +951,17 @@ const MarketManagement: React.FC = () => {
     const editable = members.some(
       (x) => x.status === "upcoming" || x.status === "open"
     )
+    const openCount = members.filter((x) => x.status === "open").length
+    const cancellableCount = members.filter((x) =>
+      ["upcoming", "open", "closed", "resolving"].includes(x.status)
+    ).length
+    const pinned = members.every((x) => x.isFeatured)
+    const target = pinTarget(first)
+    const groupPin = target
+      ? target.kind === "hub"
+        ? `the ${target.name} hub`
+        : "the app feed"
+      : null
     // An option resolved Yes is the group's winner so far.
     const winners = members.filter((x) =>
       x.outcomes.some(
@@ -977,7 +1102,43 @@ const MarketManagement: React.FC = () => {
             {closes ? new Date(closes).toLocaleString() : "Not set"}
           </td>
           <td>
-            <div style={{ display: "flex", gap: "0.5rem" }}>
+            <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              {editable && (
+                <button
+                  onClick={() =>
+                    handleGroupAnnounce(groupId, title, members.length)
+                  }
+                  className="secondary"
+                  title="Announce the whole group to the Telegram channel (one post)"
+                >
+                  <Megaphone size={14} />
+                </button>
+              )}
+              {groupPin && (
+                <button
+                  onClick={() =>
+                    handleGroupFeatured(groupId, !pinned, groupPin)
+                  }
+                  className="secondary"
+                  title={
+                    pinned
+                      ? `Unpin the group from ${groupPin}`
+                      : `Pin the group to the top of ${groupPin}`
+                  }
+                  style={pinned ? { color: "#fbbf24" } : undefined}
+                >
+                  <Star size={14} fill={pinned ? "#fbbf24" : "none"} />
+                </button>
+              )}
+              {openCount > 0 && (
+                <button
+                  onClick={() => handleGroupClose(groupId, title, openCount)}
+                  className="secondary"
+                  title="Close every open option (stops betting on the group)"
+                >
+                  <Square size={14} />
+                </button>
+              )}
               {editable && (
                 <button
                   onClick={() => handleEditGroup(first)}
@@ -988,6 +1149,28 @@ const MarketManagement: React.FC = () => {
                   <Edit size={14} />
                 </button>
               )}
+              {cancellableCount > 0 && (
+                <button
+                  onClick={() =>
+                    handleGroupCancel(groupId, title, cancellableCount)
+                  }
+                  className="secondary"
+                  title="Cancel the whole group and refund every prediction"
+                  style={{ color: "hsl(0 84% 60%)" }}
+                >
+                  <XCircle size={14} />
+                </button>
+              )}
+              <button
+                onClick={() =>
+                  handleGroupDelete(groupId, title, members.length)
+                }
+                className="secondary"
+                title="Delete the whole group (only when no option has predictions)"
+                style={{ color: "hsl(0 84% 60%)" }}
+              >
+                <Trash2 size={14} />
+              </button>
               <button
                 onClick={() => toggleGroup(groupId)}
                 className="secondary"

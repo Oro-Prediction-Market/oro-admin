@@ -392,6 +392,35 @@ export function useAdminApi(token: string | null) {
         ),
       announceMarket: (id: string) =>
         apiFetch(`/admin/markets/${id}/announce`, { method: "POST" }),
+      // ── Whole-group actions: every option of a group market at once ──────
+      // Longer timeouts: each acts on every option in turn.
+      announceMarketGroup: (groupId: string) =>
+        apiFetch(`/admin/markets/group/${groupId}/announce`, {
+          method: "POST",
+        }),
+      closeMarketGroup: (groupId: string) =>
+        apiFetch(
+          `/admin/markets/group/${groupId}/close`,
+          { method: "POST" },
+          90_000
+        ),
+      cancelMarketGroup: (groupId: string) =>
+        apiFetch(
+          `/admin/markets/group/${groupId}/cancel`,
+          { method: "POST" },
+          120_000
+        ),
+      deleteMarketGroup: (groupId: string) =>
+        apiFetch(
+          `/admin/markets/group/${groupId}`,
+          { method: "DELETE" },
+          90_000
+        ),
+      setMarketGroupFeatured: (groupId: string, isFeatured: boolean) =>
+        apiFetch(`/admin/markets/group/${groupId}/featured`, {
+          method: "PATCH",
+          body: JSON.stringify({ isFeatured }),
+        }),
 
       // ── Announcements: a notice sent to every user ──────────────────────
       // sendAnnouncement runs the whole fan-out inline (the insert plus
