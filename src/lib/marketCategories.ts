@@ -26,6 +26,9 @@ export const SPORT_SUBCATEGORIES = [
   "unl-season",
   "unl-topscorer",
   "unl-assists",
+  // NBA outrights (Champion, Conference winners, MVP). Games are made by the
+  // NBA job as nba-match; anything else nba-* shows in the hub's Season tab.
+  "nba-season",
   "bpl-match",
   "bpl-winner",
   "bpl-topscorer",
